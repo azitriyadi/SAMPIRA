@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profil Saya | EcoRecycle</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=20261029-quality5">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
-    
+
     <style>
         /* Sidebar & Layout Styles */
         :root {
@@ -89,7 +89,7 @@
             text-decoration: none;
             font-weight: 600;
             font-size: 0.95rem;
-            transition: all 0.2s;
+            transition: background-color 0.2s, color 0.2s, transform 0.2s;
             cursor: pointer;
         }
 
@@ -126,7 +126,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #10b981;
+            background: #087443;
             color: white;
             font-weight: 900;
         }
@@ -174,7 +174,7 @@
             font-weight: 700;
             color: var(--text-secondary);
             cursor: pointer;
-            transition: all 0.3s;
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s, transform 0.3s;
             padding: 12px 24px;
             border-radius: 12px;
             font-size: 0.95rem;
@@ -335,7 +335,7 @@
             font-weight: 800;
             font-size: 1rem;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s, transform 0.3s;
             margin-top: 30px;
             display: inline-flex;
             align-items: center;
@@ -392,7 +392,7 @@
             right: 0;
             bottom: 0;
             background-color: var(--gray-300);
-            transition: .4s;
+            transition: background-color .4s, transform .4s;
             border-radius: 34px;
         }
 
@@ -404,7 +404,7 @@
             left: 4px;
             bottom: 4px;
             background-color: white;
-            transition: .4s;
+            transition: background-color .4s, transform .4s;
             border-radius: 50%;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
@@ -501,6 +501,7 @@
                 transform: translateY(0);
             }
         }
+    @media (prefers-reduced-motion: reduce) { .pane { animation: none; } .sidebar, .sidebar-item, .main-content, .action-btn, .slider, .slider::before { transition: none; } }
     </style>
 </head>
 
@@ -531,7 +532,7 @@
                     <i class="fas fa-home"></i> Beranda
                 </a>
                 <a href="dashboard" class="sidebar-item" style="text-decoration:none;">
-                    <i class="fas fa-recycle"></i> Setor E-Waste
+                    <i class="fas fa-recycle"></i> Setor Sampah
                 </a>
                 <a href="dashboard" class="sidebar-item" style="text-decoration:none;">
                     <i class="fas fa-truck-pickup"></i> Lacak Status
@@ -561,7 +562,7 @@
     <div class="portal-content">
         <!-- Main Content -->
         <main class="profile-dashboard">
-            
+
             <!-- Center Profile Tabs -->
             <div class="profile-tabs-wrapper">
                 <div class="header-tab active" data-target="pane-data"><i class="fas fa-user"></i> Data Profil</div>
@@ -582,25 +583,25 @@
                 <div id="pane-data" class="pane active">
                     <div class="pane-header">
                         <h2>Data Diri</h2>
-                        <p>Kelola data identitas dan alamat donasi sampah elektronik Anda.</p>
+                        <p>Kelola data identitas dan alamat donasi sampah Anda.</p>
                     </div>
                     <form>
                         <div class="data-grid">
                             <div class="data-group">
-                                <label>Nama Lengkap</label>
+                                <label for="profile-input-name">Nama Lengkap</label>
                                 <input type="text" class="data-input" id="profile-input-name" value="">
                             </div>
                             <div class="data-group">
-                                <label>Nomor WhatsApp Aktif</label>
+                                <label for="profile-input-phone">Nomor WhatsApp Aktif</label>
                                 <input type="tel" class="data-input" id="profile-input-phone" value="" placeholder="Masukkan Nomor WA">
                             </div>
                             <div class="data-group" style="grid-column: 1 / -1;">
-                                <label>Alamat Email</label>
+                                <label for="profile-input-email">Alamat Email</label>
                                 <input type="email" class="data-input" id="profile-input-email" value="" readonly>
                             </div>
                             <div class="data-group" style="grid-column: 1 / -1;">
-                                <label>Alamat Utama Penjemputan (Bandung)</label>
-                                <textarea class="data-input" rows="4">Jl. Telekomunikasi No. 1, Terusan Buahbatu, Bandung, Jawa Barat</textarea>
+                                <label for="profile-input-address">Alamat Utama Penjemputan (Bandung)</label>
+                                <textarea id="profile-input-address" class="data-input" rows="4">Jl. Telekomunikasi No. 1, Terusan Buahbatu, Bandung, Jawa Barat</textarea>
                             </div>
                         </div>
                         <button type="button" class="action-btn" onclick="alert('Profil berhasil diperbarui!')"><i class="fas fa-save"></i> Simpan Perubahan</button>
@@ -619,8 +620,7 @@
                             <h4>Notifikasi WhatsApp</h4>
                             <p>Terima update otomatis status kurir dan payout via WA.</p>
                         </div>
-                        <label class="toggle">
-                            <input type="checkbox" checked>
+                        <label class="toggle" for="profile-notify-whatsapp"><input id="profile-notify-whatsapp" type="checkbox" aria-label="Notifikasi WhatsApp" checked>
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -630,8 +630,7 @@
                             <h4>Autentikasi Dua Faktor</h4>
                             <p>Tingkatkan lapisan keamanan saat login baru.</p>
                         </div>
-                        <label class="toggle">
-                            <input type="checkbox">
+                        <label class="toggle" for="profile-two-factor"><input id="profile-two-factor" type="checkbox" aria-label="Autentikasi dua faktor">
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -651,14 +650,14 @@
                 <div id="pane-policy" class="pane">
                     <div class="pane-header">
                         <h2>Kebijakan & Privasi</h2>
-                        <p>Persyaratan penyerahan limbah e-waste dan privasi data.</p>
+                        <p>Persyaratan setoran sampah dan privasi data.</p>
                     </div>
                     <div style="background: var(--gray-50); padding: 30px; border-radius: 16px; border: 1px solid var(--gray-200); color: var(--text-secondary); line-height: 1.8; max-height: 400px; overflow-y: auto;">
-                        <h4 style="color: var(--brand-dark); margin-bottom: 10px; font-size: 1.1rem;">1. Ketentuan E-Waste</h4>
-                        <p style="margin-bottom: 20px;">EcoRecycle murni menerima kategori sampah elektronik seperti Small Gadgets, Computers, Large Appliances, dan Aki/Baterai. Limbah non-elektronik berbahaya (bahan peledak atau zat kimia non-komponen e-waste) sangat dilarang.</p>
+                        <h4 style="color: var(--brand-dark); margin-bottom: 10px; font-size: 1.1rem;">1. Ketentuan Sampah</h4>
+                        <p style="margin-bottom: 20px;">EcoRecycle menyediakan kategori organik, anorganik terpilah, elektronik, serta B3 rumah tangga. Pilih satu kategori untuk setiap pengajuan. B3 harus dipisahkan dan jenis serta kondisinya dijelaskan; penjemputannya menyesuaikan kesiapan penanganan. Kategori B3 rumah tangga bukan untuk limbah medis, industri, atau bahan peledak.</p>
 
                         <h4 style="color: var(--brand-dark); margin-bottom: 10px; font-size: 1.1rem;">2. Keamanan Data</h4>
-                        <p style="margin-bottom: 20px;">Kami mengenkripsi nama, alamat penjemputan, dan kontak WhatsApp Anda untuk kebutuhan sinkronisasi kurir kolektor di lapangan. Data tidak akan disalahgunakan atau dibagikan ke pihak ketiga di luar logistik e-waste.</p>
+                        <p style="margin-bottom: 20px;">Kami mengenkripsi nama, alamat penjemputan, dan kontak WhatsApp Anda untuk kebutuhan sinkronisasi kurir kolektor di lapangan. Data tidak akan disalahgunakan atau dibagikan ke pihak ketiga di luar logistik sampah.</p>
 
                         <h4 style="color: var(--brand-dark); margin-bottom: 10px; font-size: 1.1rem;">3. Hak Penghapusan Akun</h4>
                         <p>Eco Warrior berhak penuh meminta penghapusan seluruh data identitas dan riwayat transaksi donasi mereka dari basis data kami kapan saja melalui pusat bantuan.</p>
@@ -697,10 +696,10 @@
         // Tab Switching
         headerTabs.forEach(tab => {
             tab.addEventListener('click', () => {
-                const targetPaneId = tab.getAttribute('data-target');
+                const targetPaneId = tab.dataset.target;
 
                 headerTabs.forEach(t => {
-                    if (t.getAttribute('data-target') === targetPaneId) {
+                    if (t.dataset.target === targetPaneId) {
                         t.classList.add('active');
                     } else {
                         t.classList.remove('active');
@@ -721,23 +720,23 @@
                 window.location.href = 'login';
                 return;
             }
-            
+
             const user = JSON.parse(userSession);
-            
+
             // Sidebar Data
             const navUserName = document.getElementById('nav-user-name');
             const navUserRole = document.getElementById('nav-user-role');
             const navUserAvatar = document.getElementById('nav-user-avatar');
-            
+
             if(navUserName) navUserName.innerText = user.name;
             if(navUserRole) navUserRole.innerText = user.role === 'user' ? 'ECO WARRIOR' : user.role.toUpperCase();
             if(navUserAvatar) navUserAvatar.innerText = user.name.substring(0, 2).toUpperCase();
-            
+
             // Profile Header Data
             const profileName = document.getElementById('profile-user-name');
             const profileRole = document.getElementById('profile-user-role');
             const profileAvatar = document.getElementById('profile-avatar-glow');
-            
+
             if(profileName) profileName.innerText = user.name;
             if(profileRole) {
                 profileRole.innerHTML = user.role === 'user' ? '<i class="fas fa-crown"></i> ECO WARRIOR' : '<i class="fas fa-shield-halved"></i> ' + user.role.toUpperCase();
@@ -747,7 +746,7 @@
             // Profile Form Data
             const inputName = document.getElementById('profile-input-name');
             const inputEmail = document.getElementById('profile-input-email');
-            
+
             if(inputName) inputName.value = user.name;
             if(inputEmail) inputEmail.value = user.email;
         }

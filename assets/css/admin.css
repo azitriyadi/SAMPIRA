@@ -20,7 +20,6 @@ body.portal-page {
     flex-direction: column;
     padding: 32px 0;
     border-right: 1px solid rgba(255, 255, 255, 0.05);
-    transition: transform 0.3s ease;
 }
 
 .sidebar-logo {
@@ -58,16 +57,15 @@ body.portal-page {
     font-weight: 600;
     font-size: 0.95rem;
     cursor: pointer;
-    transition: all 0.2s ease;
 }
 
 .sidebar-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: #1b2b3f;
     color: white;
 }
 
 .sidebar-item.active {
-    background-color: #10b981; /* Emerald Green */
+    background-color: #087443; /* Emerald Green */
     color: white;
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
 }
@@ -83,7 +81,6 @@ body.portal-page {
 /* View Sections */
 .view-section {
     display: none;
-    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .view-section.active {
@@ -173,7 +170,7 @@ body.portal-page {
 }
 
 .verification-summary span {
-    color: #059669;
+    color: #087443;
     font-size: 0.8rem;
     font-weight: 900;
 }
@@ -202,11 +199,6 @@ body.portal-page {
     border-radius: 20px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-    transition: transform 0.2s ease;
-}
-
-.kpi-card:hover {
-    transform: translateY(-2px);
 }
 
 /* Custom Marker */
@@ -254,5 +246,28 @@ body.portal-page {
 
     .mobile-header {
         display: flex;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+
+    .sidebar {
+    transition: transform 0.3s ease;
+    }
+
+    .sidebar-item {
+    transition: background-color 0.2s ease, color .2s, border-color .2s, transform .2s;
+    }
+
+    .view-section {
+    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .kpi-card {
+    transition: transform 0.2s ease;
+    }
+
+    .kpi-card:hover {
+    transform: translateY(-2px);
     }
 }

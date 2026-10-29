@@ -17,13 +17,13 @@ const collectorStatusMeta = {
     pickup: {
         label: 'Siap Dijemput',
         shortLabel: 'JEMPUT',
-        description: 'Tugas sudah menjadi milik Anda. Datangi alamat donor dan ambil e-waste.',
+        description: 'Tugas sudah menjadi milik Anda. Datangi alamat donor dan ambil sampah.',
         nextAction: 'Klik Mulai Transit setelah barang sudah diambil.'
     },
     transit: {
         label: 'Menuju Hub',
         shortLabel: 'MENUJU HUB',
-        description: 'E-waste sedang Anda bawa menuju Recycling Hub.',
+        description: 'Sampah sedang Anda bawa menuju Recycling Hub.',
         nextAction: 'Klik Tiba di Hub setelah barang diterima hub.'
     },
     arrived: {
@@ -46,9 +46,9 @@ function getCollectorStatusMeta(status) {
 
 function getPickupNetReward(item) {
     if (item.final_eco_reward && item.final_processing_fee) {
-        return parseFloat(item.final_eco_reward) - parseFloat(item.final_processing_fee);
+        return Number.parseFloat(item.final_eco_reward) - Number.parseFloat(item.final_processing_fee);
     }
-    return parseFloat(item.eco_reward) - parseFloat(item.processing_fee);
+    return Number.parseFloat(item.eco_reward) - Number.parseFloat(item.processing_fee);
 }
 
 function initMap() {
@@ -69,7 +69,7 @@ function initMap() {
             const collIcon = L.divIcon({ className: 'marker-coll', html: '<div style="background:#10b981; width:14px; height:14px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(16,185,129,0.5);"></div>' });
             const donorIcon = L.divIcon({ className: 'marker-donor', html: '<div style="background:#064e3b; width:16px; height:16px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(6,78,59,0.5);"></div>' });
 
-            const hash = Array.from(globalActiveMission.tracking_number).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const hash = Array.from(globalActiveMission.tracking_number).reduce((acc, char) => acc + char.codePointAt(0), 0);
             const latOffset1 = ((hash % 80) - 40) / 10000;
             const lngOffset1 = (((hash * 2) % 80) - 40) / 10000;
             const latOffset2 = (((hash * 3) % 80) - 40) / 10000;
@@ -106,8 +106,9 @@ function switchView(viewId, element) {
         const navItems = document.querySelectorAll('.sidebar-item, .nav-item');
         navItems.forEach(item => {
             const text = item.innerText.toLowerCase();
-            if (text.includes(viewId.replace('-', ' '))) item.classList.add('active');
-            else if (viewId === 'dashboard' && (text.includes('home') || text.includes('beranda'))) item.classList.add('active');
+            const matchesView = text.includes(viewId.replace('-', ' '));
+            const matchesHome = viewId === 'dashboard' && (text.includes('home') || text.includes('beranda'));
+            if (matchesView || matchesHome) item.classList.add('active');
         });
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -121,7 +122,7 @@ function openActiveMission() {
             icon: 'info',
             title: 'Tidak Ada Misi Aktif',
             text: 'Saat ini Anda tidak memiliki misi penjemputan aktif. Silakan ambil tugas dari Antrean.',
-            confirmButtonColor: '#10b981'
+            confirmButtonColor: '#126048'
         });
         switchView('dashboard');
     }
@@ -158,12 +159,12 @@ function viewActiveMission(item) {
     if (btn) {
         if (item.status === 'pickup') {
             btn.innerHTML = '<i class="fas fa-truck-fast"></i> Mulai Transit (Bawa Sampah ke Hub)';
-            btn.style.background = '#0d9488';
+            btn.style.background = '#276e57';
             btn.onclick = () => updateMissionStatus(item.tracking_number, 'transit', 'Di Perjalanan', 'Limbah telah diangkut oleh kolektor menuju Recycling Hub.');
         } else if (item.status === 'transit') {
             btn.innerHTML = '<i class="fas fa-check-circle"></i> Selesai Verifikasi & Tiba di Hub';
-            btn.style.background = '#10b981';
-            btn.onclick = () => updateMissionStatus(item.tracking_number, 'arrived', 'Recycling Hub Bandung', 'Sampah elektronik telah tiba di Recycling Hub dan siap diverifikasi admin untuk payout.');
+            btn.style.background = '#087443';
+            btn.onclick = () => updateMissionStatus(item.tracking_number, 'arrived', 'Recycling Hub Bandung', 'Sampah telah tiba di Recycling Hub dan siap diverifikasi admin untuk payout.');
         } else if (item.status === 'arrived') {
             btn.innerHTML = '<i class="fas fa-clipboard-check"></i> Menunggu Payout Admin';
             btn.style.background = '#64748b';
@@ -174,7 +175,7 @@ function viewActiveMission(item) {
 }
 
 function openMissionRoute() {
-    if (!globalActiveMission || !globalActiveMission.pickup_address) {
+    if (!globalActiveMission?.pickup_address) {
         Swal.fire({
             icon: 'info',
             title: 'Alamat Belum Tersedia',
@@ -188,125 +189,123 @@ function openMissionRoute() {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank', 'noopener,noreferrer');
 }
 
-function updateMissionStatus(trackingNum, newStatus, location, notes) {
-    const userSession = localStorage.getItem('user');
-    if (!userSession) return;
-    const user = JSON.parse(userSession);
-
-    Swal.fire({
-        title: 'Konfirmasi Perubahan Status',
-        text: `Ubah status penjemputan ${trackingNum} menjadi ${newStatus.toUpperCase()}?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#10b981',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: 'Ya, Update!',
-        cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch('api/ecorecycle/pickup_status', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + user.token
-                },
-                body: JSON.stringify({
-                    tracking_number: trackingNum,
-                    status: newStatus,
-                    location: location,
-                    notes: notes
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil',
-                        text: 'Status misi berhasil diperbarui!',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        loadCollectorData();
-                        switchView('dashboard');
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: data.message,
-                        confirmButtonColor: '#10b981'
-                    });
-                }
-            })
-            .catch(err => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Kesalahan',
-                    text: 'Gagal terhubung ke server.',
-                    confirmButtonColor: '#10b981'
-                });
-            });
+async function updateMissionStatus(trackingNum, newStatus, location, notes) {
+    const session = localStorage.getItem('user');
+    if (!session) return;
+    const user = JSON.parse(session);
+    const result = await Swal.fire({title: 'Konfirmasi Perubahan Status', text: 'Ubah status penjemputan ' + trackingNum + ' menjadi ' + newStatus.toUpperCase() + '?', icon: 'question', showCancelButton: true, confirmButtonColor: '#126048', cancelButtonColor: '#64748b', confirmButtonText: 'Ya, Update!', cancelButtonText: 'Batal'});
+    if (!result.isConfirmed) return;
+    try {
+        const response = await fetch('api/ecorecycle/pickup_status', {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + user.token}, body: JSON.stringify({tracking_number: trackingNum, status: newStatus, location, notes})});
+        const data = await response.json();
+        if (data.status !== 'success') {
+            await Swal.fire({icon: 'error', title: 'Gagal', text: data.message, confirmButtonColor: '#126048'});
+            return;
         }
-    });
+        await Swal.fire({icon: 'success', title: 'Berhasil', text: 'Status misi berhasil diperbarui!', timer: 1500, showConfirmButton: false});
+        loadCollectorData();
+        switchView('dashboard');
+    } catch {
+        await Swal.fire({icon: 'error', title: 'Kesalahan', text: 'Gagal terhubung ke server.', confirmButtonColor: '#126048'});
+    }
 }
 
-function claimPickup(trackingNum) {
-    const userSession = localStorage.getItem('user');
-    if (!userSession) return;
-    const user = JSON.parse(userSession);
-
-    Swal.fire({
-        title: 'Ambil Tugas Penjemputan',
-        text: `Apakah Anda bersedia menjemput sampah elektronik ${trackingNum}?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#10b981',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: 'Ya, Jemput!',
-        cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch('api/ecorecycle/assign_collector', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + user.token
-                },
-                body: JSON.stringify({
-                    tracking_number: trackingNum
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Tugas Diambil!',
-                        text: 'Silakan lihat rincian alamat penjemputan masyarakat di tab Misi Aktif.',
-                        confirmButtonColor: '#10b981'
-                    }).then(() => {
-                        loadCollectorData();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: data.message,
-                        confirmButtonColor: '#10b981'
-                    });
-                }
-            })
-            .catch(err => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Kesalahan',
-                    text: 'Gagal menghubungi server.',
-                    confirmButtonColor: '#10b981'
-                });
-            });
+async function claimPickup(trackingNum) {
+    const session = localStorage.getItem('user');
+    if (!session) return;
+    const user = JSON.parse(session);
+    const result = await Swal.fire({title: 'Ambil Tugas Penjemputan', text: 'Apakah Anda bersedia menjemput sampah ' + trackingNum + '?', icon: 'question', showCancelButton: true, confirmButtonColor: '#126048', cancelButtonColor: '#64748b', confirmButtonText: 'Ya, Jemput!', cancelButtonText: 'Batal'});
+    if (!result.isConfirmed) return;
+    try {
+        const response = await fetch('api/ecorecycle/assign_collector', {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + user.token}, body: JSON.stringify({tracking_number: trackingNum})});
+        const data = await response.json();
+        if (data.status !== 'success') {
+            await Swal.fire({icon: 'error', title: 'Gagal', text: data.message, confirmButtonColor: '#126048'});
+            return;
         }
-    });
+        await Swal.fire({icon: 'success', title: 'Tugas Diambil!', text: 'Silakan lihat rincian alamat penjemputan masyarakat di tab Misi Aktif.', confirmButtonColor: '#126048'});
+        loadCollectorData();
+    } catch {
+        await Swal.fire({icon: 'error', title: 'Kesalahan', text: 'Gagal menghubungi server.', confirmButtonColor: '#126048'});
+    }
+}
+
+function renderCollectorHistory(item) {
+    const commission = getPickupNetReward(item) * 0.1;
+    const statusMeta = getCollectorStatusMeta(item.status);
+    const dateObj = new Date(item.created_at);
+    const dateStr = dateObj.getDate() + ' ' + dateObj.toLocaleString('id-ID', {month: 'short'}) + ' ' + dateObj.getFullYear();
+    return `
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 16px; font-weight: 800; color:#064e3b;">${item.tracking_number}</td>
+                            <td style="padding: 16px;">${dateStr}</td>
+                            <td style="padding: 16px; font-weight: 800; color: #087443;">+Rp ${commission.toLocaleString('id-ID')}</td>
+                            <td style="padding: 16px;"><span class="status-pill success" style="background:#f0fdf4; color:#15803d; font-weight:800; padding:4px 12px; border-radius:50px; font-size:0.75rem;">${statusMeta.label}</span></td>
+                        </tr>
+                    `;
+}
+
+function renderAssignedCollectorTask(item) {
+    const statusMeta = getCollectorStatusMeta(item.status);
+    const colors = {transit: ['#276e57', '#f0fdfa'], arrived: ['#15803d', '#f0fdf4']};
+    const [badgeColor, badgeBg] = colors[item.status] || ['#1d4ed8', '#eff6ff'];
+    return `
+                            <button type="button" class="task-item" data-mission="${encodeURIComponent(JSON.stringify(item))}" onclick="viewActiveMission(JSON.parse(decodeURIComponent(this.dataset.mission)))">
+                                <div style="display:flex; align-items:center; gap:14px;">
+                                    <div style="background:#ecfdf5; color: #087443; width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.2rem;"><i class="fas fa-truck-pickup"></i></div>
+                                    <div>
+                                        <div style="font-weight:900; font-size: 0.9rem; color:#064e3b;">${item.tracking_number}</div>
+                                        <div style="font-size:0.75rem; color:#64748b;">${item.pickup_address.substring(0,25)}...</div>
+                                    </div>
+                                </div>
+                                <span style="background:${badgeBg}; color:${badgeColor}; font-weight:800; padding:4px 10px; border-radius:50px; font-size:0.7rem;">${statusMeta.shortLabel}</span>
+                            </button>
+                        `;
+}
+
+function renderOpenCollectorTask(item) {
+    const statusMeta = getCollectorStatusMeta(item.status);
+    return `
+                            <div class="task-item" style="cursor:default;">
+                                <div style="display:flex; align-items:center; gap:14px; flex:1;">
+                                    <div style="background:#fffbeb; color: #8a5315; width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.2rem;"><i class="fas fa-hand-holding-hand"></i></div>
+                                    <div style="flex:1;">
+                                        <div style="font-weight:900; font-size: 0.9rem; color:#064e3b;">${item.tracking_number}</div>
+                                        <div style="font-size:0.75rem; color:#64748b;">${item.pickup_address.substring(0,25)}... (${item.weight_kg} KG)</div>
+                                        <div style="font-size:0.72rem; color: #8a5315; font-weight:800; margin-top:3px;">${statusMeta.nextAction}</div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-primary" style="padding: 8px 16px; font-size: 0.75rem; border-radius: 8px; width:auto; border:none;" onclick="claimPickup('${item.tracking_number}')">AMBIL</button>
+                            </div>
+                        `;
+}
+
+function summarizeCollectorPickups(list, userId) {
+    const result = {weight: 0, commission: 0, historyHtml: '', tasksHtml: '', activeMission: null};
+    for (const item of list) {
+        if (item.status === 'completed') {
+            result.weight += Number.parseFloat(item.weight_kg);
+            result.commission += getPickupNetReward(item) * 0.1;
+            result.historyHtml += renderCollectorHistory(item);
+        } else if (String(item.collector_id) === String(userId)) {
+            if (['pickup', 'transit'].includes(item.status)) result.activeMission = item;
+            result.tasksHtml += renderAssignedCollectorTask(item);
+        } else if (item.status === 'pending') {
+            result.tasksHtml += renderOpenCollectorTask(item);
+        }
+    }
+    return result;
+}
+
+function renderCollectorDashboard(list, userId) {
+    const result = summarizeCollectorPickups(list, userId);
+    globalActiveMission = result.activeMission;
+    document.getElementById('stat-packages').innerText = result.weight.toFixed(1) + ' KG';
+    document.getElementById('stat-profit').innerText = 'Rp ' + result.commission.toLocaleString('id-ID');
+    document.getElementById('earnings-total').innerText = 'Rp ' + result.commission.toLocaleString('id-ID');
+    if (upcomingList) upcomingList.innerHTML = result.tasksHtml || '<div style="text-align:center; padding:20px; color:#64748b;">Tidak ada antrean pickup tersedia.</div>';
+    if (historyBody) historyBody.innerHTML = result.historyHtml || '<tr><td colspan="4" style="text-align:center; padding:16px; color:#64748b;">Belum ada riwayat misi penjemputan selesai.</td></tr>';
+    initMap();
 }
 
 function loadCollectorData() {
@@ -338,116 +337,7 @@ function loadCollectorData() {
     })
     .then(res => res.json())
     .then(data => {
-        if (data.status === 'success') {
-            const list = data.data;
-
-            if (upcomingList) upcomingList.innerHTML = '';
-            if (historyBody) historyBody.innerHTML = '';
-
-            let totalWeightCollected = 0.0;
-            let totalCommissionEarned = 0.0;
-            globalActiveMission = null;
-            let openTasksHtml = '';
-            let historyHtml = '';
-
-            list.forEach(item => {
-                const weight = parseFloat(item.weight_kg);
-                const commission = getPickupNetReward(item) * 0.1; // 10% commission of net reward
-
-                if (item.status === 'completed') {
-                    const statusMeta = getCollectorStatusMeta(item.status);
-                    // Mission completed goes to history
-                    totalWeightCollected += weight;
-                    totalCommissionEarned += commission;
-
-                    const dateObj = new Date(item.created_at);
-                    const dateStr = `${dateObj.getDate()} ${dateObj.toLocaleString('id-ID', { month: 'short' })} ${dateObj.getFullYear()}`;
-
-                    historyHtml += `
-                        <tr style="border-bottom: 1px solid #f1f5f9;">
-                            <td style="padding: 16px; font-weight: 800; color:#064e3b;">${item.tracking_number}</td>
-                            <td style="padding: 16px;">${dateStr}</td>
-                            <td style="padding: 16px; font-weight: 800; color: #10b981;">+Rp ${commission.toLocaleString('id-ID')}</td>
-                            <td style="padding: 16px;"><span class="status-pill success" style="background:#f0fdf4; color:#15803d; font-weight:800; padding:4px 12px; border-radius:50px; font-size:0.75rem;">${statusMeta.label}</span></td>
-                        </tr>
-                    `;
-                } else {
-                    // Active or Open Pickups
-                    if (item.collector_id == user.id) {
-                        const statusMeta = getCollectorStatusMeta(item.status);
-                        // Assigned to me and not completed (status: 'pickup' or 'transit' or 'arrived')
-                        if (item.status === 'pickup' || item.status === 'transit') {
-                            globalActiveMission = item; // Store active mission
-                        }
-                        
-                        let badgeColor = '#1d4ed8'; // pickup
-                        let badgeBg = '#eff6ff';
-                        if (item.status === 'transit') {
-                            badgeColor = '#0d9488';
-                            badgeBg = '#f0fdfa';
-                        } else if (item.status === 'arrived') {
-                            badgeColor = '#15803d';
-                            badgeBg = '#f0fdf4';
-                        }
-
-                        openTasksHtml += `
-                            <div class="task-item" onclick="viewActiveMission(${JSON.stringify(item).replace(/"/g, '&quot;')})">
-                                <div style="display:flex; align-items:center; gap:14px;">
-                                    <div style="background:#ecfdf5; color:#10b981; width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.2rem;"><i class="fas fa-truck-pickup"></i></div>
-                                    <div>
-                                        <div style="font-weight:900; font-size: 0.9rem; color:#064e3b;">${item.tracking_number}</div>
-                                        <div style="font-size:0.75rem; color:#64748b;">${item.pickup_address.substring(0,25)}...</div>
-                                    </div>
-                                </div>
-                                <span style="background:${badgeBg}; color:${badgeColor}; font-weight:800; padding:4px 10px; border-radius:50px; font-size:0.7rem;">${statusMeta.shortLabel}</span>
-                            </div>
-                        `;
-                    } else if (item.status === 'pending') {
-                        const statusMeta = getCollectorStatusMeta(item.status);
-                        // Open task to claim
-                        openTasksHtml += `
-                            <div class="task-item" style="cursor:default;" onclick="event.stopPropagation();">
-                                <div style="display:flex; align-items:center; gap:14px; flex:1;">
-                                    <div style="background:#fffbeb; color:#d97706; width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.2rem;"><i class="fas fa-hand-holding-hand"></i></div>
-                                    <div style="flex:1;">
-                                        <div style="font-weight:900; font-size: 0.9rem; color:#064e3b;">${item.tracking_number}</div>
-                                        <div style="font-size:0.75rem; color:#64748b;">${item.pickup_address.substring(0,25)}... (${item.weight_kg} KG)</div>
-                                        <div style="font-size:0.72rem; color:#d97706; font-weight:800; margin-top:3px;">${statusMeta.nextAction}</div>
-                                    </div>
-                                </div>
-                                <button class="btn-primary" style="padding: 8px 16px; font-size: 0.75rem; border-radius: 8px; width:auto; border:none; background:#10b981;" onclick="claimPickup('${item.tracking_number}')">AMBIL</button>
-                            </div>
-                        `;
-                    }
-                }
-            });
-
-            // Set KPIs
-            document.getElementById('stat-packages').innerText = `${totalWeightCollected.toFixed(1)} KG`;
-            document.getElementById('stat-profit').innerText = `Rp ${totalCommissionEarned.toLocaleString('id-ID')}`;
-            document.getElementById('earnings-total').innerText = `Rp ${totalCommissionEarned.toLocaleString('id-ID')}`;
-
-            // Populate open tasks list
-            if (upcomingList) {
-                if (openTasksHtml === '') {
-                    upcomingList.innerHTML = '<div style="text-align:center; padding:20px; color:#64748b;">Tidak ada antrean pickup tersedia.</div>';
-                } else {
-                    upcomingList.innerHTML = openTasksHtml;
-                }
-            }
-
-            // Populate history table
-            if (historyBody) {
-                if (historyHtml === '') {
-                    historyBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:16px; color:#64748b;">Belum ada riwayat misi penjemputan selesai.</td></tr>';
-                } else {
-                    historyBody.innerHTML = historyHtml;
-                }
-            }
-
-            // Render Map
-            initMap();
-        }
+        if (data.status === 'success') renderCollectorDashboard(data.data, user.id);
     })
     .catch(err => {
         console.error('Error loading collector data:', err);

@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	httpx "ecorecycle/internal/middleware"
@@ -15,11 +16,11 @@ import (
 
 func (a *App) EstimateRewardHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	data := httpx.RequestData(r)
-	categoryName := data["category"]
+	categoryName := strings.TrimSpace(data["category"])
 	weightStr := data["weight_kg"]
 	if categoryName == "" || weightStr == "" {
 		httpx.SendResponse(w, "error", "Kategori dan berat (KG) wajib diisi.", nil, http.StatusBadRequest)
@@ -34,11 +35,11 @@ func (a *App) EstimateRewardHandler(w http.ResponseWriter, r *http.Request) {
 
 	var catDisplayName string
 	var rewardPerKg, processingFeePerKg float64
-	err = a.DB.QueryRow("SELECT category_name, reward_per_kg, processing_fee_per_kg FROM waste_categories WHERE category_name LIKE ?", "%"+categoryName+"%").
+	err = a.DB.QueryRow("SELECT category_name, reward_per_kg, processing_fee_per_kg FROM waste_categories WHERE category_name = ?", categoryName).
 		Scan(&catDisplayName, &rewardPerKg, &processingFeePerKg)
 	if err != nil {
-		catDisplayName = "Small Gadgets"
-		rewardPerKg = 5000.0
+		httpx.SendResponse(w, "error", "Kategori sampah tidak ditemukan.", nil, http.StatusBadRequest)
+		return
 	}
 
 	totalReward := rewardPerKg * weight
@@ -47,13 +48,15 @@ func (a *App) EstimateRewardHandler(w http.ResponseWriter, r *http.Request) {
 		"weight_kg":      weight,
 		"reward_rate":    rewardPerKg,
 		"total_estimate": totalReward,
+		"processing_fee": processingFeePerKg * weight,
+		"net_estimate":   totalReward - processingFeePerKg*weight,
 		"co2_saved":      services.CO2Saved(weight),
 	}, http.StatusOK)
 }
 
 func (a *App) VerifyPickupHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	user, err := a.Auth.UserFromRequest(r)
@@ -96,7 +99,7 @@ func (a *App) VerifyPickupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if pickupStatus != models.StatusArrived {
-		httpx.SendResponse(w, "error", "Verifikasi berat final hanya dapat dilakukan setelah e-waste tiba di hub.", nil, http.StatusBadRequest)
+		httpx.SendResponse(w, "error", "Verifikasi berat final hanya dapat dilakukan setelah sampah tiba di hub.", nil, http.StatusBadRequest)
 		return
 	}
 
@@ -105,7 +108,7 @@ func (a *App) VerifyPickupHandler(w http.ResponseWriter, r *http.Request) {
 
 	tx, err := a.DB.Begin()
 	if err != nil {
-		httpx.SendResponse(w, "error", "Gagal memulai transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionStartMessage, nil, http.StatusInternalServerError)
 		return
 	}
 	defer tx.Rollback()
@@ -123,7 +126,7 @@ func (a *App) VerifyPickupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := tx.Commit(); err != nil {
-		httpx.SendResponse(w, "error", "Gagal commit transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionCommitMessage, nil, http.StatusInternalServerError)
 		return
 	}
 
@@ -139,7 +142,7 @@ func (a *App) VerifyPickupHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) ProcessPayoutHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	user, err := a.Auth.UserFromRequest(r)
@@ -164,39 +167,16 @@ func (a *App) ProcessPayoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var finalEcoReward sql.NullFloat64
-	var finalProcessingFee sql.NullFloat64
-	var verifiedAt sql.NullTime
-	var isProcessed bool
-	var pickupStatus string
-	err = a.DB.QueryRow("SELECT final_eco_reward, final_processing_fee, verified_at, is_processed, status FROM pickups WHERE id = ?", pickupID).Scan(&finalEcoReward, &finalProcessingFee, &verifiedAt, &isProcessed, &pickupStatus)
-	if err == sql.ErrNoRows {
-		httpx.SendResponse(w, "error", "Data penjemputan tidak ditemukan.", nil, http.StatusNotFound)
-		return
-	} else if err != nil {
-		httpx.SendResponse(w, "error", "Kesalahan database.", nil, http.StatusInternalServerError)
+	amountPaid, problem := a.loadPayoutAmount(pickupID)
+	if problem != nil {
+		problem.write(w)
 		return
 	}
-
-	if isProcessed {
-		httpx.SendResponse(w, "error", "Eco-reward untuk penjemputan ini sudah pernah diproses.", nil, http.StatusBadRequest)
-		return
-	}
-	if pickupStatus != models.StatusArrived {
-		httpx.SendResponse(w, "error", "Payout hanya dapat diproses setelah e-waste tiba di Recycling Hub.", nil, http.StatusBadRequest)
-		return
-	}
-	if !verifiedAt.Valid || !finalEcoReward.Valid || !finalProcessingFee.Valid {
-		httpx.SendResponse(w, "error", "Payout belum dapat diproses. Admin harus memverifikasi berat final terlebih dahulu.", nil, http.StatusBadRequest)
-		return
-	}
-
-	amountPaid := finalEcoReward.Float64 - finalProcessingFee.Float64
 
 	transactionRef := fmt.Sprintf("TX-%d-%04d", time.Now().Unix(), 1000+rand.Intn(9000))
 	tx, err := a.DB.Begin()
 	if err != nil {
-		httpx.SendResponse(w, "error", "Gagal memulai transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionStartMessage, nil, http.StatusInternalServerError)
 		return
 	}
 	defer tx.Rollback()
@@ -212,13 +192,13 @@ func (a *App) ProcessPayoutHandler(w http.ResponseWriter, r *http.Request) {
 		httpx.SendResponse(w, "error", "Gagal menyimpan log transaksi.", nil, http.StatusInternalServerError)
 		return
 	}
-	_, err = tx.Exec("INSERT INTO pickup_history (pickup_id, status, location, notes) VALUES (?, 'completed', 'Pusat Daur Ulang', 'E-Waste berhasil diproses dan reward ditransfer.')", pickupID)
+	_, err = tx.Exec("INSERT INTO pickup_history (pickup_id, status, location, notes) VALUES (?, 'completed', 'Pusat Daur Ulang', 'Sampah berhasil diproses dan reward ditransfer.')", pickupID)
 	if err != nil {
-		httpx.SendResponse(w, "error", "Gagal menyimpan riwayat penjemputan.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", pickupHistorySaveMessage, nil, http.StatusInternalServerError)
 		return
 	}
 	if err := tx.Commit(); err != nil {
-		httpx.SendResponse(w, "error", "Gagal commit transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionCommitMessage, nil, http.StatusInternalServerError)
 		return
 	}
 

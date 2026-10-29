@@ -5,173 +5,174 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Portal | EcoRecycle</title>
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
+
     <!-- Leaflet Maps -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.6.1/dist/chart.umd.min.js" integrity="sha384-Emf5ZVIUiarAdhkgtqK+5/Z5qIvM6QoVrS+qAVtfyZVuD5lIHrac0me485+Antp0" crossorigin="anonymous"></script>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/admin.css">
-    <link rel="stylesheet" href="assets/css/portal-system.css?v=20260702">
+    <link rel="stylesheet" href="assets/css/admin-base.css?v=quality4">
+    <link rel="stylesheet" href="assets/css/admin-inline.css?v=quality4">
+    <link rel="stylesheet" href="assets/css/portal-system.css?v=20261029-quality5">
+    <link rel="stylesheet" href="assets/css/portal-controls.css?v=20261029-quality5">
 </head>
 
-<body class="portal-page role-manager" style="background:#f8fafc; font-family:'Plus Jakarta Sans', sans-serif;">
+<body class="portal-page role-manager admin-3d21472f83" data-portal-style="background:#f8fafc; font-family:'Plus Jakarta Sans', sans-serif;">
 
     <!-- Sidebar Navigation -->
-    <aside class="sidebar" id="sidebar" style="background-color: #0f172a; border-right: 1px solid #1e293b;">
-        <a href="home" class="sidebar-logo" style="color:white; font-family:'Outfit', sans-serif;">
+    <aside class="sidebar admin-a48cc2f1ff" id="sidebar" data-portal-style="background-color: #0f172a; border-right: 1px solid #1e293b;">
+        <a href="home" class="sidebar-logo admin-383445bc25" data-portal-style="color:white; font-family:'Outfit', sans-serif;">
             <span class="brand-mark"><i class="fas fa-leaf"></i></span>
             <span>EcoRecycle<small>Manager Portal</small></span>
         </a>
 
         <div class="sidebar-nav">
-            <div class="nav-group-label" style="color: #64748b;">Eco Manager Controls</div>
+            <div class="nav-group-label admin-d45b386fc9" data-portal-style="color: #a4b4ac;">Eco Manager Controls</div>
             <div id="sidebar-menu-content">
-                <div class="sidebar-item active" data-target="admin-view" onclick="switchAdminTab('admin-view')">
+                <button type="button" class="sidebar-item active" data-target="admin-view" onclick="switchAdminTab('admin-view')">
                     <i class="fas fa-chart-line"></i> Dashboard Admin
-                </div>
-                <div class="sidebar-item" data-target="shipments-view" onclick="switchAdminTab('shipments-view')">
-                    <i class="fas fa-recycle"></i> E-Waste Pickups
-                </div>
-                <div class="sidebar-item" data-target="finance-view" onclick="switchAdminTab('finance-view')">
+                </button>
+                <button type="button" class="sidebar-item" data-target="shipments-view" onclick="switchAdminTab('shipments-view')">
+                    <i class="fas fa-recycle"></i> Sampah Pickups
+                </button>
+                <button type="button" class="sidebar-item" data-target="finance-view" onclick="switchAdminTab('finance-view')">
                     <i class="fas fa-wallet"></i> Payout Ledger
-                </div>
-                <div class="sidebar-item" data-target="content-view" onclick="switchAdminTab('content-view')">
+                </button>
+                <button type="button" class="sidebar-item" data-target="content-view" onclick="switchAdminTab('content-view')">
                     <i class="fas fa-bullhorn"></i> Pusat Pengumuman
-                </div>
+                </button>
             </div>
         </div>
 
-        <div class="sidebar-footer" style="border-top:1px solid #1e293b; padding:24px 16px;">
-            <div class="user-profile-side" style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-                <div class="avatar-circle" style="width:40px; height:40px; border-radius:50%; background:#10b981; color:white; display:flex; align-items:center; justify-content:center; font-weight:800;" id="admin-avatar">EM</div>
+        <div class="sidebar-footer admin-35fd747e6e" data-portal-style="border-top:1px solid #1e293b; padding:24px 16px;">
+            <div class="user-profile-side admin-834fd65dce" data-portal-style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                <div class="avatar-circle admin-8df8a3f3ee" data-portal-style="width:40px; height:40px; border-radius:50%; background:#087443; color:white; display:flex; align-items:center; justify-content:center; font-weight:800;" id="admin-avatar">EM</div>
                 <div>
-                    <span class="user-name" style="color:white; font-weight:700; font-size:0.9rem;" id="admin-display-name">Admin</span>
-                    <span class="user-role-side" style="color:#64748b; font-size:0.75rem; display:block;">System Manager</span>
+                    <span class="user-name admin-281119f090" data-portal-style="color:white; font-weight:700; font-size:0.9rem;" id="admin-display-name">Admin</span>
+                    <span class="user-role-side admin-20d59bce61" data-portal-style="color:#a4b4ac; font-size:0.75rem; display:block;">System Manager</span>
                 </div>
             </div>
-            <button onclick="logoutAdmin()" style="display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 700; color: #f87171; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); width: 100%; padding: 12px; border-radius: 12px; cursor: pointer; transition: background 0.3s;">
+            <button onclick="logoutAdmin()" data-portal-style="display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 700; color: #f87171; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); width: 100%; padding: 12px; border-radius: 12px; cursor: pointer; transition: background 0.3s;" class="admin-5fb6767e8d">
                 <i class="fas fa-sign-out-alt"></i> Log Out
             </button>
         </div>
     </aside>
 
     <!-- Mobile Top Bar -->
-    <header class="mobile-header" style="background:#0f172a; border-bottom:1px solid #1e293b;">
-        <button class="hamburger-btn" id="sidebarToggle" onclick="toggleAdminSidebar()" style="display: block; font-size: 1.25rem; color:white; background:none; border:none; cursor:pointer;">
+    <header class="mobile-header admin-45c6113de6" data-portal-style="background:#0f172a; border-bottom:1px solid #1e293b;">
+        <button class="hamburger-btn admin-af38dc5948" id="sidebarToggle" aria-label="Buka menu admin" onclick="toggleAdminSidebar()" data-portal-style="display: block; font-size: 1.25rem; color:white; background:none; border:none; cursor:pointer;">
             <i class="fas fa-bars"></i>
         </button>
-        <a href="home" class="mobile-logo" style="color:white; font-weight:900; text-decoration:none;">
-            <i class="fas fa-leaf" style="color:#10b981;"></i> EcoRecycle
+        <a href="home" class="mobile-logo admin-02c3d45f36" data-portal-style="color:white; font-weight:900; text-decoration:none;">
+            <i class="fas fa-leaf admin-23404d418d" data-portal-style="color:#087443;"></i> EcoRecycle
         </a>
-        <div style="width: 32px;"></div>
+        <div data-portal-style="width: 32px;" class="admin-d7f1e04b40"></div>
     </header>
 
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeAdminSidebar()" style="background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 998; display: none;"></div>
+    <button type="button" class="sidebar-overlay admin-5c1ace26af" id="sidebarOverlay" aria-label="Tutup menu admin" onclick="closeAdminSidebar()" data-portal-style="background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 998; display: none;"></button>
 
     <!-- Main Workspace -->
-    <main class="main-container" style="margin-left: 280px; width: calc(100% - 280px); padding: 40px; min-height: 100vh;">
+    <main class="main-container admin-f9fe232d7c" data-portal-style="margin-left: 280px; width: calc(100% - 280px); padding: 40px; min-height: 100vh;">
 
         <!-- ===========================
              VIEW 1: ADMINISTRATOR DASHBOARD
              =========================== -->
         <div id="admin-view" class="view-section active">
-            
+
             <!-- Header -->
-            <div class="page-header" style="margin-bottom:32px;">
-                <h1 style="font-family:'Outfit',sans-serif; font-size:2rem; font-weight:900; color:#0f172a;" id="welcome-message">Selamat Datang, Admin</h1>
-                <p style="color:#64748b; margin-top:4px;">Eco Command Center Overview. Pantau volume e-waste dan live koordinat kurir.</p>
+            <div class="page-header admin-293242ee3e" data-portal-style="margin-bottom:32px;">
+                <h1 data-portal-style="font-family:'Outfit',sans-serif; font-size:2rem; font-weight:900; color:#0f172a;" id="welcome-message" class="admin-1fd767b3f6">Selamat Datang, Admin</h1>
+                <p data-portal-style="color:#64748b; margin-top:4px;" class="admin-e5b6a454fe">Eco Command Center Overview. Pantau volume sampah dan live koordinat kurir.</p>
             </div>
 
             <!-- search and filter section -->
-            <div class="filter-panel" style="background:white; border:1px solid #e2e8f0; padding:16px 24px; border-radius:16px; margin-bottom:24px; display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
-                <div class="input-wrapper" style="flex:1; max-width:400px;">
-                    <i class="fas fa-search" style="color:#10b981;"></i>
-                    <input type="text" id="admin-search-input" placeholder="Cari nomor tracking..." oninput="filterPickupsTable()">
+            <div class="filter-panel admin-d70b74aa28" data-portal-style="background:white; border:1px solid #e2e8f0; padding:16px 24px; border-radius:16px; margin-bottom:24px; display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+                <div class="input-wrapper admin-3f8d69adfd" data-portal-style="flex:1; max-width:400px;">
+                    <i class="fas fa-search admin-23404d418d" data-portal-style="color:#087443;"></i>
+                    <input type="text" id="admin-search-input" aria-label="Cari nomor pelacakan" placeholder="Cari nomor tracking..." oninput="filterPickupsTable()">
                 </div>
-                <div style="display:flex; gap:8px;">
-                    <button class="btn btn-outline" style="border-radius:10px; padding:10px 16px; font-size:0.85rem;" onclick="setFilterRange('today')">Hari Ini</button>
-                    <button class="btn btn-outline" style="border-radius:10px; padding:10px 16px; font-size:0.85rem;" onclick="setFilterRange('week')">Minggu Ini</button>
-                    <button class="btn btn-outline" style="border-radius:10px; padding:10px 16px; font-size:0.85rem;" onclick="setFilterRange('month')">Bulan Ini</button>
+                <div data-portal-style="display:flex; gap:8px;" class="admin-b887bfd543">
+                    <button class="btn btn-outline admin-4bfa45e20c" data-portal-style="border-radius:10px; padding:10px 16px; font-size:0.85rem;" onclick="setFilterRange('today')">Hari Ini</button>
+                    <button class="btn btn-outline admin-4bfa45e20c" data-portal-style="border-radius:10px; padding:10px 16px; font-size:0.85rem;" onclick="setFilterRange('week')">Minggu Ini</button>
+                    <button class="btn btn-outline admin-4bfa45e20c" data-portal-style="border-radius:10px; padding:10px 16px; font-size:0.85rem;" onclick="setFilterRange('month')">Bulan Ini</button>
                 </div>
             </div>
 
             <!-- KPI Metrics Cards -->
-            <div class="kpi-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:20px; margin-bottom:32px;">
-                <div class="kpi-card" style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <span style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;">Volume Terkumpul</span>
-                        <div style="background:#ecfdf5; color:#10b981; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-weight-hanging"></i></div>
+            <div class="kpi-grid admin-8b38491930" data-portal-style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:20px; margin-bottom:32px;">
+                <div class="kpi-card admin-0a5e1072f3" data-portal-style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0;">
+                    <div data-portal-style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;" class="admin-8e7137fcc7">
+                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="admin-1b1c584415">Volume Terkumpul</span>
+                        <div data-portal-style="background:#ecfdf5; color:#087443; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;" class="admin-ab64daf53e"><i class="fas fa-weight-hanging"></i></div>
                     </div>
-                    <h2 style="font-size:1.8rem; font-weight:900; margin:0; color:#0f172a;"><span id="kpi-total-weight">0</span> KG</h2>
+                    <h2 data-portal-style="font-size:1.8rem; font-weight:900; margin:0; color:#0f172a;" class="admin-00013e7321"><span id="kpi-total-weight">0</span> KG</h2>
                 </div>
 
-                <div class="kpi-card" style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <span style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;">Total Penjemputan</span>
-                        <div style="background:#f0fdfa; color:#0d9488; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-recycle"></i></div>
+                <div class="kpi-card admin-0a5e1072f3" data-portal-style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0;">
+                    <div data-portal-style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;" class="admin-8e7137fcc7">
+                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="admin-1b1c584415">Total Penjemputan</span>
+                        <div data-portal-style="background:#f0fdfa; color:#276e57; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;" class="admin-3023f73122"><i class="fas fa-recycle"></i></div>
                     </div>
-                    <h2 style="font-size:1.8rem; font-weight:900; margin:0; color:#0f172a;" id="kpi-total-pickups">0</h2>
+                    <h2 data-portal-style="font-size:1.8rem; font-weight:900; margin:0; color:#0f172a;" id="kpi-total-pickups" class="admin-00013e7321">0</h2>
                 </div>
 
-                <div class="kpi-card" style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <span style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;">Menunggu Verifikasi</span>
-                        <div style="background:#fffbeb; color:#d97706; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-clock"></i></div>
+                <div class="kpi-card admin-0a5e1072f3" data-portal-style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0;">
+                    <div data-portal-style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;" class="admin-8e7137fcc7">
+                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="admin-1b1c584415">Menunggu Verifikasi</span>
+                        <div data-portal-style="background:#fffbeb; color:#8a5315; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;" class="admin-874e1e5911"><i class="fas fa-clock"></i></div>
                     </div>
-                    <h2 style="font-size:1.8rem; font-weight:900; margin:0; color:#0f172a;" id="kpi-pending-pickups">0</h2>
+                    <h2 data-portal-style="font-size:1.8rem; font-weight:900; margin:0; color:#0f172a;" id="kpi-pending-pickups" class="admin-00013e7321">0</h2>
                 </div>
 
-                <div class="kpi-card" style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <span style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;">Kolektor Aktif</span>
-                        <div style="background:#f8fafc; color:#475569; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-users"></i></div>
+                <div class="kpi-card admin-0a5e1072f3" data-portal-style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0;">
+                    <div data-portal-style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;" class="admin-8e7137fcc7">
+                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="admin-1b1c584415">Kolektor Aktif</span>
+                        <div data-portal-style="background:#f8fafc; color:#475569; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;" class="admin-cdb70493ab"><i class="fas fa-users"></i></div>
                     </div>
-                    <h2 style="font-size:1.8rem; font-weight:900; margin:0; color:#0f172a;" id="kpi-active-collectors">0</h2>
+                    <h2 data-portal-style="font-size:1.8rem; font-weight:900; margin:0; color:#0f172a;" id="kpi-active-collectors" class="admin-00013e7321">0</h2>
                 </div>
             </div>
 
             <!-- Layout Grid: Table and Maps -->
-            <div class="layout-grid" style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:24px;">
-                
+            <div class="layout-grid admin-a82c141b12" data-portal-style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:24px;">
+
                 <!-- Table Card -->
-                <div class="panel-card" style="background:white; border-radius:24px; border:1px solid #e2e8f0; padding:32px;">
-                    <h3 style="font-weight:900; font-size:1.2rem; color:#0f172a; margin-bottom:20px;">Daftar E-Waste Pending</h3>
-                    
-                    <div style="overflow-x:auto;">
-                        <table class="history-table" style="width:100%; border-collapse:collapse; min-width:500px;" id="pendingPickupsTable">
+                <div class="panel-card admin-af4797bb6e" data-portal-style="background:white; border-radius:24px; border:1px solid #e2e8f0; padding:32px;">
+                    <h3 data-portal-style="font-weight:900; font-size:1.2rem; color:#0f172a; margin-bottom:20px;" class="admin-33673ee54e">Daftar Sampah Pending</h3>
+
+                    <div data-portal-style="overflow-x:auto;" class="admin-fbff25e9fc">
+                        <table class="history-table admin-2e5daa7686" data-portal-style="width:100%; border-collapse:collapse; min-width:500px;" id="pendingPickupsTable">
                             <thead>
-                                <tr style="border-bottom:2px solid #f1f5f9; text-align:left;">
-                                    <th style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;">NO. TRACKING</th>
-                                    <th style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;">MASYARAKAT (USER)</th>
-                                    <th style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;">KATEGORI & BERAT</th>
-                                    <th style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b; text-align:right;">AKSI</th>
+                                <tr data-portal-style="border-bottom:2px solid #f1f5f9; text-align:left;" class="admin-2c6c5b0f8e">
+                                    <th data-portal-style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-617dd2c602">NO. TRACKING</th>
+                                    <th data-portal-style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-617dd2c602">MASYARAKAT (USER)</th>
+                                    <th data-portal-style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-617dd2c602">KATEGORI & BERAT</th>
+                                    <th data-portal-style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b; text-align:right;" class="admin-afd96faa13">AKSI</th>
                                 </tr>
                             </thead>
                             <tbody id="pendingPickupsTableBody">
-                                <tr><td colspan="4" style="text-align:center; padding:16px; color:#64748b;">Memuat data...</td></tr>
+                                <tr><td colspan="4" data-portal-style="text-align:center; padding:16px; color:#64748b;" class="admin-2543dceb38">Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
                 <!-- Leaflet Peta Live Grid -->
-                <div class="panel-card" style="background:white; border-radius:24px; border:1px solid #e2e8f0; padding:32px;">
-                    <h3 style="font-weight:900; font-size:1.2rem; color:#0f172a; margin-bottom:20px;">Live Collector Grid</h3>
-                    <div class="map-container" style="height: 300px; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0;">
-                        <div id="live-map" style="width:100%; height:100%;"></div>
+                <div class="panel-card admin-af4797bb6e" data-portal-style="background:white; border-radius:24px; border:1px solid #e2e8f0; padding:32px;">
+                    <h3 data-portal-style="font-weight:900; font-size:1.2rem; color:#0f172a; margin-bottom:20px;" class="admin-33673ee54e">Live Collector Grid</h3>
+                    <div class="map-container admin-2cc83afa6f" data-portal-style="height: 300px; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0;">
+                        <div id="live-map" data-portal-style="width:100%; height:100%;" class="admin-d13674593a"></div>
                     </div>
                 </div>
             </div>
@@ -182,27 +183,27 @@
              VIEW 2: E-WASTE PICKUPS DATABASE
              =========================== -->
         <div id="shipments-view" class="view-section">
-            <div class="page-header" style="margin-bottom:32px;">
-                <h1 style="font-family:'Outfit',sans-serif; font-size:2rem; font-weight:900; color:#0f172a;">Global E-Waste Database</h1>
-                <p style="color:#64748b; margin-top:4px;">Daftar lengkap seluruh transaksi penjemputan sampah elektronik.</p>
+            <div class="page-header admin-293242ee3e" data-portal-style="margin-bottom:32px;">
+                <h1 data-portal-style="font-family:'Outfit',sans-serif; font-size:2rem; font-weight:900; color:#0f172a;" class="admin-1fd767b3f6">Global Sampah Database</h1>
+                <p data-portal-style="color:#64748b; margin-top:4px;" class="admin-e5b6a454fe">Daftar lengkap seluruh transaksi penjemputan sampah.</p>
             </div>
 
-            <div class="panel-card" style="background:white; border-radius:24px; border:1px solid #e2e8f0; padding:32px;">
-                <div style="overflow-x:auto;">
-                    <table class="history-table" style="width:100%; border-collapse:collapse; min-width:800px;">
+            <div class="panel-card admin-af4797bb6e" data-portal-style="background:white; border-radius:24px; border:1px solid #e2e8f0; padding:32px;">
+                <div data-portal-style="overflow-x:auto;" class="admin-fbff25e9fc">
+                    <table class="history-table admin-105ad79cd2" data-portal-style="width:100%; border-collapse:collapse; min-width:800px;">
                         <thead>
-                            <tr style="border-bottom:2px solid #f1f5f9; text-align:left;">
-                                <th style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;">NO. TRACKING</th>
-                                <th style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;">TANGGAL</th>
-                                <th style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;">MASYARAKAT (USER)</th>
-                                <th style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;">KATEGORI</th>
-                                <th style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;">BERAT</th>
-                                <th style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;">KOLEKTOR</th>
-                                <th style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;">STATUS</th>
+                            <tr data-portal-style="border-bottom:2px solid #f1f5f9; text-align:left;" class="admin-2c6c5b0f8e">
+                                <th data-portal-style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-8e610124b8">NO. TRACKING</th>
+                                <th data-portal-style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-8e610124b8">TANGGAL</th>
+                                <th data-portal-style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-8e610124b8">MASYARAKAT (USER)</th>
+                                <th data-portal-style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-8e610124b8">KATEGORI</th>
+                                <th data-portal-style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-8e610124b8">BERAT</th>
+                                <th data-portal-style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-8e610124b8">KOLEKTOR</th>
+                                <th data-portal-style="padding:16px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-8e610124b8">STATUS</th>
                             </tr>
                         </thead>
                         <tbody id="globalPickupsTableBody">
-                            <tr><td colspan="7" style="text-align:center; padding:16px; color:#64748b;">Memuat data...</td></tr>
+                            <tr><td colspan="7" data-portal-style="text-align:center; padding:16px; color:#64748b;" class="admin-2543dceb38">Memuat data...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -213,57 +214,57 @@
              VIEW 3: FINANCE & PAYOUT MANAGER
              =========================== -->
         <div id="finance-view" class="view-section">
-            <div class="page-header" style="margin-bottom:32px;">
-                <h1 style="font-family:'Outfit',sans-serif; font-size:2rem; font-weight:900; color:#0f172a;">Eco-Reward Payout Ledger</h1>
-                <p style="color:#64748b; margin-top:4px;">Validasi dan eksekusi pembayaran kompensasi reward masyarakat e-waste via E-Wallet / Transfer Bank.</p>
+            <div class="page-header admin-293242ee3e" data-portal-style="margin-bottom:32px;">
+                <h1 data-portal-style="font-family:'Outfit',sans-serif; font-size:2rem; font-weight:900; color:#0f172a;" class="admin-1fd767b3f6">Eco-Reward Payout Ledger</h1>
+                <p data-portal-style="color:#64748b; margin-top:4px;" class="admin-e5b6a454fe">Validasi dan eksekusi pembayaran kompensasi reward masyarakat sampah via E-Wallet / Transfer Bank.</p>
             </div>
 
             <!-- KPI Finance -->
-            <div class="kpi-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-bottom:32px;">
-                <div class="kpi-card" style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <span style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;">Total Reward Dibayarkan</span>
-                        <div style="background:#ecfdf5; color:#10b981; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-coins"></i></div>
+            <div class="kpi-grid admin-54c3b7208c" data-portal-style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-bottom:32px;">
+                <div class="kpi-card admin-0a5e1072f3" data-portal-style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0;">
+                    <div data-portal-style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;" class="admin-8e7137fcc7">
+                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="admin-1b1c584415">Total Reward Dibayarkan</span>
+                        <div data-portal-style="background:#ecfdf5; color:#087443; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;" class="admin-ab64daf53e"><i class="fas fa-coins"></i></div>
                     </div>
-                    <h2 style="font-size:1.8rem; font-weight:900; margin:0; color:#0f172a;" id="finance-paid-amount">Rp 0</h2>
+                    <h2 data-portal-style="font-size:1.8rem; font-weight:900; margin:0; color:#0f172a;" id="finance-paid-amount" class="admin-00013e7321">Rp 0</h2>
                 </div>
 
-                <div class="kpi-card" style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <span style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;">Antrean Reward Pending</span>
-                        <div style="background:#fffbeb; color:#d97706; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;"><i class="fas fa-wallet"></i></div>
+                <div class="kpi-card admin-0a5e1072f3" data-portal-style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0;">
+                    <div data-portal-style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;" class="admin-8e7137fcc7">
+                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="admin-1b1c584415">Antrean Reward Pending</span>
+                        <div data-portal-style="background:#fffbeb; color:#8a5315; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;" class="admin-874e1e5911"><i class="fas fa-wallet"></i></div>
                     </div>
-                    <h2 style="font-size:1.8rem; font-weight:900; margin:0; color:#0f172a;" id="finance-pending-amount">Rp 0</h2>
+                    <h2 data-portal-style="font-size:1.8rem; font-weight:900; margin:0; color:#0f172a;" id="finance-pending-amount" class="admin-00013e7321">Rp 0</h2>
                 </div>
             </div>
 
-            <div class="layout-grid" style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:24px; margin-bottom:32px;">
+            <div class="layout-grid admin-318f9db82d" data-portal-style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:24px; margin-bottom:32px;">
                 <!-- Payout table -->
-                <div class="panel-card" style="background:white; border-radius:24px; border:1px solid #e2e8f0; padding:32px;">
-                    <h3 style="font-weight:900; font-size:1.2rem; color:#0f172a; margin-bottom:20px;">Ledger Transaksi Payout</h3>
-                    
-                    <div style="overflow-x:auto;">
-                        <table class="history-table" style="width:100%; border-collapse:collapse; min-width:720px;">
+                <div class="panel-card admin-af4797bb6e" data-portal-style="background:white; border-radius:24px; border:1px solid #e2e8f0; padding:32px;">
+                    <h3 data-portal-style="font-weight:900; font-size:1.2rem; color:#0f172a; margin-bottom:20px;" class="admin-33673ee54e">Ledger Transaksi Payout</h3>
+
+                    <div data-portal-style="overflow-x:auto;" class="admin-fbff25e9fc">
+                        <table class="history-table admin-321500124c" data-portal-style="width:100%; border-collapse:collapse; min-width:720px;">
                             <thead>
-                                <tr style="border-bottom:2px solid #f1f5f9; text-align:left;">
-                                    <th style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;">NO. TRACKING</th>
-                                    <th style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;">MASYARAKAT (USER)</th>
-                                    <th style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;">TUJUAN PAYOUT</th>
-                                    <th style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;">NOMINAL</th>
-                                    <th style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b; text-align:right;">AKSI</th>
+                                <tr data-portal-style="border-bottom:2px solid #f1f5f9; text-align:left;" class="admin-2c6c5b0f8e">
+                                    <th data-portal-style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-617dd2c602">NO. TRACKING</th>
+                                    <th data-portal-style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-617dd2c602">MASYARAKAT (USER)</th>
+                                    <th data-portal-style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-617dd2c602">TUJUAN PAYOUT</th>
+                                    <th data-portal-style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b;" class="admin-617dd2c602">NOMINAL</th>
+                                    <th data-portal-style="padding:12px; font-size:0.75rem; font-weight:800; color:#64748b; text-align:right;" class="admin-afd96faa13">AKSI</th>
                                 </tr>
                             </thead>
                             <tbody id="payoutLedgerTableBody">
-                                <tr><td colspan="5" style="text-align:center; padding:16px; color:#64748b;">Memuat data...</td></tr>
+                                <tr><td colspan="5" data-portal-style="text-align:center; padding:16px; color:#64748b;" class="admin-2543dceb38">Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
                 <!-- Monthly Revenue Chart -->
-                <div class="panel-card" style="background:white; border-radius:24px; border:1px solid #e2e8f0; padding:32px;">
-                    <h3 style="font-weight:900; font-size:1.2rem; color:#0f172a; margin-bottom:20px;">Tren Distribusi Reward</h3>
-                    <div style="height:250px; position:relative;">
+                <div class="panel-card admin-af4797bb6e" data-portal-style="background:white; border-radius:24px; border:1px solid #e2e8f0; padding:32px;">
+                    <h3 data-portal-style="font-weight:900; font-size:1.2rem; color:#0f172a; margin-bottom:20px;" class="admin-33673ee54e">Tren Distribusi Reward</h3>
+                    <div data-portal-style="height:250px; position:relative;" class="admin-6ba1173f58">
                         <canvas id="financeChart"></canvas>
                     </div>
                 </div>
@@ -331,9 +332,9 @@
 
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="assets/js/portal-announcements.js?v=20260702"></script>
-    <script src="assets/js/admin.js?v=20260702-cms"></script>
+    <script src="assets/js/admin.js?v=20261029-quality5"></script>
 </body>
 
 </html>

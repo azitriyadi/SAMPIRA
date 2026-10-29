@@ -3,24 +3,26 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Collector Portal | EcoRecycle</title>
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
+
     <!-- Leaflet Maps -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="assets/css/collector.css?v=20260702-mission">
-    <link rel="stylesheet" href="assets/css/portal-system.css?v=20260702">
+    <link rel="stylesheet" href="assets/css/collector-base.css?v=quality4">
+    <link rel="stylesheet" href="assets/css/collector-inline.css?v=quality4">
+    <link rel="stylesheet" href="assets/css/portal-system.css?v=20261029-quality5">
+    <link rel="stylesheet" href="assets/css/portal-controls.css?v=20261029-quality5">
 </head>
 
 <body class="portal-page role-collector">
@@ -32,12 +34,12 @@
             <span>EcoRecycle<small>Collector Portal</small></span>
         </a>
         <div class="sidebar-nav">
-            <div class="sidebar-item active" onclick="switchView('dashboard', this)"><i class="fas fa-house-chimney"></i> Dashboard</div>
-            <div class="sidebar-item" onclick="openActiveMission()"><i class="fas fa-route"></i> Pickup Aktif</div>
-            <div class="sidebar-item" onclick="switchView('history', this)"><i class="fas fa-list-check"></i> Riwayat Misi</div>
-            <div class="sidebar-item" onclick="switchView('earnings', this)"><i class="fas fa-wallet"></i> Komisi</div>
-            <div class="sidebar-item" onclick="switchView('profile', this)"><i class="fas fa-user-circle"></i> Profil</div>
-            <div class="sidebar-item" style="color: #f87171; margin-top: auto;" onclick="logoutCollector()"><i class="fas fa-sign-out-alt"></i> Keluar</div>
+            <button type="button" class="sidebar-item active" onclick="switchView('dashboard', this)"><i class="fas fa-house-chimney"></i> Dashboard</button>
+            <button type="button" class="sidebar-item" onclick="openActiveMission()"><i class="fas fa-route"></i> Pickup Aktif</button>
+            <button type="button" class="sidebar-item" onclick="switchView('history', this)"><i class="fas fa-list-check"></i> Riwayat Misi</button>
+            <button type="button" class="sidebar-item" onclick="switchView('earnings', this)"><i class="fas fa-wallet"></i> Komisi</button>
+            <button type="button" class="sidebar-item" onclick="switchView('profile', this)"><i class="fas fa-user-circle"></i> Profil</button>
+            <button type="button" class="sidebar-item collector-089139e8c8" data-portal-style="color: #f87171; margin-top: auto;" onclick="logoutCollector()"><i class="fas fa-sign-out-alt"></i> Keluar</button>
         </div>
     </aside>
 
@@ -51,50 +53,50 @@
                     <h1>Eco Command Center</h1>
                     <p id="desktop-greeting">Selamat bertugas, Kolektor. Siap menjemput kontribusi penyelamat bumi?</p>
                 </div>
-                <div style="display:flex; gap:16px; align-items:center;">
-                    <span class="status-pill success" style="background:#d1fae5; color:#065f46; font-weight:800; padding:6px 16px; border-radius:50px;">ON DUTY</span>
+                <div data-portal-style="display:flex; gap:16px; align-items:center;" class="collector-7172ab67fc">
+                    <span class="status-pill success collector-3fb11f7751" data-portal-style="background:#d1fae5; color:#065f46; font-weight:800; padding:6px 16px; border-radius:50px;">ON DUTY</span>
                 </div>
             </header>
 
             <header class="mobile-header">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <div class="avatar-circle" id="mobile-avatar" style="width: 48px; height: 48px; border-radius: 50%; background:#10b981; color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.1rem;">EC</div>
+                <div data-portal-style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;" class="collector-1b723f5e1c">
+                    <div data-portal-style="display:flex; align-items:center; gap:12px;" class="collector-a527d03795">
+                        <div class="avatar-circle collector-6296ba4103" id="mobile-avatar" data-portal-style="width: 48px; height: 48px; border-radius: 50%; background:#087443; color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.1rem;">EC</div>
                         <div>
-                            <div style="font-weight:900; font-size: 1.1rem;" id="mobile-name">Kolektor</div>
-                            <div style="font-size:0.75rem; opacity:0.8;">Collector Partner • EcoRecycle</div>
+                            <div data-portal-style="font-weight:900; font-size: 1.1rem;" id="mobile-name" class="collector-42c61adbe7">Kolektor</div>
+                            <div data-portal-style="font-size:0.75rem; opacity:0.8;" class="collector-ed622dca03">Collector Partner • EcoRecycle</div>
                         </div>
                     </div>
-                    <i class="fas fa-leaf" style="font-size:1.3rem; color:#10b981;"></i>
+                    <i class="fas fa-leaf collector-87039d3b62" data-portal-style="font-size:1.3rem; color:#087443;"></i>
                 </div>
             </header>
 
             <!-- KPI Row -->
-            <div class="kpi-row" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:20px; margin-bottom:32px;">
-                <div class="kpi-card" style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0; display:flex; align-items:center; gap:16px;">
-                    <div class="kpi-icon" style="background:#ecfdf5; color:#10b981; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem;"><i class="fas fa-weight-hanging"></i></div>
+            <div class="kpi-row collector-8b38491930" data-portal-style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:20px; margin-bottom:32px;">
+                <div class="kpi-card collector-56dc07fe6c" data-portal-style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0; display:flex; align-items:center; gap:16px;">
+                    <div class="kpi-icon collector-3d0ebadea6" data-portal-style="background:#ecfdf5; color:#087443; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem;"><i class="fas fa-weight-hanging"></i></div>
                     <div>
-                        <span style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;">E-Waste Terkumpul</span>
-                        <h3 style="font-size:1.8rem; font-weight:900; margin:0;" id="stat-packages">0 KG</h3>
+                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="collector-1b1c584415">Sampah Terkumpul</span>
+                        <h3 data-portal-style="font-size:1.8rem; font-weight:900; margin:0;" id="stat-packages" class="collector-1d693bc1bd">0 KG</h3>
                     </div>
                 </div>
-                <div class="kpi-card" style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0; display:flex; align-items:center; gap:16px;">
-                    <div class="kpi-icon" style="background:#fffbeb; color:#d97706; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem;"><i class="fas fa-sack-dollar"></i></div>
+                <div class="kpi-card collector-56dc07fe6c" data-portal-style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0; display:flex; align-items:center; gap:16px;">
+                    <div class="kpi-icon collector-daa8f057e2" data-portal-style="background:#fffbeb; color:#8a5315; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem;"><i class="fas fa-sack-dollar"></i></div>
                     <div>
-                        <span style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;">Estimasi Komisi</span>
-                        <h3 style="font-size:1.6rem; font-weight:900; margin:0;" id="stat-profit">Rp 0</h3>
+                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="collector-1b1c584415">Estimasi Komisi</span>
+                        <h3 data-portal-style="font-size:1.6rem; font-weight:900; margin:0;" id="stat-profit" class="collector-132795a74f">Rp 0</h3>
                     </div>
                 </div>
-                <div class="kpi-card" style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0; display:flex; align-items:center; gap:16px;">
-                    <div class="kpi-icon" style="background:#f0fdfa; color:#0d9488; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem;"><i class="fas fa-star"></i></div>
+                <div class="kpi-card collector-56dc07fe6c" data-portal-style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0; display:flex; align-items:center; gap:16px;">
+                    <div class="kpi-icon collector-f26c5ee929" data-portal-style="background:#f0fdfa; color:#276e57; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem;"><i class="fas fa-star"></i></div>
                     <div>
-                        <span style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;">Rating Kinerja</span>
-                        <h3 style="font-size:1.8rem; font-weight:900; margin:0;">5.0</h3>
+                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="collector-1b1c584415">Rating Kinerja</span>
+                        <h3 data-portal-style="font-size:1.8rem; font-weight:900; margin:0;" class="collector-1d693bc1bd">5.0</h3>
                     </div>
                 </div>
             </div>
 
-            <section class="portal-announcement-section collector-announcement-section" id="collector-announcement-section" style="display:none;">
+            <section class="portal-announcement-section collector-announcement-section collector-d0466aa33f" id="collector-announcement-section" data-portal-style="display:none;">
                 <div class="portal-section-heading">
                     <div>
                         <span class="portal-eyebrow">Briefing operasional</span>
@@ -106,25 +108,25 @@
             </section>
 
             <!-- Main Map and Open Pickups Grid -->
-            <div class="layout-grid" style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:24px;">
+            <div class="layout-grid collector-a82c141b12" data-portal-style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:24px;">
                 <!-- Map Panel -->
-                <div class="mission-panel" style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <h2 style="margin:0; font-size:1.2rem; font-weight:900; color:#064e3b;">Peta Rute Penjemputan (Bandung)</h2>
-                        <span class="status-pill warning" style="background:#fffbeb; color:#d97706; padding:4px 12px; border-radius:50px; font-size:0.75rem; font-weight:800;">LIVE NAVIGATOR</span>
+                <div class="mission-panel collector-33d3d18670" data-portal-style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0;">
+                    <div data-portal-style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;" class="collector-1b723f5e1c">
+                        <h2 data-portal-style="margin:0; font-size:1.2rem; font-weight:900; color:#064e3b;" class="collector-2b1c053ff6">Peta Rute Penjemputan (Bandung)</h2>
+                        <span class="status-pill warning collector-79f1a82301" data-portal-style="background:#fffbeb; color:#8a5315; padding:4px 12px; border-radius:50px; font-size:0.75rem; font-weight:800;">LIVE NAVIGATOR</span>
                     </div>
-                    <div class="map-wrapper" style="height:350px; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; margin-bottom:20px;">
-                        <div id="map" style="width: 100%; height: 100%;"></div>
+                    <div class="map-wrapper collector-4104c79aff" data-portal-style="height:350px; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; margin-bottom:20px;">
+                        <div id="map" data-portal-style="width: 100%; height: 100%;" class="collector-ed08e28b31"></div>
                     </div>
-                    <button class="btn-primary" onclick="openActiveMission()" style="width:100%; height:50px; border-radius:12px; font-weight:800;">Buka Detail Lokasi Penjemputan</button>
+                    <button class="btn-primary collector-57f6fc976a" onclick="openActiveMission()" data-portal-style="width:100%; height:50px; border-radius:12px; font-weight:800;">Buka Detail Lokasi Penjemputan</button>
                 </div>
 
                 <!-- Available open pickups list -->
-                <div class="queue-panel" style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0;">
-                    <h3 style="font-weight:900; font-size:1.2rem; margin-bottom:8px; color:#064e3b;">Antrean Penjemputan Bandung</h3>
-                    <p style="color:#64748b; font-size:0.8rem; margin-bottom:20px;">Ambil tugas penjemputan e-waste di daerah Bandung.</p>
-                    <div class="task-list" id="upcoming-task-list" style="display:flex; flex-direction:column; gap:16px;">
-                        <div style="text-align:center; padding:20px; color:#64748b;">Memuat daftar pickup...</div>
+                <div class="queue-panel collector-33d3d18670" data-portal-style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0;">
+                    <h3 data-portal-style="font-weight:900; font-size:1.2rem; margin-bottom:8px; color:#064e3b;" class="collector-d1ce672316">Antrean Penjemputan Bandung</h3>
+                    <p data-portal-style="color:#64748b; font-size:0.8rem; margin-bottom:20px;" class="collector-71572c779c">Ambil tugas penjemputan sampah di daerah Bandung.</p>
+                    <div class="task-list collector-141abdf468" id="upcoming-task-list" data-portal-style="display:flex; flex-direction:column; gap:16px;">
+                        <div data-portal-style="text-align:center; padding:20px; color:#64748b;" class="collector-1d78a84533">Memuat daftar pickup...</div>
                     </div>
                 </div>
             </div>
@@ -205,20 +207,20 @@
 
         <!-- VIEW: HISTORY -->
         <div id="view-history" class="view-section">
-            <h2 style="font-weight:900; margin-bottom:24px; color:#064e3b;">Riwayat Misi Penjemputan</h2>
-            <div class="enterprise-card" style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0; overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+            <h2 data-portal-style="font-weight:900; margin-bottom:24px; color:#064e3b;" class="collector-9b1d182755">Riwayat Misi Penjemputan</h2>
+            <div class="enterprise-card collector-ea5cca3288" data-portal-style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0; overflow-x: auto;">
+                <table data-portal-style="width: 100%; border-collapse: collapse; min-width: 600px;" class="collector-184e3d5c68">
                     <thead>
-                        <tr style="border-bottom: 2px solid #f1f5f9; text-align:left;">
-                            <th style="padding: 16px; font-size: 0.75rem; color: #64748b; font-weight:800;">NO. TRACKING</th>
-                            <th style="padding: 16px; font-size: 0.75rem; color: #64748b; font-weight:800;">TANGGAL</th>
-                            <th style="padding: 16px; font-size: 0.75rem; color: #64748b; font-weight:800;">KOMISI ANDA</th>
-                            <th style="padding: 16px; font-size: 0.75rem; color: #64748b; font-weight:800;">STATUS</th>
+                        <tr data-portal-style="border-bottom: 2px solid #f1f5f9; text-align:left;" class="collector-9c4c9b21ba">
+                            <th data-portal-style="padding: 16px; font-size: 0.75rem; color: #64748b; font-weight:800;" class="collector-7b03969abe">NO. TRACKING</th>
+                            <th data-portal-style="padding: 16px; font-size: 0.75rem; color: #64748b; font-weight:800;" class="collector-7b03969abe">TANGGAL</th>
+                            <th data-portal-style="padding: 16px; font-size: 0.75rem; color: #64748b; font-weight:800;" class="collector-7b03969abe">KOMISI ANDA</th>
+                            <th data-portal-style="padding: 16px; font-size: 0.75rem; color: #64748b; font-weight:800;" class="collector-7b03969abe">STATUS</th>
                         </tr>
                     </thead>
                     <tbody id="history-table-body">
                         <tr>
-                            <td colspan="4" style="padding: 16px; text-align:center; color:#64748b;">Memuat riwayat...</td>
+                            <td colspan="4" data-portal-style="padding: 16px; text-align:center; color:#64748b;" class="collector-c6657ff8e7">Memuat riwayat...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -227,34 +229,34 @@
 
         <!-- VIEW: EARNINGS -->
         <div id="view-earnings" class="view-section">
-            <h2 style="font-weight:900; margin-bottom:24px; color:#064e3b;">Dompet Kolektor</h2>
-            <div class="balance-card" style="background: linear-gradient(135deg, #064e3b 0%, #022c22 100%); color:white; padding:40px; border-radius:24px; max-width:600px; box-shadow: 0 10px 30px rgba(6,78,59,0.15);">
-                <div style="font-size:0.9rem; opacity:0.8; font-weight:700;">TOTAL KOMISI DIDAPAT</div>
-                <h2 style="font-size:3.5rem; font-weight:900; margin:12px 0; letter-spacing: -2px;" id="earnings-total">Rp 0</h2>
-                <button class="btn-primary" style="background:white; color:#064e3b; width: auto; padding: 12px 28px; border-radius:12px; font-weight:800;" onclick="alert('Komisi akan ditransfer ke rekening bank terdaftar Anda.')">Cairkan Pendapatan</button>
+            <h2 data-portal-style="font-weight:900; margin-bottom:24px; color:#064e3b;" class="collector-9b1d182755">Dompet Kolektor</h2>
+            <div class="balance-card collector-10394b0a6f" data-portal-style="background: linear-gradient(135deg, #064e3b 0%, #022c22 100%); color:white; padding:40px; border-radius:24px; max-width:600px; box-shadow: 0 10px 30px rgba(6,78,59,0.15);">
+                <div data-portal-style="font-size:0.9rem; opacity:0.8; font-weight:700;" class="collector-31486f07f4">TOTAL KOMISI DIDAPAT</div>
+                <h2 data-portal-style="font-size:3.5rem; font-weight:900; margin:12px 0; letter-spacing: -2px;" id="earnings-total" class="collector-95a68d1cc0">Rp 0</h2>
+                <button class="btn-primary collector-6d82a9c18c" data-portal-style="background:white; color:#064e3b; width: auto; padding: 12px 28px; border-radius:12px; font-weight:800;" onclick="alert('Komisi akan ditransfer ke rekening bank terdaftar Anda.')">Cairkan Pendapatan</button>
             </div>
         </div>
 
         <!-- VIEW: PROFILE -->
         <div id="view-profile" class="view-section">
-            <h2 style="font-weight:900; margin-bottom:24px; color:#064e3b;">Profil Kolektor</h2>
-            <div class="enterprise-card" style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0; max-width:600px; text-align:center;">
-                <div class="profile-header" style="margin-bottom:32px;">
-                    <div class="avatar-circle" id="profile-avatar-large" style="width: 100px; height: 100px; border-radius: 50%; background:#064e3b; color:white; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:2.2rem; margin:0 auto 16px;">C</div>
-                    <h2 style="margin:0; font-size: 1.5rem; font-weight: 900; color:#064e3b;" id="profile-name">Eco Collector</h2>
-                    <p style="color:#64748b; font-size: 0.9rem; margin-top:4px;">Expert Partner • EcoRecycle</p>
+            <h2 data-portal-style="font-weight:900; margin-bottom:24px; color:#064e3b;" class="collector-9b1d182755">Profil Kolektor</h2>
+            <div class="enterprise-card collector-643f5faaad" data-portal-style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0; max-width:600px; text-align:center;">
+                <div class="profile-header collector-293242ee3e" data-portal-style="margin-bottom:32px;">
+                    <div class="avatar-circle collector-3dfb5b2e10" id="profile-avatar-large" data-portal-style="width: 100px; height: 100px; border-radius: 50%; background:#064e3b; color:white; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:2.2rem; margin:0 auto 16px;">C</div>
+                    <h2 data-portal-style="margin:0; font-size: 1.5rem; font-weight: 900; color:#064e3b;" id="profile-name" class="collector-0d3dc6aec0">Eco Collector</h2>
+                    <p data-portal-style="color:#64748b; font-size: 0.9rem; margin-top:4px;" class="collector-6d6eba2899">Expert Partner • EcoRecycle</p>
                 </div>
-                <div class="info-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:32px;">
-                    <div class="info-box" style="background:#f8fafc; border:1px solid #e2e8f0; padding:16px; border-radius:16px; text-align:left;">
-                        <span style="font-size:0.7rem; font-weight:800; color:#64748b;">ARMADA DONASI</span>
-                        <p style="font-weight:700; margin:4px 0 0 0; color:#0f172a;">Sepeda Motor Listrik</p>
+                <div class="info-grid collector-4db4254359" data-portal-style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:32px;">
+                    <div class="info-box collector-24692c0dde" data-portal-style="background:#f8fafc; border:1px solid #e2e8f0; padding:16px; border-radius:16px; text-align:left;">
+                        <span data-portal-style="font-size:0.7rem; font-weight:800; color:#64748b;" class="collector-fc15f7b0ca">ARMADA DONASI</span>
+                        <p data-portal-style="font-weight:700; margin:4px 0 0 0; color:#0f172a;" class="collector-6a6262f18b">Sepeda Motor Listrik</p>
                     </div>
-                    <div class="info-box" style="background:#f8fafc; border:1px solid #e2e8f0; padding:16px; border-radius:16px; text-align:left;">
-                        <span style="font-size:0.7rem; font-weight:800; color:#64748b;">WILAYAH TUGAS</span>
-                        <p style="font-weight:700; margin:4px 0 0 0; color:#0f172a;">Kota & Kabupaten Bandung</p>
+                    <div class="info-box collector-24692c0dde" data-portal-style="background:#f8fafc; border:1px solid #e2e8f0; padding:16px; border-radius:16px; text-align:left;">
+                        <span data-portal-style="font-size:0.7rem; font-weight:800; color:#64748b;" class="collector-fc15f7b0ca">WILAYAH TUGAS</span>
+                        <p data-portal-style="font-weight:700; margin:4px 0 0 0; color:#0f172a;" class="collector-6a6262f18b">Kota & Kabupaten Bandung</p>
                     </div>
                 </div>
-                <button class="btn-primary" style="background:#fef2f2; color:#ef4444; border: 1px solid #fee2e2;" onclick="logoutCollector()">
+                <button class="btn-primary collector-1c0833d367" data-portal-style="background:#fef2f2; color:#b42332; border: 1px solid #fee2e2;" onclick="logoutCollector()">
                     <i class="fas fa-sign-out-alt"></i> Keluar Akun
                 </button>
             </div>
@@ -264,16 +266,16 @@
 
     <!-- Bottom Navigation (Mobile) -->
     <nav class="bottom-nav">
-        <div class="nav-item active" onclick="switchView('dashboard', this)"><i class="fas fa-house"></i><span>Beranda</span></div>
-        <div class="nav-item" onclick="openActiveMission()"><i class="fas fa-route"></i><span>Misi</span></div>
-        <div class="nav-item" onclick="switchView('history', this)"><i class="fas fa-list-check"></i><span>Riwayat</span></div>
-        <div class="nav-item" onclick="switchView('earnings', this)"><i class="fas fa-wallet"></i><span>Dompet</span></div>
-        <div class="nav-item" onclick="switchView('profile', this)"><i class="fas fa-user-circle"></i><span>Profil</span></div>
+        <button type="button" class="nav-item active" onclick="switchView('dashboard', this)"><i class="fas fa-house"></i><span>Beranda</span></button>
+        <button type="button" class="nav-item" onclick="openActiveMission()"><i class="fas fa-route"></i><span>Misi</span></button>
+        <button type="button" class="nav-item" onclick="switchView('history', this)"><i class="fas fa-list-check"></i><span>Riwayat</span></button>
+        <button type="button" class="nav-item" onclick="switchView('earnings', this)"><i class="fas fa-wallet"></i><span>Dompet</span></button>
+        <button type="button" class="nav-item" onclick="switchView('profile', this)"><i class="fas fa-user-circle"></i><span>Profil</span></button>
     </nav>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="assets/js/portal-announcements.js?v=20260702"></script>
-    <script src="assets/js/collector.js"></script>
+    <script src="assets/js/collector.js?v=20261029-quality5"></script>
 </body>
 
 </html>

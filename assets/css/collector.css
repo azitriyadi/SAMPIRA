@@ -58,11 +58,10 @@ body {
     font-weight: 600;
     font-size: 0.95rem;
     cursor: pointer;
-    transition: all 0.2s ease;
 }
 
 .sidebar-item:hover, .sidebar-item.active {
-    background-color: #10b981;
+    background-color: #087443;
     color: white;
 }
 
@@ -111,12 +110,11 @@ body {
 }
 
 .nav-item.active {
-    color: #10b981;
+    color: #087443;
 }
 
 .view-section {
     display: none;
-    animation: fadeIn 0.4s ease;
 }
 
 .view-section.active {
@@ -157,14 +155,13 @@ body {
     justify-content: space-between;
     align-items: center;
     gap: 16px;
-    transition: all 0.3s ease;
     cursor: pointer;
 }
 
 .task-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-    border-color: #10b981;
+    border-color: #087443;
 }
 
 /* Active mission workspace */
@@ -216,8 +213,8 @@ body {
 
 .active-mission-card {
     width: 100%;
-    max-width: 920px !important;
-    padding: 28px !important;
+    max-width: 920px;
+    padding: 28px;
 }
 
 .mission-card-header {
@@ -244,7 +241,7 @@ body {
     border: 1px solid #cfe9df;
     border-radius: 8px;
     background: #e9f8f2;
-    color: #0d9b71;
+    color: #276e57;
 }
 
 .mission-icon {
@@ -313,7 +310,7 @@ body {
     gap: 9px;
     padding: 12px;
     border-right: 1px solid #dce4e0;
-    color: #7a8580;
+    color: #58675f;
     font-size: 0.78rem;
 }
 
@@ -338,7 +335,7 @@ body {
 
 .mission-progress-step.completed span {
     border-color: #0d9b71;
-    background: #0d9b71;
+    background: #087443;
     color: #ffffff;
 }
 
@@ -403,7 +400,7 @@ body {
 }
 
 .mission-detail-list dt {
-    color: #718079;
+    color: #58675f;
     font-size: 0.75rem;
     font-weight: 650;
 }
@@ -450,7 +447,6 @@ body {
     font-size: 0.83rem;
     font-weight: 800;
     cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .collector-action-btn.secondary {
@@ -510,7 +506,7 @@ body {
     }
 
     .active-mission-card {
-        padding: 18px !important;
+        padding: 18px;
     }
 
     .mission-card-header {
@@ -550,5 +546,24 @@ body {
 
     .mission-detail-list > div {
         grid-template-columns: 82px minmax(0, 1fr);
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+
+    .sidebar-item {
+    transition: background-color 0.2s ease, color .2s, border-color .2s, transform .2s;
+    }
+
+    .view-section {
+    animation: fadeIn 0.4s ease;
+    }
+
+    .task-item {
+    transition: background-color 0.3s ease, color .2s, border-color .2s, transform .2s;
+    }
+
+    .collector-action-btn {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
     }
 }

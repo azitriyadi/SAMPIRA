@@ -2,17 +2,15 @@ package handlers
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 	"time"
 
 	httpx "ecorecycle/internal/middleware"
-	"ecorecycle/internal/models"
 )
 
 func (a *App) PickupStatusGetHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	_, err := a.Auth.UserFromRequest(r)
@@ -37,7 +35,7 @@ func (a *App) PickupStatusGetHandler(w http.ResponseWriter, r *http.Request) {
 		a.DB.QueryRow("SELECT COALESCE(SUM(eco_reward), 0.0) FROM pickups WHERE is_processed = FALSE").Scan(&totalRewardPending)
 		a.DB.QueryRow("SELECT COUNT(*) FROM users WHERE role = 'collector'").Scan(&collectorsOnline)
 
-		httpx.SendResponse(w, "success", "Statistik e-waste berhasil diambil.", map[string]interface{}{
+		httpx.SendResponse(w, "success", "Statistik sampah berhasil diambil.", map[string]interface{}{
 			"total_weight":          totalWeight,
 			"total_reward_paid":     totalRewardPaid,
 			"total_reward_pending":  totalRewardPending,
@@ -155,7 +153,7 @@ func (a *App) PickupStatusGetHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) PickupStatusPostHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	user, err := a.Auth.UserFromRequest(r)
@@ -175,45 +173,16 @@ func (a *App) PickupStatusPostHandler(w http.ResponseWriter, r *http.Request) {
 		httpx.SendResponse(w, "error", "Nomor tracking dan status baru wajib diisi.", nil, http.StatusBadRequest)
 		return
 	}
-	if status != models.StatusTransit && status != models.StatusArrived {
-		httpx.SendResponse(w, "error", "Status tidak valid. Status operasional yang diizinkan adalah transit atau arrived.", nil, http.StatusBadRequest)
+	if problem := a.validatePickupStatusUpdate(user, trackingNum, status); problem != nil {
+		problem.write(w)
 		return
 	}
-
-	var currentStatus string
-	var assignedCollectorID sql.NullInt64
-	err = a.DB.QueryRow("SELECT status, collector_id FROM pickups WHERE tracking_number = ?", trackingNum).Scan(&currentStatus, &assignedCollectorID)
-	if err == sql.ErrNoRows {
-		httpx.SendResponse(w, "error", "Nomor tracking tidak ditemukan.", nil, http.StatusNotFound)
-		return
-	} else if err != nil {
-		httpx.SendResponse(w, "error", "Kesalahan database.", nil, http.StatusInternalServerError)
-		return
-	}
-
-	if user.Role == "collector" && (!assignedCollectorID.Valid || int(assignedCollectorID.Int64) != user.ID) {
-		httpx.SendResponse(w, "error", "Akses ditolak. Kolektor hanya dapat memperbarui status tugas miliknya.", nil, http.StatusForbidden)
-		return
-	}
-
-	validTransition := (currentStatus == models.StatusPickup && status == models.StatusTransit) || (currentStatus == models.StatusTransit && status == models.StatusArrived)
-	if !validTransition {
-		httpx.SendResponse(w, "error", fmt.Sprintf("Transisi status tidak valid dari %s ke %s.", currentStatus, status), nil, http.StatusBadRequest)
-		return
-	}
-
-	location := data["location"]
-	if location == "" {
-		location = "System"
-	}
-	notes := data["notes"]
-	if notes == "" {
-		notes = "Status diperbarui"
-	}
+	location := valueOrDefault(data["location"], "System")
+	notes := valueOrDefault(data["notes"], "Status diperbarui")
 
 	tx, err := a.DB.Begin()
 	if err != nil {
-		httpx.SendResponse(w, "error", "Gagal memulai transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionStartMessage, nil, http.StatusInternalServerError)
 		return
 	}
 	defer tx.Rollback()
@@ -230,9 +199,9 @@ func (a *App) PickupStatusPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var pickupID int
-	err = tx.QueryRow("SELECT id FROM pickups WHERE tracking_number = ?", trackingNum).Scan(&pickupID)
+	err = tx.QueryRow(pickupIDQuery, trackingNum).Scan(&pickupID)
 	if err != nil {
-		httpx.SendResponse(w, "error", "Gagal menemukan ID penjemputan.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", pickupIDLookupMessage, nil, http.StatusInternalServerError)
 		return
 	}
 	_, err = tx.Exec("INSERT INTO pickup_history (pickup_id, status, location, notes) VALUES (?, ?, ?, ?)", pickupID, status, location, notes)
@@ -241,7 +210,7 @@ func (a *App) PickupStatusPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := tx.Commit(); err != nil {
-		httpx.SendResponse(w, "error", "Gagal commit transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionCommitMessage, nil, http.StatusInternalServerError)
 		return
 	}
 

@@ -5,71 +5,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eco Portal | EcoRecycle</title>
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.6.1/dist/chart.umd.min.js" integrity="sha384-Emf5ZVIUiarAdhkgtqK+5/Z5qIvM6QoVrS+qAVtfyZVuD5lIHrac0me485+Antp0" crossorigin="anonymous"></script>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/dashboard.css?v=20260622-ui-refresh">
-    <link rel="stylesheet" href="assets/css/portal-system.css?v=20260702">
+<link rel="stylesheet" href="assets/css/user-layout.css?v=20261029-quality5">
+    <link rel="stylesheet" href="assets/css/user-inline.css?v=20261029-quality5">
+    <link rel="stylesheet" href="assets/css/user-flat.css?v=20261029-quality5">
 </head>
 
 <body class="portal-page role-warrior">
 
     <!-- Mobile Header -->
     <div class="mobile-header">
-        <a href="home" class="mobile-logo" style="font-weight: 900; text-decoration: none; color: #064e3b; display: flex; align-items: center; gap: 8px; font-size: 1.2rem;">
-            <i class="fas fa-leaf" style="color: var(--brand-primary);"></i> EcoRecycle
+        <a href="home" class="mobile-logo u-7dab19e52e" data-inline-style="font-weight: 900; text-decoration: none; color: #064e3b; display: flex; align-items: center; gap: 8px; font-size: 1.2rem;">
+            <i class="fas fa-leaf u-6a3ee14681" aria-hidden="true" data-inline-style="color: var(--brand-primary);"></i> EcoRecycle
         </a>
-        <button class="hamburger-btn" id="mobileMenuToggle" style="background: none; border: none; font-size: 1.5rem; color: #1e293b; cursor: pointer;">
-            <i class="fas fa-bars"></i>
+        <button class="hamburger-btn u-0602517645" id="mobileMenuToggle" aria-label="Buka menu navigasi" aria-controls="sidebar" aria-expanded="false" data-inline-style="background: none; border: none; font-size: 1.5rem; color: #1e293b; cursor: pointer;">
+            <i class="fas fa-bars" aria-hidden="true"></i>
         </button>
     </div>
 
     <!-- Mobile Sidebar Overlay -->
-    <div class="sidebar-overlay" id="sidebarOverlay" style="background: rgba(6, 78, 59, 0.4); backdrop-filter: blur(4px); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: none;"></div>
+    <div class="sidebar-overlay u-99805def65" id="sidebarOverlay" data-inline-style="background: rgba(6, 78, 59, 0.4); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: none;"></div>
 
     <!-- 6. Menu Navigasi (Sidebar) -->
     <aside class="sidebar" id="sidebar">
         <a href="home" class="sidebar-logo">
-            <span class="brand-mark"><i class="fas fa-leaf"></i></span>
-            <span>EcoRecycle<small>Warrior Portal</small></span>
+            <span class="brand-mark"><i class="fas fa-leaf" aria-hidden="true"></i></span>
+            <span>EcoRecycle<small>Portal pengguna</small></span>
         </a>
 
         <div class="sidebar-nav">
-            <div class="nav-group-label">Eco Menu</div>
+            <div class="nav-group-label">Ruang pengguna</div>
             <div id="sidebar-menu-content">
-                <div class="sidebar-item hub-tab active" data-target="beranda">
-                    <i class="fas fa-home"></i> Beranda
-                </div>
-                <div class="sidebar-item hub-tab" data-target="setor-sampah">
-                    <i class="fas fa-recycle"></i> Setor E-Waste
-                </div>
-                <div class="sidebar-item hub-tab" data-target="lacak-pickup">
-                    <i class="fas fa-truck-pickup"></i> Lacak Status
-                </div>
-                <div class="sidebar-item hub-tab" data-target="riwayat-payout">
-                    <i class="fas fa-history"></i> Riwayat Payout
-                </div>
-                <div class="sidebar-item hub-tab" data-target="pengaturan">
-                    <i class="fas fa-sliders-h"></i> Pengaturan
-                </div>
+                <button type="button" class="sidebar-item hub-tab active" data-target="beranda" aria-current="page">
+                    <i class="fas fa-home" aria-hidden="true"></i> Beranda
+                </button>
+                <button type="button" class="sidebar-item hub-tab" data-target="setor-sampah">
+                    <i class="fas fa-recycle" aria-hidden="true"></i> Setor Sampah
+                </button>
+                <button type="button" class="sidebar-item hub-tab" data-target="lacak-pickup">
+                    <i class="fas fa-truck-pickup" aria-hidden="true"></i> Lacak Status
+                </button>
+                <button type="button" class="sidebar-item hub-tab" data-target="riwayat-payout">
+                    <i class="fas fa-history" aria-hidden="true"></i> Riwayat setoran
+                </button>
+                <button type="button" class="sidebar-item hub-tab" data-target="pengaturan">
+                    <i class="fas fa-sliders-h" aria-hidden="true"></i> Pengaturan
+                </button>
             </div>
         </div>
 
         <div class="sidebar-footer">
-            <div style="padding: 0 16px;">
-                <button onclick="logoutUser()" style="display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 700; color: #f87171; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); width: 100%; padding: 12px; border-radius: 12px; cursor: pointer; transition: background 0.3s;">
-                    <i class="fas fa-sign-out-alt"></i> Log Out
+            <div data-inline-style="padding: 0 16px;" class="u-f68f124073">
+                <button onclick="logoutUser()" data-inline-style="display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 700; color: #f87171; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); width: 100%; padding: 12px; border-radius: 12px; cursor: pointer; transition: background 0.3s;" class="u-5fb6767e8d">
+                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Keluar
                 </button>
             </div>
         </div>
@@ -77,123 +78,110 @@
 
     <div class="portal-content">
         <!-- 1. Header / Profil Pengguna -->
-        <section class="hero-portal-impact" style="padding-bottom: 80px; background: linear-gradient(135deg, #064e3b 0%, #022c22 100%);">
-            <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
-                <div>
-                    <h1 id="hero-welcome" style="font-size: 2.2rem; font-weight: 900; color: white; margin: 0;">Halo, Eco Warrior!</h1>
-                    <p style="color: #a7f3d0; margin: 8px 0 0 0; font-size: 1rem;">Siap berkontribusi menurunkan emisi karbon hari ini?</p>
-                    <div class="hero-actions">
-                        <button type="button" class="hero-action-btn primary" onclick="document.querySelector('.sidebar-item[data-target=&quot;setor-sampah&quot;]').click()">
-                            <i class="fas fa-plus"></i>
-                            Ajukan Setoran
-                        </button>
-                        <button type="button" class="hero-action-btn" onclick="document.querySelector('.sidebar-item[data-target=&quot;lacak-pickup&quot;]').click()">
-                            <i class="fas fa-location-dot"></i>
-                            Lacak Pickup
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Profil Info -->
-                <div class="user-profile-header-card" style="display: flex; align-items: center; gap: 16px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1); padding: 12px 24px; border-radius: 20px; color: white;">
-                    <div class="avatar-circle" id="profile-avatar" style="width: 48px; height: 48px; border-radius: 50%; background: #10b981; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem;">EW</div>
-                    <div>
-                        <div style="font-weight: 800;" id="user-display-name">Eco Warrior</div>
-                        <div style="font-size: 0.75rem; color: #34d399; font-weight: 700; display:flex; align-items:center; gap:4px;">
-                            <i class="fas fa-medal"></i> <span id="user-display-level">Bronze Saver</span>
-                        </div>
-                    </div>
+        <header class="user-topbar">
+            <div class="container user-topbar-inner">
+                <div><p class="user-overline" id="workspace-label">Beranda / Ringkasan</p><h1 id="hero-welcome">Halo, Eco Warrior!</h1></div>
+                <div class="user-profile-header-card">
+                    <div class="avatar-circle" id="profile-avatar">EW</div>
+                    <div><div id="user-display-name">Eco Warrior</div><span class="user-level"><i class="fas fa-seedling" aria-hidden="true"></i> <span id="user-display-level">Bronze Saver</span></span></div>
                 </div>
             </div>
-        </section>
+        </header>
 
         <!-- Overview Content -->
-        <div class="container" style="margin-top: -40px;">
-            
+        <main class="container user-workspace" id="user-main">
+
             <!-- 3. Notifikasi & Pesan Sistem (Alert Box) -->
-            <div id="system-notification-box" class="notification-alert-box" style="display: none; background: #ecfdf5; border: 1px solid #a7f3d0; border-left: 5px solid #10b981; border-radius: 16px; padding: 16px 24px; margin-bottom: 24px; color: #065f46; font-size: 0.9rem; align-items: center; justify-content: space-between; gap: 16px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <i class="fas fa-bell" style="font-size: 1.2rem; color: #10b981;"></i>
+            <div id="system-notification-box" class="notification-alert-box u-c29c508401" data-inline-style="display: none; background: #ecfdf5; border: 1px solid #a7f3d0; border-left: 5px solid #10b981; border-radius: 16px; padding: 16px 24px; margin-bottom: 24px; color: #065f46; font-size: 0.9rem; align-items: center; justify-content: space-between; gap: 16px;">
+                <div data-inline-style="display: flex; align-items: center; gap: 12px;" class="u-b5e6692c7c">
+                    <i class="fas fa-bell u-9e157e7b0c" aria-hidden="true" data-inline-style="font-size: 1.2rem; color:#087443;"></i>
                     <span id="notification-message">Tidak ada pemberitahuan terbaru.</span>
                 </div>
-                <button onclick="closeNotification()" style="background: none; border: none; cursor: pointer; color: #047857;"><i class="fas fa-times"></i></button>
+                <button aria-label="Tutup pemberitahuan" onclick="closeNotification()" data-inline-style="background: none; border: none; cursor: pointer; color: #047857;" class="u-acb7517e0f"><i class="fas fa-times" aria-hidden="true"></i></button>
             </div>
 
             <!-- TAB: BERANDA (HOME OVERVIEW) -->
             <div id="beranda" class="tab-pane active">
+                <div class="user-overview">
+                <section class="user-welcome" aria-labelledby="welcome-title">
+                    <div><p class="user-overline">Dari rumah, untuk lingkungan</p><h2 id="welcome-title">Pilah hari ini.<br>Beri manfaat lagi.</h2><p>Ajukan setoran, pantau penjemputan, dan lihat<br class="desktop-break"> kontribusimu dalam satu tempat.</p><div class="hero-actions"><button type="button" class="hero-action-btn primary" onclick="document.querySelector('.sidebar-item[data-target=&quot;setor-sampah&quot;]').click()">Setor sampah <i class="fas fa-arrow-right" aria-hidden="true"></i></button><button type="button" class="hero-action-btn" onclick="document.querySelector('.sidebar-item[data-target=&quot;lacak-pickup&quot;]').click()">Lacak penjemputan</button></div></div>
+                    <img src="assets/img/waste-inorganic.svg" width="320" height="230" alt="Botol, kardus, dan kertas yang sudah dipilah">
+                </section>
 
-                <section class="portal-announcement-section" id="warrior-announcement-section" style="display:none;">
+
+
+                <!-- 2. Ringkasan Utama (Widget/Card Metrik) -->
+                <div class="kpi-grid u-d8d16b3aef" data-inline-style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 32px;">
+                    <div class="kpi-card u-a841696d1a" data-inline-style="background: white; border-radius: 20px; padding: 24px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
+                        <div data-inline-style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;" class="u-ab4de765f5">
+                            <span data-inline-style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;" class="u-fa344aacab">Total Sampah Disetor</span>
+                            <div data-inline-style="color:#087443; background: #ecfdf5; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;" class="u-bc052c5035"><i class="fas fa-recycle" aria-hidden="true"></i></div>
+                        </div>
+                        <h2 data-inline-style="font-size: 2.2rem; font-weight: 900; margin: 0; color: var(--brand-dark);" class="u-bae36208ce"><span id="metric-total-weight">0</span> <sub data-inline-style="font-size: 1rem; font-weight: 600; bottom: 0;" class="u-57cdccb1ed">KG</sub></h2>
+                    </div>
+
+                    <div class="kpi-card u-a841696d1a" data-inline-style="background: white; border-radius: 20px; padding: 24px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
+                        <div data-inline-style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;" class="u-ab4de765f5">
+                            <span data-inline-style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;" class="u-fa344aacab">Simulasi Pengurangan Karbon</span>
+                            <div data-inline-style="color: #0d9488; background: #f0fdfa; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;" class="u-81c3404786"><i class="fas fa-cloud" aria-hidden="true"></i></div>
+                        </div>
+                        <h2 data-inline-style="font-size: 2.2rem; font-weight: 900; margin: 0; color: var(--brand-dark);" class="u-bae36208ce"><span id="metric-total-carbon">0</span> <sub data-inline-style="font-size: 1rem; font-weight: 600; bottom: 0;" class="u-57cdccb1ed">KG CO₂</sub></h2>
+                    </div>
+
+                    <div class="kpi-card u-a841696d1a" data-inline-style="background: white; border-radius: 20px; padding: 24px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
+                        <div data-inline-style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;" class="u-ab4de765f5">
+                            <span data-inline-style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;" class="u-fa344aacab">Reward diterima</span>
+                            <div data-inline-style="color: #b45309; background: #fffbeb; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;" class="u-4fdd725789"><i class="fas fa-wallet" aria-hidden="true"></i></div>
+                        </div>
+                        <h2 data-inline-style="font-size: 2rem; font-weight: 900; margin: 0; color: var(--brand-dark);" id="metric-total-reward" class="u-70fef3e866">Rp 0</h2>
+                    </div>
+                </div>
+
+                </div>
+                <div class="layout-grid-dashboard u-d3ff0d3666" data-inline-style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px;">
+
+                    <!-- 4. Aktivitas Terakhir (Penjemputan Aktif) -->
+                    <div class="panel-card u-4ffd9f475f" data-inline-style="background: white; border-radius: 24px; padding: 32px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
+                        <h3 data-inline-style="font-weight: 800; font-size: 1.2rem; margin-bottom: 8px;" class="u-b689a4e359">Penjemputan aktif</h3>
+                        <p data-inline-style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 24px;" class="u-3fd84f466d">Pantau status setoranmu yang sedang berjalan.</p>
+
+                        <div id="active-pickups-container">
+                            <div data-inline-style="text-align: center; padding: 24px; color: var(--text-secondary);" class="u-157b09b0ac">Memuat data penjemputan...</div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Grafik Kontribusi Sampah Bulanan -->
+                    <div class="panel-card u-4ffd9f475f" data-inline-style="background: white; border-radius: 24px; padding: 32px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
+                        <h3 data-inline-style="font-weight: 800; font-size: 1.2rem; margin-bottom: 8px;" class="u-b689a4e359">Kontribusi bulanan</h3>
+                        <p data-inline-style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;" class="u-24f1ff00d4">Volume penyerahan sampah Anda (KG).</p>
+
+                        <div data-inline-style="height: 220px; position: relative;" class="u-d3dff8e3df">
+                            <canvas id="monthlyWasteChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <section class="portal-announcement-section u-d0466aa33f" id="warrior-announcement-section" data-inline-style="display:none;">
                     <div class="portal-section-heading">
                         <div>
                             <span class="portal-eyebrow">Informasi terbaru</span>
                             <h3>Pengumuman EcoRecycle</h3>
                         </div>
-                        <i class="fas fa-bullhorn"></i>
+                        <i class="fas fa-bullhorn" aria-hidden="true"></i>
                     </div>
                     <div id="warrior-announcement-list" class="portal-announcement-list"></div>
                 </section>
-                
-                <!-- 2. Ringkasan Utama (Widget/Card Metrik) -->
-                <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 32px;">
-                    <div class="kpi-card" style="background: white; border-radius: 20px; padding: 24px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <span style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;">Total E-Waste Disetor</span>
-                            <div style="color: #10b981; background: #ecfdf5; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-recycle"></i></div>
-                        </div>
-                        <h2 style="font-size: 2.2rem; font-weight: 900; margin: 0; color: var(--brand-dark);"><span id="metric-total-weight">0</span> <sub style="font-size: 1rem; font-weight: 600; bottom: 0;">KG</sub></h2>
-                    </div>
-
-                    <div class="kpi-card" style="background: white; border-radius: 20px; padding: 24px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <span style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;">Karbon Terselamatkan</span>
-                            <div style="color: #0d9488; background: #f0fdfa; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-cloud"></i></div>
-                        </div>
-                        <h2 style="font-size: 2.2rem; font-weight: 900; margin: 0; color: var(--brand-dark);"><span id="metric-total-carbon">0</span> <sub style="font-size: 1rem; font-weight: 600; bottom: 0;">KG CO₂</sub></h2>
-                    </div>
-
-                    <div class="kpi-card" style="background: white; border-radius: 20px; padding: 24px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <span style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;">Saldo Eco-Reward</span>
-                            <div style="color: #b45309; background: #fffbeb; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-wallet"></i></div>
-                        </div>
-                        <h2 style="font-size: 2rem; font-weight: 900; margin: 0; color: var(--brand-dark);" id="metric-total-reward">Rp 0</h2>
-                    </div>
-                </div>
-
-                <div class="layout-grid-dashboard" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px;">
-                    
-                    <!-- 4. Aktivitas Terakhir (Penjemputan Aktif) -->
-                    <div class="panel-card" style="background: white; border-radius: 24px; padding: 32px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
-                        <h3 style="font-weight: 800; font-size: 1.2rem; margin-bottom: 8px;">Penjemputan Sampah Aktif</h3>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 24px;">Pelacakan real-time untuk penjemputan yang sedang berjalan.</p>
-                        
-                        <div id="active-pickups-container">
-                            <div style="text-align: center; padding: 24px; color: var(--text-secondary);">Memuat data penjemputan...</div>
-                        </div>
-                    </div>
-
-                    <!-- 5. Grafik Kontribusi E-Waste Bulanan -->
-                    <div class="panel-card" style="background: white; border-radius: 24px; padding: 32px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
-                        <h3 style="font-weight: 800; font-size: 1.2rem; margin-bottom: 8px;">Tren Setor Sampah</h3>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;">Volume penyerahan e-waste Anda (KG).</p>
-                        
-                        <div style="height: 220px; position: relative;">
-                            <canvas id="monthlyWasteChart"></canvas>
-                        </div>
-                    </div>
-                </div>
 
             </div>
 
             <!-- TAB: SETOR SAMPAH (BOOKING FORM) -->
             <div id="setor-sampah" class="tab-pane">
-                <div class="panel-card" style="background: white; border-radius: 24px; padding: 40px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--gray-100); padding-bottom:24px; margin-bottom:32px;">
+                <div class="panel-card u-6d93f75cb7" data-inline-style="background: white; border-radius: 24px; padding: 40px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
+                    <div data-inline-style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--gray-100); padding-bottom:24px; margin-bottom:32px;" class="u-fef2729fc1">
                         <div>
-                            <h2 style="font-weight: 800; font-size: 1.6rem; color: var(--brand-dark);">Formulir Setor E-Waste baru</h2>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top:4px;">Kolektor kami akan menjemput muatan ke alamat Anda.</p>
+                            <h2 data-inline-style="font-weight: 800; font-size: 1.6rem; color: var(--brand-dark);" class="u-4041c5a824">Setor sampah</h2>
+                            <p data-inline-style="color: var(--text-secondary); font-size: 0.9rem; margin-top:4px;" class="u-8fd53dbf2a">Pilih jenis sampah dan tentukan alamat penjemputannya.</p>
                         </div>
-                        <i class="fas fa-recycle" style="font-size: 2.5rem; color: #10b981; opacity: 0.2;"></i>
+                        <i class="fas fa-recycle u-c7d88a3084" aria-hidden="true" data-inline-style="font-size: 2.5rem; color:#087443; opacity: 0.2;"></i>
                     </div>
 
                     <form id="pickup-request-form">
@@ -201,29 +189,29 @@
                             <div class="pickup-step-header">
                                 <span class="pickup-step-number">1</span>
                                 <div>
-                                    <h3>Jenis Sampah Elektronik</h3>
-                                    <p>Pilih kategori yang paling mendekati barang Anda.</p>
+                                    <h3>Jenis Sampah</h3>
+                                    <p>Pilih organik, anorganik terpilah, elektronik, atau B3 rumah tangga. Satu kategori untuk setiap pengajuan.</p>
                                 </div>
                             </div>
 
                             <div class="category-helper-grid" id="category-helper-grid">
                                 <button type="button" class="category-helper-card active" data-category="Small Gadgets" data-weight="0.5" data-example="HP rusak, tablet, kamera digital, charger, atau perangkat kecil lainnya.">
-                                    <i class="fas fa-mobile-screen-button"></i>
+                                    <i class="fas fa-mobile-screen-button" aria-hidden="true"></i>
                                     <strong>Gadget Kecil</strong>
                                     <span>HP, tablet, kamera</span>
                                 </button>
                                 <button type="button" class="category-helper-card" data-category="Computers" data-weight="2.0" data-example="Laptop rusak, CPU, monitor, motherboard, RAM, keyboard, atau perangkat komputer.">
-                                    <i class="fas fa-laptop"></i>
+                                    <i class="fas fa-laptop" aria-hidden="true"></i>
                                     <strong>Komputer</strong>
                                     <span>Laptop, CPU, monitor</span>
                                 </button>
                                 <button type="button" class="category-helper-card" data-category="Large Appliances" data-weight="8.0" data-example="TV, kulkas, AC, mesin cuci, atau perangkat elektronik besar.">
-                                    <i class="fas fa-tv"></i>
+                                    <i class="fas fa-tv" aria-hidden="true"></i>
                                     <strong>Elektronik Besar</strong>
                                     <span>TV, AC, kulkas</span>
                                 </button>
                                 <button type="button" class="category-helper-card" data-category="Batteries" data-weight="1.0" data-example="Baterai laptop, powerbank rusak, aki, baterai lithium-ion, atau UPS battery.">
-                                    <i class="fas fa-car-battery"></i>
+                                    <i class="fas fa-car-battery" aria-hidden="true"></i>
                                     <strong>Baterai</strong>
                                     <span>Powerbank, aki, UPS</span>
                                 </button>
@@ -239,28 +227,28 @@
                                 </div>
                             </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div data-inline-style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;" class="u-9667097330">
                             <div class="input-field">
-                                <label>Nama Penyetor</label>
+                                <label for="form-donor-name">Nama Penyetor</label>
                                 <div class="input-wrapper">
-                                    <i class="fas fa-user"></i>
-                                    <input type="text" id="form-donor-name" readonly style="background: var(--gray-50); color: var(--text-secondary);">
+                                    <i class="fas fa-user" aria-hidden="true"></i>
+                                    <input type="text" id="form-donor-name" readonly data-inline-style="background: var(--gray-50); color: var(--text-secondary);" class="u-9c839b7451">
                                 </div>
                             </div>
                             <div class="input-field">
-                                <label>Nomor HP / WhatsApp Aktif</label>
+                                <label for="form-donor-phone">Nomor HP / WhatsApp Aktif</label>
                                 <div class="input-wrapper">
-                                    <i class="fas fa-phone"></i>
+                                    <i class="fas fa-phone" aria-hidden="true"></i>
                                     <input type="tel" id="form-donor-phone" placeholder="Contoh: 08123456789" required>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="input-field" style="margin-bottom: 20px;">
-                            <label>Alamat Penjemputan (Wilayah Bandung)</label>
+                        <div class="input-field u-f6279acc73" data-inline-style="margin-bottom: 20px;">
+                            <label for="form-pickup-address">Alamat Penjemputan (Wilayah Bandung)</label>
                             <div class="input-wrapper">
-                                <i class="fas fa-map-marker-alt"></i>
-                                <textarea id="form-pickup-address" placeholder="Tulis alamat lengkap penjemputan beserta kec/desa" required style="width: 100%; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 16px 14px 44px; font-family: inherit; font-size: 0.95rem; background: var(--bg-muted); height: 80px; resize: none;"></textarea>
+                                <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+                                <textarea id="form-pickup-address" placeholder="Tulis alamat lengkap penjemputan beserta kec/desa" required data-inline-style="width: 100%; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 16px 14px 44px; font-family: inherit; font-size: 0.95rem; background: var(--bg-muted); height: 80px; resize: none;" class="u-adfa9cad7f"></textarea>
                             </div>
                         </div>
                         </div>
@@ -274,11 +262,11 @@
                                 </div>
                             </div>
 
-                        <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; margin-bottom: 20px;">
+                        <div data-inline-style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; margin-bottom: 20px;" class="u-ccaaeaa34e">
                             <div class="input-field">
-                                <label>Kategori Terpilih</label>
+                                <label for="form-waste-category">Kategori Terpilih</label>
                                 <div class="input-wrapper">
-                                    <i class="fas fa-laptop"></i>
+                                    <i class="fas fa-laptop" aria-hidden="true"></i>
                                     <select id="form-waste-category" required>
                                         <option value="Small Gadgets">Small Gadgets (HP, Tablet, Kamera) [Rate: Rp5.000/KG]</option>
                                         <option value="Computers">Computers (Laptop, CPU, Monitor) [Rate: Rp7.000/KG]</option>
@@ -288,59 +276,61 @@
                                 </div>
                             </div>
                             <div class="input-field">
-                                <label>Estimasi Berat (KG)</label>
+                                <label for="form-waste-weight">Estimasi Berat (KG)</label>
                                 <div class="input-wrapper">
-                                    <i class="fas fa-weight-hanging"></i>
+                                    <i class="fas fa-weight-hanging" aria-hidden="true"></i>
                                     <input type="number" id="form-waste-weight" value="1.0" min="0.1" step="0.1" required>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="input-field" style="margin-bottom: 20px;">
-                            <label>Foto Sampah Elektronik (Opsional)</label>
+                        <div class="input-field u-f6279acc73" data-inline-style="margin-bottom: 20px;">
+                            <output id="category-handling-note" data-inline-style="margin-bottom:12px; color:var(--text-secondary); font-size:0.85rem;" class="u-01caf6e3f4"></output>
+                            <p data-inline-style="margin-bottom:16px; color:var(--text-secondary); font-size:0.8rem;" class="u-5a224e0df6">Tarif anorganik adalah acuan awal material bersih dan terpilah. Organik dan B3 rumah tangga umum tanpa reward awal. Biaya kategori baru belum diberlakukan. <a href="home#estimator">Lihat acuan tarif</a>.</p>
+                            <label for="form-waste-photo">Foto Sampah (Opsional)</label>
                             <div class="input-wrapper">
-                                <i class="fas fa-camera" style="top: 26px;"></i>
-                                <input type="file" id="form-waste-photo" accept="image/*" style="padding-top: 12px; height: auto; min-height: 52px; background: var(--bg-muted); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">
+                                <i class="fas fa-camera u-d12d1d6fec" aria-hidden="true" data-inline-style="top: 26px;"></i>
+                                <input type="file" id="form-waste-photo" accept="image/*" data-inline-style="padding-top: 12px; height: auto; min-height: 52px; background: var(--bg-muted); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;" class="u-4f1eaa765a">
                             </div>
-                            <div id="photo-preview-card" class="photo-preview-card" style="display:none;">
-                                <img id="photo-preview-img" alt="Preview foto e-waste">
-                                <button type="button" id="remove-photo-btn" aria-label="Hapus foto"><i class="fas fa-times"></i></button>
+                            <div id="photo-preview-card" class="photo-preview-card u-d0466aa33f" data-inline-style="display:none;">
+                                <img id="photo-preview-img" alt="Preview foto sampah">
+                                <button type="button" id="remove-photo-btn" aria-label="Hapus foto"><i class="fas fa-times" aria-hidden="true"></i></button>
                             </div>
                         </div>
 
-                        <div class="input-field" style="margin-bottom: 32px;">
-                            <label>Deskripsi Barang & Kondisi Singkat</label>
+                        <div class="input-field u-e8a8a9c051" data-inline-style="margin-bottom: 32px;">
+                            <label for="form-item-description">Deskripsi Barang & Kondisi Singkat</label>
                             <div class="input-wrapper">
-                                <i class="fas fa-comment-dots"></i>
-                                <textarea id="form-item-description" placeholder="Contoh: 1 Laptop Lenovo mati total, 2 Baterai kembung" required style="width: 100%; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 16px 14px 44px; font-family: inherit; font-size: 0.95rem; background: var(--bg-muted); height: 80px; resize: none;"></textarea>
+                                <i class="fas fa-comment-dots" aria-hidden="true"></i>
+                                <textarea id="form-item-description" placeholder="Contoh: 1 Laptop Lenovo mati total, 2 Baterai kembung" required data-inline-style="width: 100%; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 16px 14px 44px; font-family: inherit; font-size: 0.95rem; background: var(--bg-muted); height: 80px; resize: none;" class="u-adfa9cad7f"></textarea>
                             </div>
                         </div>
                         </div>
 
                         <!-- Panel Payout Preview -->
-                        <div style="background: #f8fafc; border: 1px solid var(--gray-200); border-radius: 20px; padding: 24px; margin-bottom: 32px; display: flex; flex-direction: column; gap: 12px;">
-                            <div style="display:flex; justify-content:space-between; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem;">
+                        <div class="reward-preview u-7b2d66c0d4" data-inline-style="background: #f8fafc; border: 1px solid var(--gray-200); border-radius: 20px; padding: 24px; margin-bottom: 32px; display: flex; flex-direction: column; gap: 12px;">
+                            <div data-inline-style="display:flex; justify-content:space-between; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem;" class="u-02e8d30545">
                                 <span>Estimasi Nilai Sampah:</span>
                                 <span id="preview-gross-reward">Rp 0</span>
                             </div>
-                            <div style="display:flex; justify-content:space-between; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem;">
+                            <div data-inline-style="display:flex; justify-content:space-between; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem;" class="u-02e8d30545">
                                 <span>Estimasi Biaya Proses:</span>
                                 <span id="preview-fee">Rp 0</span>
                             </div>
-                            <hr style="border:none; border-top:1px dashed var(--gray-300); margin: 4px 0;">
-                            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                            <hr data-inline-style="border:none; border-top:1px dashed var(--gray-300); margin: 4px 0;" class="u-29816485e2">
+                            <div data-inline-style="display:flex; justify-content:space-between; align-items:flex-end;" class="u-67d7b6c618">
                                 <div>
-                                    <span style="font-size:0.75rem; font-weight:800; color:#10b981; text-transform:uppercase; letter-spacing:1px;">Net Reward Diterima</span>
-                                    <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">
-                                        <i class="fas fa-cloud-arrow-down" style="color: #0d9488;"></i> Estimasi CO₂ Terselamatkan: <span id="preview-carbon" style="font-weight:800; color:#0d9488;">0</span> KG
+                                    <span data-inline-style="font-size:0.75rem; font-weight:800; color:#087443; text-transform:uppercase; letter-spacing:1px;" class="u-231d3b98f3">Net Reward Diterima</span>
+                                    <div data-inline-style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;" class="u-806ba95be9">
+                                        <i class="fas fa-cloud-arrow-down u-0cd832f86c" aria-hidden="true" data-inline-style="color: #0d9488;"></i> Simulasi CO₂ (faktor tetap): <span id="preview-carbon" data-inline-style="font-weight:800; color:#0d9488;" class="u-9e8a058b34">0</span> KG
                                     </div>
                                 </div>
-                                <span style="font-size: 2rem; font-weight: 900; color: var(--brand-dark);" id="preview-net-reward">Rp 0</span>
+                                <span data-inline-style="font-size: 2rem; font-weight: 900; color: var(--brand-dark);" id="preview-net-reward" class="u-06baad8fb7">Rp 0</span>
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary" style="width:100%; height:60px; border-radius:16px; font-weight:800; font-size:1.1rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.25);">
-                            <i class="fas fa-paper-plane" style="margin-right:8px;"></i> AJUKAN PENJEMPUTAN SAMPAH
+                        <button type="submit" class="btn btn-primary u-782843dcec" data-inline-style="width:100%; height:60px; border-radius:16px; font-weight:800; font-size:1.1rem; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.25);">
+                            <i class="fas fa-paper-plane u-d802a6f8c3" aria-hidden="true" data-inline-style="margin-right:8px;"></i> AJUKAN PENJEMPUTAN SAMPAH
                         </button>
                     </form>
                 </div>
@@ -348,37 +338,43 @@
 
             <!-- TAB: LACAK PICKUP (TIMELINE) -->
             <div id="lacak-pickup" class="tab-pane">
-                <div class="panel-card" style="background: white; border-radius: 24px; padding: 40px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
-                    <h2 style="font-weight: 800; font-size: 1.4rem; color: var(--brand-dark); margin-bottom: 8px;">Pelacakan Logistik E-Waste</h2>
-                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 32px;">Pantau perjalanan e-waste Anda dari penjemputan hingga verifikasi daur ulang akhir.</p>
+                <div class="panel-card u-6d93f75cb7" data-inline-style="background: white; border-radius: 24px; padding: 40px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
+                    <h2 data-inline-style="font-weight: 800; font-size: 1.4rem; color: var(--brand-dark); margin-bottom: 8px;" class="u-f5cfbfebcd">Lacak penjemputan</h2>
+                    <p data-inline-style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 32px;" class="u-3643694671">Pantau perjalanan sampah Anda dari penjemputan hingga verifikasi daur ulang akhir.</p>
 
                     <!-- Search Box Lacak -->
-                    <div style="display: flex; gap: 16px; margin-bottom: 40px; max-width: 600px;">
-                        <div class="input-wrapper" style="flex:1;">
-                            <i class="fas fa-barcode"></i>
-                            <input type="text" id="track-number-search" placeholder="Masukkan Nomor Tracking (ECR-XXXXXXXXX)">
+                    <div class="tracking-search u-ca3ee3cf5a" data-inline-style="display: flex; gap: 16px; margin-bottom: 40px; max-width: 600px;">
+                        <div class="input-wrapper u-6253876a64" data-inline-style="flex:1;">
+                            <i class="fas fa-barcode" aria-hidden="true"></i>
+                            <input type="text" id="track-number-search" aria-label="Nomor pelacakan" placeholder="Masukkan Nomor Tracking (ECR-XXXXXXXXX)">
                         </div>
-                        <button class="btn btn-secondary" onclick="searchTracking()" style="border-radius:12px; font-weight:700; padding:0 24px;">Lacak</button>
+                        <button class="btn btn-secondary u-4fef9156b4" onclick="searchTracking()" data-inline-style="border-radius:12px; font-weight:700; padding:0 24px;">Lacak</button>
                     </div>
 
+                    <section class="user-map-panel" aria-labelledby="user-map-title">
+                        <div class="user-map-heading"><div><h3 id="user-map-title">Peta penjemputan</h3><p>Bandung dan sekitarnya</p></div><button type="button" id="user-map-reset" aria-label="Kembalikan peta ke area Bandung"><i class="fas fa-crosshairs" aria-hidden="true"></i> Area Bandung</button></div>
+                        <section id="user-tracking-map" aria-label="Peta interaktif area Bandung"></section>
+                        <div class="user-map-details"><div><strong id="user-map-tracking">Alamat penjemputan</strong><p id="user-map-address">Cari nomor pelacakan untuk melihat alamat setoranmu.</p></div><a id="user-map-address-link" target="_blank" rel="noopener noreferrer" hidden>Lihat alamat di Google Maps ↗</a></div>
+                        <div class="user-map-footnote">Peta menunjukkan area Bandung. Titik penjemputan dan posisi GPS kolektor belum tersedia. <a href="https://www.openstreetmap.org/#map=11/-6.9175/107.6191" target="_blank" rel="noopener noreferrer">Buka peta penuh ↗</a><output id="user-map-load-status"></output></div>
+                    </section>
                     <!-- Timeline Hasil Lacak -->
-                    <div id="tracking-timeline-container" style="display: none; animation: fadeIn 0.4s ease;">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; background: var(--gray-50); border: 1px solid var(--gray-200); padding: 24px; border-radius: 16px; margin-bottom: 32px; flex-wrap:wrap; gap:16px;">
+                    <div id="tracking-timeline-container" data-inline-style="display: none; animation: fadeIn 0.4s ease;" class="u-316af56250">
+                        <div data-inline-style="display:flex; justify-content:space-between; align-items:flex-start; background: var(--gray-50); border: 1px solid var(--gray-200); padding: 24px; border-radius: 16px; margin-bottom: 32px; flex-wrap:wrap; gap:16px;" class="u-8b9476c4c7">
                             <div>
-                                <span style="font-size:0.8rem; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">No. Tracking</span>
-                                <h4 style="font-size:1.3rem; font-weight:900; color:var(--brand-dark); margin:4px 0;" id="track-disp-number">ECR-XXXX</h4>
+                                <span data-inline-style="font-size:0.8rem; font-weight:800; color:var(--text-secondary); text-transform:uppercase;" class="u-ce0598a230">No. Tracking</span>
+                                <h4 data-inline-style="font-size:1.3rem; font-weight:900; color:var(--brand-dark); margin:4px 0;" id="track-disp-number" class="u-9a8156b3a4">ECR-XXXX</h4>
                             </div>
                             <div>
-                                <span style="font-size:0.8rem; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Status Saat Ini</span>
-                                <div style="margin-top:4px;"><span class="status-badge" id="track-disp-status" style="font-weight:800;">PENDING</span></div>
+                                <span data-inline-style="font-size:0.8rem; font-weight:800; color:var(--text-secondary); text-transform:uppercase;" class="u-ce0598a230">Status Saat Ini</span>
+                                <div data-inline-style="margin-top:4px;" class="u-36e81f8612"><span class="status-badge u-30794ccb8a" id="track-disp-status" data-inline-style="font-weight:800;">PENDING</span></div>
                             </div>
                             <div>
-                                <span style="font-size:0.8rem; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">Kategori & Berat</span>
-                                <h4 style="font-size:1.1rem; font-weight:700; color:var(--brand-dark); margin:4px 0;" id="track-disp-detail">-</h4>
+                                <span data-inline-style="font-size:0.8rem; font-weight:800; color:var(--text-secondary); text-transform:uppercase;" class="u-ce0598a230">Kategori & Berat</span>
+                                <h4 data-inline-style="font-size:1.1rem; font-weight:700; color:var(--brand-dark); margin:4px 0;" id="track-disp-detail" class="u-c4b4cf7b4f">-</h4>
                             </div>
                         </div>
 
-                        <div style="border-left: 3px solid var(--gray-200); padding-left: 32px; margin-left: 16px; display: flex; flex-direction: column; gap: 32px;" id="track-timeline-list">
+                        <div data-inline-style="border-left: 3px solid var(--gray-200); padding-left: 32px; margin-left: 16px; display: flex; flex-direction: column; gap: 32px;" id="track-timeline-list" class="u-4ada604514">
                             <!-- Timeline items injected here -->
                         </div>
                     </div>
@@ -387,24 +383,24 @@
 
             <!-- TAB: RIWAYAT PAYOUT -->
             <div id="riwayat-payout" class="tab-pane">
-                <div class="panel-card" style="background: white; border-radius: 24px; padding: 40px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
-                    <h2 style="font-weight: 800; font-size: 1.4rem; color: var(--brand-dark); margin-bottom: 8px;">Riwayat Kontribusi & Payout</h2>
-                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 24px;">Daftar lengkap seluruh sampah elektronik yang pernah Anda setor beserta status payout reward.</p>
+                <div class="panel-card u-6d93f75cb7" data-inline-style="background: white; border-radius: 24px; padding: 40px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
+                    <h2 data-inline-style="font-weight: 800; font-size: 1.4rem; color: var(--brand-dark); margin-bottom: 8px;" class="u-f5cfbfebcd">Riwayat setoran & reward</h2>
+                    <p data-inline-style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 24px;" class="u-3fd84f466d">Daftar lengkap seluruh sampah yang pernah Anda setor beserta status payout reward.</p>
 
-                    <div style="overflow-x: auto;">
-                        <table class="history-table" style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                    <div data-inline-style="overflow-x: auto;" class="u-aeadbd0923">
+                        <table class="history-table u-184e3d5c68" data-inline-style="width: 100%; border-collapse: collapse; min-width: 600px;">
                             <thead>
-                                <tr style="border-bottom: 2px solid var(--gray-100); text-align: left;">
-                                    <th style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);">TANGGAL</th>
-                                    <th style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);">NO. TRACKING</th>
-                                    <th style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);">KATEGORI</th>
-                                    <th style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);">BERAT (KG)</th>
-                                    <th style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);">NET REWARD</th>
-                                    <th style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);">STATUS</th>
+                                <tr data-inline-style="border-bottom: 2px solid var(--gray-100); text-align: left;" class="u-c31abc7c65">
+                                    <th data-inline-style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);" class="u-26271e0ee1">TANGGAL</th>
+                                    <th data-inline-style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);" class="u-26271e0ee1">NO. TRACKING</th>
+                                    <th data-inline-style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);" class="u-26271e0ee1">KATEGORI</th>
+                                    <th data-inline-style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);" class="u-26271e0ee1">BERAT (KG)</th>
+                                    <th data-inline-style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);" class="u-26271e0ee1">NET REWARD</th>
+                                    <th data-inline-style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);" class="u-26271e0ee1">STATUS</th>
                                 </tr>
                             </thead>
                             <tbody id="payout-history-table-body">
-                                <tr><td colspan="6" style="text-align:center; padding: 24px; color:var(--text-secondary);">Memuat data riwayat...</td></tr>
+                                <tr><td colspan="6" data-inline-style="text-align:center; padding: 24px; color:var(--text-secondary);" class="u-ad3bbac891">Memuat data riwayat...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -413,48 +409,48 @@
 
             <!-- TAB: PENGATURAN -->
             <div id="pengaturan" class="tab-pane">
-                <div class="panel-card" style="background: white; border-radius: 24px; padding: 40px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
-                    <h2 style="font-weight: 800; font-size: 1.4rem; color: var(--brand-dark); margin-bottom: 8px;">Pengaturan Akun</h2>
-                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 32px;">Sesuaikan data identitas dan preferensi penjemputan Anda.</p>
+                <div class="panel-card u-6d93f75cb7" data-inline-style="background: white; border-radius: 24px; padding: 40px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
+                    <h2 data-inline-style="font-weight: 800; font-size: 1.4rem; color: var(--brand-dark); margin-bottom: 8px;" class="u-f5cfbfebcd">Pengaturan Akun</h2>
+                    <p data-inline-style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 32px;" class="u-3643694671">Sesuaikan data identitas dan preferensi penjemputan Anda.</p>
 
                     <form id="settings-profile-form">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div data-inline-style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;" class="u-9667097330">
                             <div class="input-field">
-                                <label>Nama Lengkap</label>
+                                <label for="settings-name">Nama Lengkap</label>
                                 <div class="input-wrapper">
-                                    <i class="fas fa-user"></i>
+                                    <i class="fas fa-user" aria-hidden="true"></i>
                                     <input type="text" id="settings-name" required>
                                 </div>
                             </div>
                             <div class="input-field">
-                                <label>Alamat Email (Tidak dapat diubah)</label>
+                                <label for="settings-email">Alamat Email (Tidak dapat diubah)</label>
                                 <div class="input-wrapper">
-                                    <i class="fas fa-envelope"></i>
-                                    <input type="email" id="settings-email" readonly style="background:var(--gray-50); color:var(--text-secondary);">
+                                    <i class="fas fa-envelope" aria-hidden="true"></i>
+                                    <input type="email" id="settings-email" readonly data-inline-style="background:var(--gray-50); color:var(--text-secondary);" class="u-96daa9352e">
                                 </div>
                             </div>
                         </div>
 
                         <div class="settings-section-title">
-                            <i class="fas fa-wallet"></i>
+                            <i class="fas fa-wallet" aria-hidden="true"></i>
                             <div>
-                                <strong>Data Payout Reward</strong>
-                                <span>Dipakai admin saat mencairkan eco-reward setelah e-waste tiba di hub.</span>
+                                <strong>Tujuan pembayaran reward</strong>
+                                <span>Dipakai admin saat mencairkan eco-reward setelah sampah tiba di hub.</span>
                             </div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div data-inline-style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;" class="u-9667097330">
                             <div class="input-field">
-                                <label>Nomor HP / WhatsApp</label>
+                                <label for="settings-phone">Nomor HP / WhatsApp</label>
                                 <div class="input-wrapper">
-                                    <i class="fas fa-phone"></i>
+                                    <i class="fas fa-phone" aria-hidden="true"></i>
                                     <input type="tel" id="settings-phone" placeholder="08123456789">
                                 </div>
                             </div>
                             <div class="input-field">
-                                <label>Metode Payout</label>
+                                <label for="settings-payout-method">Metode Payout</label>
                                 <div class="input-wrapper">
-                                    <i class="fas fa-money-bill-transfer"></i>
+                                    <i class="fas fa-money-bill-transfer" aria-hidden="true"></i>
                                     <select id="settings-payout-method">
                                         <option value="">Pilih metode payout</option>
                                         <option value="ewallet">E-Wallet</option>
@@ -465,51 +461,54 @@
                             </div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div data-inline-style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;" class="u-9667097330">
                             <div class="input-field">
-                                <label>Nama Penerima</label>
+                                <label for="settings-payout-name">Nama Penerima</label>
                                 <div class="input-wrapper">
-                                    <i class="fas fa-id-card"></i>
+                                    <i class="fas fa-id-card" aria-hidden="true"></i>
                                     <input type="text" id="settings-payout-name" placeholder="Nama sesuai rekening/e-wallet">
                                 </div>
                             </div>
                             <div class="input-field">
-                                <label>Nomor Rekening / E-Wallet</label>
+                                <label for="settings-payout-number">Nomor Rekening / E-Wallet</label>
                                 <div class="input-wrapper">
-                                    <i class="fas fa-credit-card"></i>
+                                    <i class="fas fa-credit-card" aria-hidden="true"></i>
                                     <input type="text" id="settings-payout-number" placeholder="Nomor tujuan payout">
                                 </div>
                             </div>
                         </div>
 
-                        <div class="input-field" style="margin-bottom: 24px;">
-                            <label>Alamat Default Penjemputan</label>
+                        <div class="input-field u-fec3619ed0" data-inline-style="margin-bottom: 24px;">
+                            <label for="settings-address">Alamat Default Penjemputan</label>
                             <div class="input-wrapper textarea-wrapper">
-                                <i class="fas fa-location-dot"></i>
-                                <textarea id="settings-address" rows="3" placeholder="Alamat yang sering digunakan untuk penjemputan e-waste"></textarea>
+                                <i class="fas fa-location-dot" aria-hidden="true"></i>
+                                <textarea id="settings-address" rows="3" placeholder="Alamat yang sering digunakan untuk penjemputan sampah"></textarea>
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary" style="border-radius:12px; font-weight:700; padding:14px 28px; width:auto; display:flex; align-items:center; gap:8px;">
-                            <i class="fas fa-save"></i> Simpan Perubahan
+                        <button type="submit" class="btn btn-primary u-d8b741f9cc" data-inline-style="border-radius:12px; font-weight:700; padding:14px 28px; width:auto; display:flex; align-items:center; gap:8px;">
+                            <i class="fas fa-save" aria-hidden="true"></i> Simpan Perubahan
                         </button>
                     </form>
                 </div>
             </div>
 
-        </div>
+        </main>
 
         <!-- Footer -->
-        <footer style="background-color: #0f172a; color: var(--white); padding: 40px 0; margin-top:80px;">
-            <div class="container" style="text-align: center;">
-                <p style="color: rgba(255,255,255,0.4); font-size: 0.85rem; margin: 0;">&copy; 2026 EcoRecycle Indonesia. Hak Cipta Dilindungi.</p>
+        <footer data-inline-style="background-color: #0f172a; color: var(--white); padding: 40px 0; margin-top:80px;" class="u-1aee3af0cd">
+            <div class="container u-fb5ec070f2" data-inline-style="text-align: center;">
+                <p data-inline-style="color: rgba(255,255,255,0.4); font-size: 0.85rem; margin: 0;" class="u-b4dca52f6e">&copy; 2026 EcoRecycle Indonesia. Hak Cipta Dilindungi.</p>
             </div>
         </footer>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="assets/js/portal-announcements.js?v=20260702"></script>
-    <script src="assets/js/dashboard.js?v=20260622-ui-refresh"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+    <script src="assets/js/user-map.js?v=20261029-map"></script>
+    <script src="assets/js/waste-categories.js?v=20261029-categories2"></script>
+    <script src="assets/js/dashboard.js?v=20261029-quality5"></script>
 </body>
 
 </html>

@@ -14,11 +14,11 @@
         rel="stylesheet">
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="assets/css/style.css">
-    
+    <link rel="stylesheet" href="assets/css/style.css?v=20261029-quality5">
+
     <style>
         body.auth-page.split-layout {
             display: flex;
@@ -108,9 +108,9 @@
 
         /* Overrides for the form inside split layout */
         .auth-header .logo {
-            color: var(--brand-dark) !important;
+            color: var(--brand-dark);
         }
-        
+
         .auth-header .logo i {
             color: var(--brand-primary);
         }
@@ -168,14 +168,14 @@
                 <!-- Login Form -->
                 <form id="login-form" class="auth-form active">
                     <div class="input-field" style="margin-bottom: 24px;">
-                        <label style="font-weight: 700; color: var(--text-primary);">Email</label>
+                        <label for="login-email" style="font-weight: 700; color: var(--text-primary);">Email</label>
                         <div class="input-wrapper">
                             <i class="fas fa-envelope"></i>
                             <input type="email" id="login-email" placeholder="nama@email.com" required>
                         </div>
                     </div>
                     <div class="input-field" style="margin-bottom: 32px;">
-                        <label style="font-weight: 700; color: var(--text-primary);">Kata Sandi</label>
+                        <label for="login-password" style="font-weight: 700; color: var(--text-primary);">Kata Sandi</label>
                         <div class="input-wrapper">
                             <i class="fas fa-lock"></i>
                             <input type="password" id="login-password" placeholder="••••••••" required>
@@ -187,21 +187,21 @@
                 <!-- Register Form -->
                 <form id="register-form" class="auth-form">
                     <div class="input-field" style="margin-bottom: 20px;">
-                        <label style="font-weight: 700; color: var(--text-primary);">Nama Lengkap</label>
+                        <label for="register-name" style="font-weight: 700; color: var(--text-primary);">Nama Lengkap</label>
                         <div class="input-wrapper">
                             <i class="fas fa-user"></i>
                             <input type="text" id="register-name" placeholder="Nama Lengkap Anda" required>
                         </div>
                     </div>
                     <div class="input-field" style="margin-bottom: 20px;">
-                        <label style="font-weight: 700; color: var(--text-primary);">Email</label>
+                        <label for="register-email" style="font-weight: 700; color: var(--text-primary);">Email</label>
                         <div class="input-wrapper">
                             <i class="fas fa-envelope"></i>
                             <input type="email" id="register-email" placeholder="nama@email.com" required>
                         </div>
                     </div>
                     <div class="input-field" style="margin-bottom: 32px;">
-                        <label style="font-weight: 700; color: var(--text-primary);">Kata Sandi Baru</label>
+                        <label for="register-password" style="font-weight: 700; color: var(--text-primary);">Kata Sandi Baru</label>
                         <div class="input-wrapper">
                             <i class="fas fa-lock"></i>
                             <input type="password" id="register-password" placeholder="Minimal 8 karakter" required>
@@ -270,7 +270,7 @@
                 if (data.status === 'success') {
                     alert('Login berhasil! Selamat datang, ' + data.data.name);
                     localStorage.setItem('user', JSON.stringify(data.data));
-                    
+
                     // Redirect based on role
                     if(data.data.role === 'admin') window.location.href = 'admin';
                     else if(data.data.role === 'kurir') window.location.href = 'kurir';

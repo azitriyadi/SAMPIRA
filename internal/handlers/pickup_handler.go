@@ -1,15 +1,10 @@
 package handlers
 
 import (
-	"crypto/md5"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
-	"io"
 	"math/rand"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -20,7 +15,7 @@ import (
 
 func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	user, err := a.Auth.UserFromRequest(r)
@@ -33,18 +28,7 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = r.ParseMultipartForm(10 << 20)
-	var data map[string]string
-	if err != nil || (r.MultipartForm != nil && len(r.MultipartForm.Value) == 0) {
-		data = httpx.RequestData(r)
-	} else {
-		data = make(map[string]string)
-		for k, v := range r.MultipartForm.Value {
-			if len(v) > 0 {
-				data[k] = v[0]
-			}
-		}
-	}
+	data := pickupRequestData(r)
 
 	requiredFields := []string{"item_description", "pickup_address", "contact_phone", "weight_kg", "category"}
 	for _, field := range requiredFields {
@@ -56,49 +40,26 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 
 	weight, err := strconv.ParseFloat(data["weight_kg"], 64)
 	if err != nil || weight <= 0 {
-		httpx.SendResponse(w, "error", "Berat e-waste harus berupa angka numerik positif dan lebih besar dari 0 KG.", nil, http.StatusBadRequest)
+		httpx.SendResponse(w, "error", "Berat sampah harus berupa angka numerik positif dan lebih besar dari 0 KG.", nil, http.StatusBadRequest)
 		return
 	}
 
-	var photoURL *string
-	file, header, err := r.FormFile("photo")
-	if err == nil {
-		defer file.Close()
-		ext := strings.ToLower(filepath.Ext(header.Filename))
-		if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".webp" {
-			httpx.SendResponse(w, "error", "Ekstensi file foto tidak diizinkan (Hanya JPG, JPEG, PNG, WEBP).", nil, http.StatusBadRequest)
-			return
-		}
-
-		hasher := md5.New()
-		hasher.Write([]byte(fmt.Sprintf("%d%s", time.Now().UnixNano(), header.Filename)))
-		newFileName := fmt.Sprintf("%s%s", hex.EncodeToString(hasher.Sum(nil)), ext)
-
-		uploadDir := "./uploads"
-		if err := os.MkdirAll(uploadDir, 0755); err == nil {
-			destPath := filepath.Join(uploadDir, newFileName)
-			out, err := os.Create(destPath)
-			if err == nil {
-				defer out.Close()
-				if _, err = io.Copy(out, file); err == nil {
-					urlStr := "uploads/" + newFileName
-					photoURL = &urlStr
-				}
-			}
-		}
+	photoURL, problem := savePickupPhoto(r)
+	if problem != nil {
+		problem.write(w)
+		return
 	}
 
-	categoryName := data["category"]
+	categoryName := strings.TrimSpace(data["category"])
 	var catID int
 	var catDisplayName string
 	var rewardPerKg, processingFeePerKg float64
 
-	err = a.DB.QueryRow("SELECT id, category_name, reward_per_kg, processing_fee_per_kg FROM waste_categories WHERE category_name LIKE ?", "%"+categoryName+"%").
+	err = a.DB.QueryRow("SELECT id, category_name, reward_per_kg, processing_fee_per_kg FROM waste_categories WHERE category_name = ?", categoryName).
 		Scan(&catID, &catDisplayName, &rewardPerKg, &processingFeePerKg)
 	if err != nil {
-		catID = 1
-		rewardPerKg = 5000.0
-		processingFeePerKg = 500.0
+		httpx.SendResponse(w, "error", "Kategori sampah tidak ditemukan.", nil, http.StatusBadRequest)
+		return
 	}
 
 	ecoReward := rewardPerKg * weight
@@ -107,7 +68,7 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 
 	tx, err := a.DB.Begin()
 	if err != nil {
-		httpx.SendResponse(w, "error", "Gagal memulai transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionStartMessage, nil, http.StatusInternalServerError)
 		return
 	}
 	defer tx.Rollback()
@@ -127,15 +88,15 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err = tx.Exec("INSERT INTO pickup_history (pickup_id, status, location, notes) VALUES (?, 'pending', 'Lokasi Masyarakat (User)', 'Permohonan penjemputan baru diajukan.')", pickupID)
 	if err != nil {
-		httpx.SendResponse(w, "error", "Gagal menyimpan riwayat penjemputan.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", pickupHistorySaveMessage, nil, http.StatusInternalServerError)
 		return
 	}
 	if err := tx.Commit(); err != nil {
-		httpx.SendResponse(w, "error", "Gagal commit transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionCommitMessage, nil, http.StatusInternalServerError)
 		return
 	}
 
-	httpx.SendResponse(w, "success", "Permohonan penjemputan e-waste berhasil dibuat.", map[string]interface{}{
+	httpx.SendResponse(w, "success", "Permohonan penjemputan sampah berhasil dibuat.", map[string]interface{}{
 		"pickup_id":       pickupID,
 		"tracking_number": trackingNum,
 		"eco_reward":      ecoReward,
@@ -146,7 +107,7 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) ListPickupsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	user, err := a.Auth.UserFromRequest(r)
@@ -200,101 +161,18 @@ func (a *App) ListPickupsHandler(w http.ResponseWriter, r *http.Request) {
 
 	list := make([]map[string]interface{}, 0)
 	for rows.Next() {
-		var id int
-		var userID int
-		var collectorID *int
-		var trackingNumber string
-		var itemDesc *string
-		var pickupAddress *string
-		var contactPhone *string
-		var weightKg *float64
-		var categoryID *int
-		var ecoReward *float64
-		var processingFee *float64
-		var photoURL *string
-		var isProcessed bool
-		var status string
-		var createdAt time.Time
-		var finalWeightKg *float64
-		var finalEcoReward *float64
-		var finalProcessingFee *float64
-		var verificationNotes *string
-		var verifiedAt *time.Time
-		var categoryName *string
-		var donorName *string
-		var collectorName *string
-		var payoutMethod *string
-		var payoutAccountName *string
-		var payoutAccountNumber *string
-
-		var scanErr error
-		if queryType == "user" {
-			scanErr = rows.Scan(&id, &userID, &collectorID, &trackingNumber, &itemDesc, &pickupAddress, &contactPhone, &weightKg, &categoryID, &ecoReward, &processingFee, &photoURL, &isProcessed, &status, &createdAt, &finalWeightKg, &finalEcoReward, &finalProcessingFee, &verificationNotes, &verifiedAt, &categoryName)
-		} else if queryType == "collector" {
-			scanErr = rows.Scan(&id, &userID, &collectorID, &trackingNumber, &itemDesc, &pickupAddress, &contactPhone, &weightKg, &categoryID, &ecoReward, &processingFee, &photoURL, &isProcessed, &status, &createdAt, &finalWeightKg, &finalEcoReward, &finalProcessingFee, &verificationNotes, &verifiedAt, &categoryName, &donorName)
-		} else {
-			scanErr = rows.Scan(&id, &userID, &collectorID, &trackingNumber, &itemDesc, &pickupAddress, &contactPhone, &weightKg, &categoryID, &ecoReward, &processingFee, &photoURL, &isProcessed, &status, &createdAt, &finalWeightKg, &finalEcoReward, &finalProcessingFee, &verificationNotes, &verifiedAt, &categoryName, &donorName, &collectorName, &payoutMethod, &payoutAccountName, &payoutAccountNumber)
-		}
-
+		item, scanErr := scanPickupListRow(rows, queryType)
 		if scanErr == nil {
-			item := map[string]interface{}{
-				"id":                   id,
-				"user_id":              userID,
-				"collector_id":         collectorID,
-				"tracking_number":      trackingNumber,
-				"item_description":     itemDesc,
-				"pickup_address":       pickupAddress,
-				"contact_phone":        contactPhone,
-				"weight_kg":            weightKg,
-				"category_id":          categoryID,
-				"eco_reward":           ecoReward,
-				"processing_fee":       processingFee,
-				"photo_url":            photoURL,
-				"is_processed":         isProcessed,
-				"status":               status,
-				"created_at":           createdAt,
-				"final_weight_kg":      finalWeightKg,
-				"final_eco_reward":     finalEcoReward,
-				"final_processing_fee": finalProcessingFee,
-				"verification_notes":   verificationNotes,
-				"verified_at":          verifiedAt,
-				"category_name":        categoryName,
-			}
-			if donorName != nil {
-				item["donor_name"] = *donorName
-			} else {
-				item["donor_name"] = ""
-			}
-			if collectorName != nil {
-				item["collector_name"] = *collectorName
-			} else {
-				item["collector_name"] = ""
-			}
-			if payoutMethod != nil {
-				item["payout_method"] = *payoutMethod
-			} else {
-				item["payout_method"] = ""
-			}
-			if payoutAccountName != nil {
-				item["payout_account_name"] = *payoutAccountName
-			} else {
-				item["payout_account_name"] = ""
-			}
-			if payoutAccountNumber != nil {
-				item["payout_account_number"] = *payoutAccountNumber
-			} else {
-				item["payout_account_number"] = ""
-			}
 			list = append(list, item)
 		}
 	}
 
-	httpx.SendResponse(w, "success", "Daftar penjemputan e-waste berhasil diambil.", list, http.StatusOK)
+	httpx.SendResponse(w, "success", "Daftar penjemputan sampah berhasil diambil.", list, http.StatusOK)
 }
 
 func (a *App) UpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	user, err := a.Auth.UserFromRequest(r)
@@ -321,7 +199,7 @@ func (a *App) UpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 
 	weight, err := strconv.ParseFloat(data["weight_kg"], 64)
 	if err != nil || weight <= 0 {
-		httpx.SendResponse(w, "error", "Berat e-waste harus berupa angka positif.", nil, http.StatusBadRequest)
+		httpx.SendResponse(w, "error", "Berat sampah harus berupa angka positif.", nil, http.StatusBadRequest)
 		return
 	}
 
@@ -342,12 +220,11 @@ func (a *App) UpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 
 	var catID int
 	var rewardPerKg, processingFeePerKg float64
-	err = a.DB.QueryRow("SELECT id, reward_per_kg, processing_fee_per_kg FROM waste_categories WHERE category_name LIKE ?", "%"+categoryName+"%").
+	err = a.DB.QueryRow("SELECT id, reward_per_kg, processing_fee_per_kg FROM waste_categories WHERE category_name = ?", categoryName).
 		Scan(&catID, &rewardPerKg, &processingFeePerKg)
 	if err != nil {
-		catID = 1
-		rewardPerKg = 5000.0
-		processingFeePerKg = 500.0
+		httpx.SendResponse(w, "error", "Kategori sampah tidak ditemukan.", nil, http.StatusBadRequest)
+		return
 	}
 
 	ecoReward := rewardPerKg * weight
@@ -355,7 +232,7 @@ func (a *App) UpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 
 	tx, err := a.DB.Begin()
 	if err != nil {
-		httpx.SendResponse(w, "error", "Gagal memulai transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionStartMessage, nil, http.StatusInternalServerError)
 		return
 	}
 	defer tx.Rollback()
@@ -373,7 +250,7 @@ func (a *App) UpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := tx.Commit(); err != nil {
-		httpx.SendResponse(w, "error", "Gagal commit transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionCommitMessage, nil, http.StatusInternalServerError)
 		return
 	}
 
@@ -387,7 +264,7 @@ func (a *App) UpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) CancelPickupHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	user, err := a.Auth.UserFromRequest(r)
@@ -413,7 +290,7 @@ func (a *App) CancelPickupHandler(w http.ResponseWriter, r *http.Request) {
 
 	tx, err := a.DB.Begin()
 	if err != nil {
-		httpx.SendResponse(w, "error", "Gagal memulai transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionStartMessage, nil, http.StatusInternalServerError)
 		return
 	}
 	defer tx.Rollback()
@@ -430,7 +307,7 @@ func (a *App) CancelPickupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var pickupID int
-	err = tx.QueryRow("SELECT id FROM pickups WHERE tracking_number = ?", trackingNum).Scan(&pickupID)
+	err = tx.QueryRow(pickupIDQuery, trackingNum).Scan(&pickupID)
 	if err != nil {
 		httpx.SendResponse(w, "error", "Gagal menemukan ID pengajuan.", nil, http.StatusInternalServerError)
 		return
@@ -441,7 +318,7 @@ func (a *App) CancelPickupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := tx.Commit(); err != nil {
-		httpx.SendResponse(w, "error", "Gagal commit transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionCommitMessage, nil, http.StatusInternalServerError)
 		return
 	}
 
@@ -453,7 +330,7 @@ func (a *App) CancelPickupHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) AssignCollectorHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	user, err := a.Auth.UserFromRequest(r)
@@ -473,12 +350,7 @@ func (a *App) AssignCollectorHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collectorID := user.ID
-	if user.Role == "admin" && data["collector_id"] != "" {
-		if id, err := strconv.Atoi(data["collector_id"]); err == nil {
-			collectorID = id
-		}
-	}
+	collectorID := assignmentCollectorID(user, data["collector_id"])
 
 	var collectorName string
 	var collectorRole string
@@ -494,7 +366,7 @@ func (a *App) AssignCollectorHandler(w http.ResponseWriter, r *http.Request) {
 
 	tx, err := a.DB.Begin()
 	if err != nil {
-		httpx.SendResponse(w, "error", "Gagal memulai transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionStartMessage, nil, http.StatusInternalServerError)
 		return
 	}
 	defer tx.Rollback()
@@ -511,20 +383,20 @@ func (a *App) AssignCollectorHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var pickupID int
-	err = tx.QueryRow("SELECT id FROM pickups WHERE tracking_number = ?", trackingNum).Scan(&pickupID)
+	err = tx.QueryRow(pickupIDQuery, trackingNum).Scan(&pickupID)
 	if err != nil {
-		httpx.SendResponse(w, "error", "Gagal menemukan ID penjemputan.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", pickupIDLookupMessage, nil, http.StatusInternalServerError)
 		return
 	}
 
 	notes := fmt.Sprintf("Penjemputan diambil alih oleh Kolektor: %s", collectorName)
 	_, err = tx.Exec("INSERT INTO pickup_history (pickup_id, status, location, notes) VALUES (?, 'pickup', 'Kolektor Wilayah', ?)", pickupID, notes)
 	if err != nil {
-		httpx.SendResponse(w, "error", "Gagal menyimpan riwayat penjemputan.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", pickupHistorySaveMessage, nil, http.StatusInternalServerError)
 		return
 	}
 	if err := tx.Commit(); err != nil {
-		httpx.SendResponse(w, "error", "Gagal commit transaksi.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", transactionCommitMessage, nil, http.StatusInternalServerError)
 		return
 	}
 

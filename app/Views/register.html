@@ -1,307 +1,47 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar - EcoRecycle</title>
-
-    <!-- Google Fonts -->
+    <meta name="theme-color" content="#126048">
+    <title>Daftar — EcoRecycle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="assets/css/style.css">
-    
-    <style>
-        body.auth-split-page {
-            display: flex;
-            align-items: stretch;
-            min-height: 100vh;
-            margin: 0;
-            padding: 0;
-            background: var(--white);
-            font-family: 'Outfit', sans-serif;
-            overflow: hidden;
-        }
-
-        .auth-banner {
-            flex: 1.2;
-            background-image: url('assets/img/ecorecycle_hero.png');
-            background-size: cover;
-            background-position: center;
-            position: relative;
-            display: flex;
-            align-items: flex-end;
-            padding: 80px;
-            color: white;
-        }
-
-        .banner-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to top, rgba(6, 78, 59, 0.95) 0%, rgba(6, 78, 59, 0.3) 100%);
-            z-index: 1;
-        }
-
-        .banner-content {
-            position: relative;
-            z-index: 2;
-            max-width: 500px;
-        }
-
-        .banner-content h1 {
-            font-size: 3rem;
-            font-weight: 900;
-            margin-bottom: 20px;
-            line-height: 1.2;
-        }
-
-        .banner-content p {
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.85);
-            line-height: 1.6;
-        }
-
-        .auth-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 40px 24px;
-            background: var(--white);
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .auth-card-split {
-            width: 100%;
-            max-width: 420px;
-            margin: auto;
-            padding: 20px 0;
-        }
-
-        .back-to-home {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            transition: color 0.3s;
-            margin-bottom: 40px;
-            padding: 8px 16px;
-            background: var(--gray-50);
-            border-radius: 20px;
-            border: 1px solid var(--gray-200);
-        }
-
-        .back-to-home:hover {
-            color: var(--brand-primary);
-            background: var(--white);
-            border-color: var(--brand-primary);
-        }
-
-        .auth-split-header {
-            margin-bottom: 40px;
-            background: transparent;
-            color: var(--brand-dark);
-            padding: 0;
-            text-align: left;
-        }
-
-        .auth-split-header .logo {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--brand-dark);
-            text-decoration: none;
-            font-size: 1.8rem;
-            font-weight: 900;
-            margin-bottom: 30px;
-        }
-        
-        .auth-split-header .logo i {
-            color: var(--brand-primary);
-            font-size: 2.2rem;
-        }
-
-        .auth-split-header h2 {
-            font-size: 2.2rem;
-            color: var(--brand-dark);
-            margin-bottom: 12px;
-            font-weight: 800;
-        }
-
-        .auth-split-header p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            margin-bottom: 0;
-        }
-
-        .input-field {
-            margin-bottom: 20px;
-        }
-
-        .input-field label {
-            display: block;
-            font-weight: 700;
-            color: var(--brand-dark);
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-        }
-
-        .input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .input-wrapper i {
-            position: absolute;
-            left: 20px;
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-        }
-
-        .input-wrapper input {
-            width: 100%;
-            padding: 14px 20px 14px 50px;
-            border: 2px solid var(--gray-200);
-            border-radius: 12px;
-            font-family: inherit;
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--brand-dark);
-            transition: all 0.3s;
-            background: var(--gray-50);
-        }
-
-        .input-wrapper input:focus {
-            outline: none;
-            border-color: var(--brand-primary);
-            background: var(--white);
-            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
-        }
-
-        .btn-primary {
-            background: var(--brand-primary);
-            color: white;
-            border: none;
-            padding: 16px;
-            border-radius: 12px;
-            font-weight: 800;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 10px;
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.25);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.35);
-            background: #059669;
-        }
-
-        .auth-footer {
-            margin-top: 30px;
-            text-align: center;
-        }
-
-        .auth-footer p {
-            color: var(--text-secondary);
-            font-size: 1rem;
-        }
-
-        .auth-footer a {
-            color: var(--brand-primary);
-            font-weight: 800;
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .auth-footer a:hover {
-            color: var(--brand-dark);
-        }
-
-        @media (max-width: 992px) {
-            .auth-banner {
-                display: none;
-            }
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/auth-flat.css?v=20261029-quality5">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" defer integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
+    <script src="assets/js/auth.js" defer></script>
 </head>
+<body data-auth-page="register">
+    <a class="skip-link" href="#auth-form">Lewati ke formulir</a>
+    <header class="auth-header">
+        <a class="brand" href="home" aria-label="EcoRecycle, halaman utama"><span class="brand-leaves" aria-hidden="true"></span>EcoRecycle</a>
 
-<body class="auth-split-page">
-
-    <!-- Left Banner -->
-    <div class="auth-banner">
-        <div class="banner-overlay"></div>
-        <div class="banner-content">
-            <h1>Bergabung Bersama<br>EcoRecycle</h1>
-            <p>Daftar sekarang dan jadilah bagian dari gerakan penyelamatan bumi melalui pengelolaan e-waste yang cerdas.</p>
-        </div>
-    </div>
-
-    <!-- Right Form Content -->
-    <div class="auth-content">
-        <div class="auth-card-split">
-            <a href="home" class="back-to-home">
-                <i class="fas fa-arrow-left"></i>
-                <span>Kembali</span>
-            </a>
-
-            <div class="auth-split-header">
-                <a href="home" class="logo">
-                    <i class="fas fa-leaf"></i>
-                    <span>Eco<b>Recycle</b></span>
-                </a>
-                <h2>Buat Akun Baru</h2>
-                <p>Silakan isi data diri Anda untuk mulai berkontribusi</p>
+    </header>
+    <main class="auth-layout">
+        <a class="back-link" href="home" aria-label="Kembali ke beranda" title="Kembali ke beranda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14"/></svg></a>
+        <section class="auth-story" aria-labelledby="story-title">
+            <div class="story-copy"><p class="eyebrow">Langkah kecil, siklus baru.</p><h1 id="story-title">Mulai dari rumah.<br><span>Beri manfaat baru.</span></h1><p>Pilah organik, anorganik, elektronik, dan B3 rumah tangga. Buat akun untuk mulai mengajukan penjemputan.</p></div>
+            <img class="story-image" src="assets/img/landing-hero-fresh.png" width="1536" height="1024" alt="Warga menyerahkan perangkat elektronik bekas kepada kolektor untuk didaur ulang">
+            <div class="story-footer"><span class="cycle-symbol" aria-hidden="true">↻</span><p>Untuk barang yang tak lagi terpakai.<br><strong>Untuk lingkungan yang lebih baik.</strong></p></div>
+        </section>
+        <section class="auth-panel" aria-labelledby="form-title">
+            <div class="auth-form-wrap" id="auth-form">
+                <nav class="auth-tabs" aria-label="Akses akun"><a href="login" >Masuk</a><a href="register" aria-current="page">Daftar</a></nav>
+                <div class="auth-page-content">
+                <div class="form-heading"><p class="eyebrow">Mulai langkah pertamamu</p><h2 id="form-title">Buat akun.<br>Mulai berkontribusi.</h2><p>Isi data di bawah untuk bergabung dengan EcoRecycle.</p></div>
+                <form id="register-form">
+                    <div class="form-field"><label for="register-name">Nama lengkap</label><input type="text" id="register-name" name="name" placeholder="Nama lengkap kamu" autocomplete="name" required></div>
+                    <div class="form-field"><label for="register-email">Alamat email</label><input type="email" id="register-email" name="email" placeholder="nama@email.com" autocomplete="email" required></div>
+                    <div class="form-field"><label for="register-password">Kata sandi</label><div class="password-field"><input type="password" id="register-password" name="password" placeholder="Buat kata sandi" autocomplete="new-password" aria-describedby="password-hint" required><button class="password-toggle" type="button" aria-controls="register-password" aria-label="Tampilkan kata sandi" aria-pressed="false">Lihat</button></div><p class="field-hint" id="password-hint">Gunakan kata sandi yang unik untuk akunmu.</p></div>
+                    <button class="submit-button" type="submit">Buat akun</button>
+                </form>
+                <p class="switch-account">Sudah punya akun? <a href="login">Masuk di sini</a></p>
+                <a class="help-link" href="home#faq">Punya pertanyaan? Lihat FAQ <span aria-hidden="true">↗</span></a>
+                </div>
             </div>
-
-            <form id="register-form">
-                <div class="input-field">
-                    <label>Nama Lengkap</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-user"></i>
-                        <input type="text" id="register-name" placeholder="Nama Lengkap Anda" required>
-                    </div>
-                </div>
-                <div class="input-field">
-                    <label>Alamat Email</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" id="register-email" placeholder="nama@email.com" required>
-                    </div>
-                </div>
-                <div class="input-field" style="margin-bottom: 32px;">
-                    <label>Kata Sandi Baru</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" id="register-password" placeholder="Minimal 8 karakter" required>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Daftar Sekarang</button>
-            </form>
-
-            <div class="auth-footer">
-                <p>Sudah punya akun? <a href="login">Masuk di sini</a></p>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="assets/js/auth.js"></script>
+            <p class="panel-footer">© 2026 EcoRecycle <span>Barang lama. Manfaat baru.</span></p>
+        </section>
+    </main>
 </body>
-
 </html>

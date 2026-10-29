@@ -38,6 +38,8 @@ func loadEnv() {
 	}
 }
 
+const insertWasteCategorySQL = "INSERT INTO waste_categories (category_name, description, reward_per_kg, processing_fee_per_kg) VALUES (?, ?, ?, ?)"
+
 func main() {
 	loadEnv()
 
@@ -235,21 +237,38 @@ func main() {
 	}
 
 	// 8. Seeding Kategori Sampah
-	_, err = db.Exec("INSERT INTO waste_categories (category_name, description, reward_per_kg, processing_fee_per_kg) VALUES (?, ?, ?, ?)", "Small Gadgets", "Smartphone, Tablet, Smartwatch, Kamera Digital", 5000.0, 500.0)
+	_, err = db.Exec(insertWasteCategorySQL, "Small Gadgets", "Smartphone, Tablet, Smartwatch, Kamera Digital", 5000.0, 500.0)
 	if err != nil {
 		log.Fatalf("Gagal seeding category Small Gadgets: %v", err)
 	}
-	_, err = db.Exec("INSERT INTO waste_categories (category_name, description, reward_per_kg, processing_fee_per_kg) VALUES (?, ?, ?, ?)", "Computers", "Laptop, Motherboard, RAM, CPU", 7000.0, 1000.0)
+	_, err = db.Exec(insertWasteCategorySQL, "Computers", "Laptop, Motherboard, RAM, CPU", 7000.0, 1000.0)
 	if err != nil {
 		log.Fatalf("Gagal seeding category Computers: %v", err)
 	}
-	_, err = db.Exec("INSERT INTO waste_categories (category_name, description, reward_per_kg, processing_fee_per_kg) VALUES (?, ?, ?, ?)", "Large Appliances", "Televisi, Kulkas, Pendingin Ruangan (AC), Mesin Cuci", 10000.0, 5000.0)
+	_, err = db.Exec(insertWasteCategorySQL, "Large Appliances", "Televisi, Kulkas, Pendingin Ruangan (AC), Mesin Cuci", 10000.0, 5000.0)
 	if err != nil {
 		log.Fatalf("Gagal seeding category Large Appliances: %v", err)
 	}
-	_, err = db.Exec("INSERT INTO waste_categories (category_name, description, reward_per_kg, processing_fee_per_kg) VALUES (?, ?, ?, ?)", "Batteries", "Baterai Lithium-Ion, Lead-Acid, UPS Battery", 3000.0, 2000.0)
+	_, err = db.Exec(insertWasteCategorySQL, "Batteries", "Baterai Lithium-Ion, Lead-Acid, UPS Battery", 3000.0, 2000.0)
 	if err != nil {
 		log.Fatalf("Gagal seeding category Batteries: %v", err)
+	}
+
+	// General waste categories. Existing databases use add_waste_categories.sql instead.
+	for _, category := range []struct {
+		name, description string
+		rate              float64
+	}{
+		{"Organik", "Sisa makanan, kulit buah, sayur, dan daun terpilah; tanpa reward", 0},
+		{"Plastik PET", "Anorganik: botol PET bening bersih dan terpilah", 3000},
+		{"Kertas dan Kardus", "Anorganik: kertas dan kardus bersih serta kering", 1000},
+		{"Besi", "Anorganik: besi bekas terpilah", 2500},
+		{"Kaca", "Anorganik: botol kaca dan beling terpilah", 150},
+		{"B3 Rumah Tangga", "Lampu dan kemasan bekas B3 rumah tangga; bukan limbah medis atau industri; tanpa reward awal", 0},
+	} {
+		if _, err := db.Exec(insertWasteCategorySQL, category.name, category.description, category.rate, 0); err != nil {
+			log.Fatalf("Gagal seeding kategori %s: %v", category.name, err)
+		}
 	}
 
 	// 9. Seeding Data Transaksi & Riwayat

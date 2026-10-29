@@ -89,16 +89,16 @@ async function loadCollectors() {
 }
 
 function getEstimatedNetReward(item) {
-    return parseFloat(item.eco_reward || 0) - parseFloat(item.processing_fee || 0);
+    return Number.parseFloat(item.eco_reward || 0) - Number.parseFloat(item.processing_fee || 0);
 }
 
 function isPickupVerified(item) {
-    return Boolean(item && item.verified_at && item.final_weight_kg && item.final_eco_reward && item.final_processing_fee);
+    return Boolean(item?.verified_at && item.final_weight_kg != null && item.final_eco_reward != null && item.final_processing_fee != null);
 }
 
 function getFinalNetReward(item) {
     if (!isPickupVerified(item)) return getEstimatedNetReward(item);
-    return parseFloat(item.final_eco_reward || 0) - parseFloat(item.final_processing_fee || 0);
+    return Number.parseFloat(item.final_eco_reward || 0) - Number.parseFloat(item.final_processing_fee || 0);
 }
 
 function renderVerificationSummary(item) {
@@ -131,7 +131,7 @@ function closeAdminSidebar() {
     document.getElementById('sidebarOverlay').style.display = 'none';
 }
 
-function switchAdminTab(targetId) {
+async function switchAdminTab(targetId) {
     document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
     document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
 
@@ -146,7 +146,7 @@ function switchAdminTab(targetId) {
     } else if (targetId === 'finance-view') {
         setTimeout(initFinanceChart, 200);
     } else if (targetId === 'content-view') {
-        loadAdminAnnouncements();
+        await loadAdminAnnouncements();
     }
 
     closeAdminSidebar();
@@ -172,11 +172,12 @@ function initLiveMap() {
         const activePickups = globalPickups.filter(p => p.status === 'pickup' || p.status === 'transit' || p.status === 'arrived');
         
         activePickups.forEach((item, index) => {
-            const hash = Array.from(item.tracking_number).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const hash = Array.from(item.tracking_number).reduce((acc, char) => acc + char.codePointAt(0), 0);
             const latOffset = (((hash * (index + 1)) % 100) - 50) / 10000;
             const lngOffset = (((hash * (index + 2)) % 100) - 50) / 10000;
             
-            const markerColor = item.status === 'arrived' ? '#15803d' : item.status === 'transit' ? '#0d9488' : '#1d4ed8';
+            const markerColors = {arrived: '#15803d', transit: '#0d9488'};
+            const markerColor = markerColors[item.status] || '#1d4ed8';
             
             const customIcon = L.divIcon({
                 className: 'custom-marker',
@@ -195,7 +196,7 @@ function initLiveMap() {
 }
 
 // 2. Load KPIs and Data
-function loadAdminCommandData() {
+async function loadAdminCommandData() {
     const userSession = localStorage.getItem('user');
     if (!userSession) {
         window.location.href = 'login';
@@ -212,98 +213,49 @@ function loadAdminCommandData() {
     document.getElementById('welcome-message').innerText = `Selamat Datang, ${user.name}`;
     document.getElementById('admin-display-name').innerText = user.name;
     document.getElementById('admin-avatar').innerText = user.name.substring(0, 2).toUpperCase();
-    loadAdminAnnouncements();
-    loadCollectors();
+    await loadAdminAnnouncements();
+    await loadCollectors();
 
-    // Fetch Global Pickups
-    fetch('api/ecorecycle/list_pickups?type=all', {
-        method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + user.token
-        }
-    })
-    .then(res => {
-        if (res.status === 401) logoutAdmin();
-        return res.json();
-    })
-    .then(data => {
-        if (data.status === 'success') {
-            globalPickups = data.data;
-
-            // Update global pickups tables
-            renderPickupsTables();
-
-            // Load Stats KPI via separate API
-            fetch('api/ecorecycle/pickup_status?type=stats', {
-                method: 'GET',
-                headers: {
-                    'Authorization': 'Bearer ' + user.token
-                }
-            })
-            .then(r => r.json())
-            .then(statRes => {
-                if (statRes.status === 'success') {
-                    const stats = statRes.data;
-                    
-                    document.getElementById('kpi-total-weight').innerText = parseFloat(stats.total_weight).toFixed(1);
-                    document.getElementById('kpi-total-pickups').innerText = stats.total_pickups;
-                    document.getElementById('kpi-pending-pickups').innerText = stats.pending_verifications;
-                    document.getElementById('kpi-active-collectors').innerText = stats.collectors_online;
-
-                    // Finance tab KPIs
-                    const formatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
-                    document.getElementById('finance-paid-amount').innerText = formatter.format(stats.total_reward_paid);
-                    document.getElementById('finance-pending-amount').innerText = formatter.format(stats.total_reward_pending);
-                }
-            });
-
-            initLiveMap();
-        }
-    })
-    .catch(err => {
-        console.error('Error loading admin dashboard data:', err);
-    });
+    try {
+        const response = await fetch('api/ecorecycle/list_pickups?type=all', {headers: {Authorization: 'Bearer ' + user.token}});
+        if (response.status === 401) { logoutAdmin(); return; }
+        const result = await response.json();
+        if (result.status !== 'success') return;
+        globalPickups = result.data;
+        renderPickupsTables();
+        await loadAdminStats(user);
+        initLiveMap();
+    } catch (error) {
+        console.error('Error loading admin dashboard data:', error);
+    }
+}
+async function loadAdminStats(user) {
+    const response = await fetch('api/ecorecycle/pickup_status?type=stats', {headers: {Authorization: 'Bearer ' + user.token}});
+    const result = await response.json();
+    if (result.status !== 'success') return;
+    const stats = result.data;
+    document.getElementById('kpi-total-weight').innerText = Number.parseFloat(stats.total_weight).toFixed(1);
+    document.getElementById('kpi-total-pickups').innerText = stats.total_pickups;
+    document.getElementById('kpi-pending-pickups').innerText = stats.pending_verifications;
+    document.getElementById('kpi-active-collectors').innerText = stats.collectors_online;
+    const formatter = new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR', minimumFractionDigits: 0});
+    document.getElementById('finance-paid-amount').innerText = formatter.format(stats.total_reward_paid);
+    document.getElementById('finance-pending-amount').innerText = formatter.format(stats.total_reward_pending);
 }
 
-function renderPickupsTables() {
-    const pendingBody = document.getElementById('pendingPickupsTableBody');
-    const globalBody = document.getElementById('globalPickupsTableBody');
-    const payoutBody = document.getElementById('payoutLedgerTableBody');
-
-    if (pendingBody) pendingBody.innerHTML = '';
-    if (globalBody) globalBody.innerHTML = '';
-    if (payoutBody) payoutBody.innerHTML = '';
-
-    let pendingHtml = '';
-    let globalHtml = '';
-    let payoutHtml = '';
-
-    const searchVal = document.getElementById('admin-search-input').value.toLowerCase().trim();
-
-    globalPickups.forEach(item => {
-        // Filter by search query
-        if (searchVal !== '' && !item.tracking_number.toLowerCase().includes(searchVal)) return;
-
-        // Filter by Date Range
-        const dateObj = new Date(item.created_at);
-        const now = new Date();
-        if (activeFilterRange === 'today') {
-            if (dateObj.toDateString() !== now.toDateString()) return;
-        } else if (activeFilterRange === 'week') {
-            const diffTime = Math.abs(now - dateObj);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            if (diffDays > 7) return;
-        } else if (activeFilterRange === 'month') {
-            if (dateObj.getMonth() !== now.getMonth() || dateObj.getFullYear() !== now.getFullYear()) return;
-        }
-
-        const dateStr = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
-        const netReward = getFinalNetReward(item);
-
-        const statusMeta = getAdminStatusMeta(item.status);
-
-        // Global DB Row
-        globalHtml += `
+function matchesAdminPickupFilter(item, search, now) {
+    if (search && !item.tracking_number.toLowerCase().includes(search)) return false;
+    const date = new Date(item.created_at);
+    if (activeFilterRange === 'today') return date.toDateString() === now.toDateString();
+    if (activeFilterRange === 'week') return Math.ceil(Math.abs(now - date) / 86400000) <= 7;
+    if (activeFilterRange === 'month') return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    return true;
+}
+function renderAdminPickupRow(item) {
+    const dateObj = new Date(item.created_at);
+    const dateStr = dateObj.getDate() + '/' + (dateObj.getMonth() + 1) + '/' + dateObj.getFullYear();
+    const statusMeta = getAdminStatusMeta(item.status);
+    return `
             <tr style="border-bottom: 1px solid #f1f5f9;">
                 <td style="padding:16px; font-weight:800; color:#0f172a;">${item.tracking_number}</td>
                 <td style="padding:16px;">${dateStr}</td>
@@ -317,10 +269,11 @@ function renderPickupsTables() {
                 </td>
             </tr>
         `;
-
-        // Pending Approval Row (Status 'pending')
-        if (item.status === 'pending') {
-            pendingHtml += `
+}
+function renderAdminPendingRow(item) {
+    if (item.status !== 'pending') return '';
+    const statusMeta = getAdminStatusMeta(item.status);
+    return `
                 <tr style="border-bottom: 1px solid #f1f5f9;">
                     <td style="padding:12px; font-weight:800; color:#0f172a;">${item.tracking_number}</td>
                     <td style="padding:12px; font-weight:600;">${item.donor_name}</td>
@@ -330,44 +283,39 @@ function renderPickupsTables() {
                     </td>
                 </tr>
             `;
-        }
-
-        // Payout Ledger Row (Status 'arrived' or 'completed')
-        if (item.status === 'arrived' || item.status === 'completed') {
-            let actionBtn = `<span class="status-pill status-success"><i class="fas fa-check-double"></i> SUDAH DIBAYAR</span>`;
-            if (item.status === 'arrived') {
-                const payoutReady = item.payout_method === 'cash' || (item.payout_method && item.payout_account_name && item.payout_account_number);
-                const verified = isPickupVerified(item);
-                const actionLabel = !verified ? 'Verifikasi Berat' : payoutReady ? 'Cairkan Payout' : 'Review Payout';
-                actionBtn = `<button class="btn btn-primary" style="padding:6px 12px; font-size:0.75rem; border-radius:8px; background:${payoutReady ? '#10b981' : '#94a3b8'};" onclick="processPayout(${item.id})">${actionLabel}</button>`;
-            }
-
-            payoutHtml += `
+}
+function renderAdminPayoutRow(item) {
+    if (!['arrived', 'completed'].includes(item.status)) return '';
+    let actionBtn = '<span class="status-pill status-success"><i class="fas fa-check-double"></i> SUDAH DIBAYAR</span>';
+    if (item.status === 'arrived') {
+        const payoutReady = item.payout_method === 'cash' || (item.payout_method && item.payout_account_name && item.payout_account_number);
+        let actionLabel = 'Review Payout';
+        if (!isPickupVerified(item)) actionLabel = 'Verifikasi Berat';
+        else if (payoutReady) actionLabel = 'Cairkan Payout';
+        const background = payoutReady ? '#087a5b' : '#526159';
+        actionBtn = '<button class="btn btn-primary" style="padding:6px 12px; font-size:0.75rem; border-radius:8px; background:' + background + ';" onclick="processPayout(' + item.id + ')">' + actionLabel + '</button>';
+    }
+    return `
                 <tr style="border-bottom: 1px solid #f1f5f9;">
                     <td style="padding:12px; font-weight:800; color:#0f172a;">${item.tracking_number}</td>
                     <td style="padding:12px; font-weight:600;">${item.donor_name}</td>
                     <td style="padding:12px;">${renderPayoutDestination(item)}</td>
-                    <td style="padding:12px; font-weight:800; color:#059669;">${renderVerificationSummary(item)}</td>
+                    <td style="padding:12px; font-weight:800; color: #087443;">${renderVerificationSummary(item)}</td>
                     <td style="padding:12px; text-align:right;">${actionBtn}</td>
                 </tr>
             `;
-        }
-    });
-
-    if (pendingBody) {
-        if (pendingHtml === '') pendingBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:16px; color:#64748b;">Tidak ada permohonan pending baru.</td></tr>';
-        else pendingBody.innerHTML = pendingHtml;
-    }
-
-    if (globalBody) {
-        if (globalHtml === '') globalBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:16px; color:#64748b;">Tidak ada data penjemputan terdaftar.</td></tr>';
-        else globalBody.innerHTML = globalHtml;
-    }
-
-    if (payoutBody) {
-        if (payoutHtml === '') payoutBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:16px; color:#64748b;">Tidak ada data penyerahan siap payout.</td></tr>';
-        else payoutBody.innerHTML = payoutHtml;
-    }
+}
+function setAdminTable(id, markup, columns, emptyText) {
+    const body = document.getElementById(id);
+    if (body) body.innerHTML = markup || '<tr><td colspan="' + columns + '" style="text-align:center; padding:16px; color:#64748b;">' + emptyText + '</td></tr>';
+}
+function renderPickupsTables() {
+    const search = document.getElementById('admin-search-input').value.toLowerCase().trim();
+    const now = new Date();
+    const items = globalPickups.filter(item => matchesAdminPickupFilter(item, search, now));
+    setAdminTable('pendingPickupsTableBody', items.map(renderAdminPendingRow).join(''), 4, 'Tidak ada permohonan pending baru.');
+    setAdminTable('globalPickupsTableBody', items.map(renderAdminPickupRow).join(''), 7, 'Tidak ada data penjemputan terdaftar.');
+    setAdminTable('payoutLedgerTableBody', items.map(renderAdminPayoutRow).join(''), 5, 'Tidak ada data penyerahan siap payout.');
 }
 
 // Search and Date Filter Handlers
@@ -398,21 +346,21 @@ async function approveAndAssign(trackingNum) {
     }
 
     if (globalCollectors.length === 0) {
-        Swal.fire({
+        await Swal.fire({
             icon: 'warning',
             title: 'Belum Ada Kolektor',
             text: 'Tambahkan atau aktifkan akun Eco Collector terlebih dahulu sebelum menugaskan pickup.',
-            confirmButtonColor: '#10b981'
+            confirmButtonColor: '#087a5b'
         });
         return;
     }
 
-    Swal.fire({
+    const result = await Swal.fire({
         title: 'Terima Permohonan & Tugaskan',
         html: `
             <div style="text-align:left;">
                 <p style="margin:0 0 12px; color:#475569;">Pilih Eco Collector yang akan menangani pickup <strong>${trackingNum}</strong>.</p>
-                <label style="display:block; font-weight:800; color:#334155; margin-bottom:6px;">Eco Collector</label>
+                <label for="collector-select" style="display:block; font-weight:800; color:#334155; margin-bottom:6px;">Eco Collector</label>
                 <select id="collector-select" class="swal2-select" style="width:100%; margin:0;">
                     ${globalCollectors.map(collector => `
                         <option value="${collector.id}">${collector.name} - ${collector.email}</option>
@@ -422,7 +370,7 @@ async function approveAndAssign(trackingNum) {
         `,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#10b981',
+        confirmButtonColor: '#087a5b',
         cancelButtonColor: '#64748b',
         confirmButtonText: 'Ya, Tugaskan!',
         cancelButtonText: 'Batal',
@@ -430,54 +378,27 @@ async function approveAndAssign(trackingNum) {
             const selected = document.getElementById('collector-select').value;
             if (!selected) {
                 Swal.showValidationMessage('Pilih kolektor terlebih dahulu.');
-                return false;
+                return undefined;
             }
             return selected;
         }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch('api/ecorecycle/assign_collector', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + user.token
-                },
-                body: JSON.stringify({
-                    tracking_number: trackingNum,
-                    collector_id: result.value
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: 'Tugas penjemputan berhasil diberikan ke Kolektor.',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        loadAdminCommandData();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: data.message,
-                        confirmButtonColor: '#10b981'
-                    });
-                }
-            })
-            .catch(err => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Kesalahan',
-                    text: 'Gagal menghubungi server.',
-                    confirmButtonColor: '#10b981'
-                });
-            });
-        }
     });
+    if (!result.isConfirmed) return;
+    try {
+        const response = await fetch('api/ecorecycle/assign_collector', {
+            method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + user.token},
+            body: JSON.stringify({tracking_number: trackingNum, collector_id: result.value})
+        });
+        const data = await response.json();
+        if (data.status !== 'success') {
+            await Swal.fire({icon: 'error', title: 'Gagal', text: data.message, confirmButtonColor: '#087a5b'});
+            return;
+        }
+        await Swal.fire({icon: 'success', title: 'Berhasil!', text: 'Tugas penjemputan berhasil diberikan ke Kolektor.', timer: 1500, showConfirmButton: false});
+        await loadAdminCommandData();
+    } catch {
+        await Swal.fire({icon: 'error', title: 'Kesalahan', text: 'Gagal menghubungi server.', confirmButtonColor: '#087a5b'});
+    }
 }
 
 async function verifyPickupWeight(user, pickup) {
@@ -485,26 +406,26 @@ async function verifyPickupWeight(user, pickup) {
         title: 'Verifikasi Berat Final',
         html: `
             <div style="text-align:left;">
-                <label style="display:block; font-weight:800; color:#334155; margin-bottom:6px;">Berat estimasi user</label>
+                <div style="display:block; font-weight:800; color:#334155; margin-bottom:6px;">Berat estimasi user</div>
                 <div style="padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:12px;">${pickup.weight_kg} KG</div>
-                <label style="display:block; font-weight:800; color:#334155; margin-bottom:6px;">Berat final hasil timbangan hub (KG)</label>
+                <label for="final-weight-input" style="display:block; font-weight:800; color:#334155; margin-bottom:6px;">Berat final hasil timbangan hub (KG)</label>
                 <input id="final-weight-input" type="number" min="0.1" step="0.1" value="${pickup.final_weight_kg || pickup.weight_kg || ''}" class="swal2-input" style="margin:0 0 12px; width:100%;" placeholder="Contoh: 4.2">
-                <label style="display:block; font-weight:800; color:#334155; margin-bottom:6px;">Catatan verifikasi</label>
+                <label for="verification-notes-input" style="display:block; font-weight:800; color:#334155; margin-bottom:6px;">Catatan verifikasi</label>
                 <textarea id="verification-notes-input" class="swal2-textarea" style="margin:0; width:100%;" placeholder="Contoh: Berat final sesuai hasil timbangan hub.">${pickup.verification_notes || ''}</textarea>
             </div>
         `,
         icon: 'info',
         showCancelButton: true,
-        confirmButtonColor: '#10b981',
+        confirmButtonColor: '#087a5b',
         cancelButtonColor: '#64748b',
         confirmButtonText: 'Simpan Verifikasi',
         cancelButtonText: 'Batal',
         preConfirm: () => {
-            const finalWeight = parseFloat(document.getElementById('final-weight-input').value);
+            const finalWeight = Number.parseFloat(document.getElementById('final-weight-input').value);
             const notes = document.getElementById('verification-notes-input').value.trim();
             if (!finalWeight || finalWeight <= 0) {
                 Swal.showValidationMessage('Berat final harus lebih besar dari 0 KG.');
-                return false;
+                return undefined;
             }
             return { finalWeight, notes };
         }
@@ -551,19 +472,19 @@ async function processPayout(pickupId) {
             pickup.verified_at = new Date().toISOString();
         }
     } catch (error) {
-        Swal.fire({
+        await Swal.fire({
             icon: 'error',
             title: 'Verifikasi Gagal',
             text: error.message,
-            confirmButtonColor: '#10b981'
+            confirmButtonColor: '#087a5b'
         });
         return;
     }
 
     const amount = getFinalNetReward(pickup);
-    const payoutDestination = pickup ? renderPayoutDestination(pickup) : 'Data payout tidak ditemukan.';
+    const payoutDestination = renderPayoutDestination(pickup);
 
-    Swal.fire({
+    const result = await Swal.fire({
         title: 'Verifikasi & Cairkan Reward',
         html: `Pastikan data timbangan fisik dan tujuan payout sudah benar.<br><br>
             <div style="text-align:left; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
@@ -572,54 +493,28 @@ async function processPayout(pickupId) {
             </div>`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#10b981',
+        confirmButtonColor: '#087a5b',
         cancelButtonColor: '#64748b',
         confirmButtonText: 'Ya, Cairkan Dana!',
         cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Call API
-            fetch('api/ecorecycle/process_payout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + user.token
-                },
-                body: JSON.stringify({
-                    pickup_id: pickupId
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    const ref = data.data.transaction_reference || data.data.bank_reference || '';
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Payout Sukses!',
-                        html: `Dana berhasil ditransfer.<br>Ref Referensi: <strong>${ref}</strong>`,
-                        confirmButtonColor: '#10b981'
-                    }).then(() => {
-                        loadAdminCommandData();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Payout Gagal',
-                        text: data.message,
-                        confirmButtonColor: '#10b981'
-                    });
-                }
-            })
-            .catch(err => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Kesalahan',
-                    text: 'Gagal terhubung ke server.',
-                    confirmButtonColor: '#10b981'
-                });
-            });
-        }
     });
+    if (!result.isConfirmed) return;
+    try {
+        const response = await fetch('api/ecorecycle/process_payout', {
+            method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + user.token},
+            body: JSON.stringify({pickup_id: pickupId})
+        });
+        const data = await response.json();
+        if (data.status !== 'success') {
+            await Swal.fire({icon: 'error', title: 'Payout Gagal', text: data.message, confirmButtonColor: '#087a5b'});
+            return;
+        }
+        const ref = data.data.transaction_reference || data.data.bank_reference || '';
+        await Swal.fire({icon: 'success', title: 'Payout Sukses!', html: 'Dana berhasil ditransfer.<br>Ref Referensi: <strong>' + ref + '</strong>', confirmButtonColor: '#087a5b'});
+        await loadAdminCommandData();
+    } catch {
+        await Swal.fire({icon: 'error', title: 'Kesalahan', text: 'Gagal terhubung ke server.', confirmButtonColor: '#087a5b'});
+    }
 }
 
 // 5. Initialize Finance Chart.js
@@ -637,7 +532,7 @@ function initFinanceChart() {
     // Group payments by category
     const categoryTotals = {};
     completedPayments.forEach(p => {
-        const net = parseFloat(p.eco_reward) - parseFloat(p.processing_fee);
+        const net = Number.parseFloat(p.eco_reward) - Number.parseFloat(p.processing_fee);
         categoryTotals[p.category_name] = (categoryTotals[p.category_name] || 0) + net;
     });
 
@@ -738,20 +633,24 @@ function renderAdminAnnouncements() {
 }
 
 async function toggleAnnouncement(id, active) {
-    const user = JSON.parse(localStorage.getItem('user'));
-    const response = await fetch('api/ecorecycle/announcements', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + user.token
-        },
-        body: JSON.stringify({ action: 'toggle', id, is_active: active })
-    });
-    const result = await response.json();
-    if (result.status === 'success') {
-        loadAdminAnnouncements();
-    } else {
-        Swal.fire({ icon: 'error', title: 'Gagal', text: result.message });
+    try {
+        const user = JSON.parse(localStorage.getItem('user'));
+        const response = await fetch('api/ecorecycle/announcements', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + user.token
+            },
+            body: JSON.stringify({ action: 'toggle', id, is_active: active })
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            await loadAdminAnnouncements();
+        } else {
+            await Swal.fire({ icon: 'error', title: 'Gagal', text: result.message });
+        }
+    } catch (error) {
+        await Swal.fire({icon: 'error', title: 'Gagal', text: error.message || 'Gagal menghubungi server.'});
     }
 }
 
@@ -767,16 +666,20 @@ async function deleteAnnouncement(id) {
     });
     if (!confirmation.isConfirmed) return;
 
-    const user = JSON.parse(localStorage.getItem('user'));
-    const response = await fetch(`api/ecorecycle/announcements?id=${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + user.token }
-    });
-    const result = await response.json();
-    if (result.status === 'success') {
-        loadAdminAnnouncements();
-    } else {
-        Swal.fire({ icon: 'error', title: 'Gagal', text: result.message });
+    try {
+        const user = JSON.parse(localStorage.getItem('user'));
+        const response = await fetch(`api/ecorecycle/announcements?id=${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + user.token }
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            loadAdminAnnouncements();
+        } else {
+            Swal.fire({ icon: 'error', title: 'Gagal', text: result.message });
+        }
+    } catch (error) {
+        await Swal.fire({icon: 'error', title: 'Gagal', text: error.message || 'Gagal menghubungi server.'});
     }
 }
 
@@ -805,9 +708,9 @@ if (announcementForm) {
             if (result.status !== 'success') throw new Error(result.message);
             this.reset();
             await loadAdminAnnouncements();
-            Swal.fire({ icon: 'success', title: 'Diterbitkan', text: 'Pengumuman sudah tampil pada portal tujuan.', timer: 1600, showConfirmButton: false });
+            await Swal.fire({ icon: 'success', title: 'Diterbitkan', text: 'Pengumuman sudah tampil pada portal tujuan.', timer: 1600, showConfirmButton: false });
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Gagal', text: error.message || 'Pengumuman gagal diterbitkan.' });
+            await Swal.fire({ icon: 'error', title: 'Gagal', text: error.message || 'Pengumuman gagal diterbitkan.' });
         } finally {
             submitButton.disabled = false;
         }

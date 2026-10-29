@@ -1,25 +1,33 @@
-﻿# EcoRecycle - Smart E-Waste Recycling Management Platform (V2.0 Go Edition)
+# EcoRecycle - Pengelolaan Sampah Terpilah (Go Edition)
 
-EcoRecycle adalah platform inovatif yang dirancang untuk mengelola rantai pasok pengumpulan dan daur ulang khusus sampah elektronik (e-waste) di wilayah Bandung (Kota, Kabupaten, dan KBB). Platform ini memfasilitasi siklus hidup produk elektronik mulai dari akhir penggunaan (end-of-life) hingga proses daur ulang yang bertanggung jawab di hub daur ulang, sambil memberikan insentif ekonomi digital secara langsung kepada pengguna.
+EcoRecycle adalah platform inovatif yang dirancang untuk mengelola rantai pasok pengumpulan dan daur ulang sampah organik, anorganik terpilah, elektronik, dan B3 rumah tangga di wilayah Bandung (Kota, Kabupaten, dan KBB). Platform ini memfasilitasi alur pengelolaan sampah mulai dari akhir penggunaan (end-of-life) hingga proses daur ulang yang bertanggung jawab di hub daur ulang, sambil memberikan insentif ekonomi digital secara langsung kepada pengguna.
 
+
+## Cakupan kategori (29 Oktober 2026)
+
+Landing page, estimator, pengajuan, portal kolektor/admin, dan profil sudah mendukung organik, anorganik, elektronik, dan B3 rumah tangga. Kategori baterai dikelompokkan ke B3. Anorganik dirinci menjadi PET bening, kertas/kardus, besi, dan kaca agar tarif tidak disamaratakan.
+
+Tarif anorganik memakai acuan awal Bank Sampah Indonesia; organik dan B3 rumah tangga umum adalah setoran tanpa reward awal. Biaya pemrosesan kategori baru belum diberlakukan. Tarif elektronik sebelumnya dipertahankan. Lihat [riset, asumsi tarif, dan batas kategori](docs/waste-categories.md).
+
+**Database yang sudah ada:** jalankan `db_init/add_waste_categories.sql` pada database aplikasi. Migrasi ini hanya menambah kategori yang belum ada. **Jangan menjalankan ulang initializer `db_init/db_init.go` untuk pembaruan: initializer menghapus database.** Inisialisasi baru mencakup seluruh kategori.
 
 ## ðŸŒŸ Deskripsi Proyek
-Masalah sampah elektronik (e-waste) global terus meningkat secara eksponensial. EcoRecycle hadir sebagai jembatan yang menghubungkan konsumen (**Eco Warriors**), mitra penjemputan lapangan (**Eco Collectors**), dan manajer keuangan/operasional (**Eco Managers/Admin**). Dengan sistem pelacakan berbasis tracking number unik dan pembayaran reward langsung (tunai/transfer manual), platform ini memastikan e-waste tidak berakhir di TPA, melainkan didaur ulang secara aman demi mendukung ekonomi sirkular.
+Masalah sampah rumah tangga terus meningkat secara eksponensial. EcoRecycle hadir sebagai jembatan yang menghubungkan konsumen (**Eco Warriors**), mitra penjemputan lapangan (**Eco Collectors**), dan manajer keuangan/operasional (**Eco Managers/Admin**). Dengan sistem pelacakan berbasis tracking number unik dan pembayaran reward langsung (tunai/transfer manual), platform ini memastikan sampah tidak berakhir di TPA, melainkan didaur ulang secara aman demi mendukung ekonomi sirkular.
 
 ---
 
 ## ðŸ› ï¸ Fitur Utama
 
-1. **Carbon & Eco-Reward Estimator**: Hitung potensi reward finansial dan kontribusi pengurangan emisi CO2 berdasarkan berat (KG) dan kategori sampah elektronik secara dinamis.
-2. **E-Waste Tracking Timeline**: Lacak perjalanan sampah elektronik Anda dengan timeline interaktif (Pending âž” Dijemput âž” Transit âž” Tiba di Hub âž” Selesai & Dibayar).
-3. **Photo Upload Verification**: Fitur unggah foto limbah elektronik saat mengajukan penjemputan untuk memudahkan kolektor melakukan verifikasi visual kondisi awal barang secara remote.
-4. **Direct Eco-Rewards Payout**: Pembayaran kompensasi reward secara langsung (tunai atau transfer bank manual) oleh Eco Manager sesaat setelah sampah elektronik tiba di hub dan diverifikasi timbangan fisiknya.
-5. **Gamified Eco-Level & Impact Score**: Klasifikasi tingkatan pengguna berdasarkan akumulasi berat sampah elektronik yang didonasikan (Bronze Saver, Silver Guardian, Emerald Hero) yang dihitung secara dinamis.
+1. **Carbon & Eco-Reward Estimator**: Hitung potensi reward menurut kategori serta simulasi karbon dengan faktor tetap 2,5 kg CO2/kg; simulasi ini belum memakai faktor emisi terverifikasi per material.
+2. **Sampah Tracking Timeline**: Lacak perjalanan sampah terpilah Anda dengan timeline interaktif (Pending âž” Dijemput âž” Transit âž” Tiba di Hub âž” Selesai & Dibayar).
+3. **Photo Upload Verification**: Fitur unggah foto sampah saat mengajukan penjemputan untuk memudahkan kolektor melakukan verifikasi visual kondisi awal barang secara remote.
+4. **Direct Eco-Rewards Payout**: Pembayaran kompensasi reward secara langsung (tunai atau transfer bank manual) oleh Eco Manager sesaat setelah sampah terpilah tiba di hub dan diverifikasi timbangan fisiknya.
+5. **Gamified Eco-Level & Impact Score**: Klasifikasi tingkatan pengguna berdasarkan akumulasi berat sampah terpilah yang didonasikan (Bronze Saver, Silver Guardian, Emerald Hero) yang dihitung secara dinamis.
 6. **Interactive Maps (Leaflet.js)**: Pemetaan visual rute perjalanan dan penentuan titik koordinat penjemputan donor oleh kolektor secara interaktif di wilayah Bandung.
 7. **Multi-Role Dashboard**: Panel terintegrasi untuk 3 target pengguna utama:
    - **Eco Warriors** (Melihat status donasi, grafik tren bulanan, estimasi karbon, unggah foto sampah, & history payout).
    - **Eco Collectors** (Menerima antrean pickup Bandung, navigasi maps, & klaim komisi hasil penjemputan).
-   - **Eco Managers / Admin** (Analitik volume e-waste, live map kolektor, & validasi pembayaran reward secara manual).
+   - **Eco Managers / Admin** (Analitik volume sampah, live map kolektor, & validasi pembayaran reward secara manual).
 
 ---
 
@@ -87,7 +95,7 @@ Masalah sampah elektronik (e-waste) global terus meningkat secara eksponensial. 
 |       `-- reward_service.go
 |-- db_init/
 |   `-- db_init.go                     # Database installer dan seeder
-|-- uploads/                           # Penyimpanan foto e-waste, Git-ignored
+|-- uploads/                           # Penyimpanan foto sampah, Git-ignored
 |-- .env                               # Kredensial lokal, Git-ignored
 |-- .env.example                       # Template environment variable
 |-- .gitignore
@@ -113,7 +121,7 @@ Basis data `ecorecycle` menggunakan relasi data yang optimal dengan skema beriku
 
 ### Skema Tabel Database
 1. **Tabel `users`**: Menyimpan akun pengguna. Password diamankan dengan hash `bcrypt`.
-2. **Tabel `waste_categories`**: Daftar kategori sampah elektronik dan rate reward per kilogram (KG).
+2. **Tabel `waste_categories`**: Daftar kategori sampah terpilah dan rate reward per kilogram (KG).
 3. **Tabel `pickups`**: Tabel transaksi donasi utama. Dilengkapi kolom `photo_url` untuk foto limbah dan kolom `collector_id` untuk pemetaan kurir penjemput.
 4. **Tabel `pickup_history`**: Mencatat detail lini masa dan riwayat mutasi status donasi.
 5. **Tabel `transactions`**: Menyimpan log audit transaksi payout reward langsung ke masyarakat.
@@ -169,7 +177,7 @@ Semua request API mengembalikan respons JSON seragam dengan header CORS dan HTTP
   - Input: `{"name": "...", "email": "...", "password": "...", "role": "user"}`
   - Fitur: Memvalidasi format email dan panjang sandi minimal 6 karakter.
 
-### 2. Pengelolaan E-Waste (Memerlukan Token Autentikasi)
+### 2. Pengelolaan Sampah (Memerlukan Token Autentikasi)
 * **Request Penjemputan**: `POST /api/ecorecycle/request_pickup` (Multipart Form-Data)
   - Header: `Authorization: Bearer <token>`
   - Input: `item_description` (text), `pickup_address` (text), `contact_phone` (text), `weight_kg` (numeric > 0), `category` (text), `photo` (file gambar - opsional)
