@@ -154,5 +154,3 @@ body[data-auth-page="register"] .auth-tabs::before { transform: translateX(calc(
     .submit-button { transition: background .15s, transform .15s;
     }
 }
-
-
