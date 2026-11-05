@@ -22,7 +22,9 @@
 <link rel="stylesheet" href="assets/css/user-layout.css?v=20261029-quality5">
     <link rel="stylesheet" href="assets/css/user-inline.css?v=20261029-quality5">
     <link rel="stylesheet" href="assets/css/user-flat.css?v=20261029-quality5">
+    <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase3b">
     <script src="/assets/js/portal-session.js?v=phase1-final"></script>
+    <script type="module" src="/assets/js/facility-reports.js?v=phase3b"></script>
 </head>
 
 <body class="portal-page role-warrior">
@@ -58,6 +60,9 @@
                 </button>
                 <button type="button" class="sidebar-item hub-tab" data-target="lacak-pickup">
                     <i class="fas fa-truck-pickup" aria-hidden="true"></i> Lacak Status
+                </button>
+                <button type="button" class="sidebar-item hub-tab" data-target="laporan-fasilitas" aria-controls="laporan-fasilitas">
+                    <i class="fas fa-clipboard-list" aria-hidden="true"></i> Lapor Fasilitas
                 </button>
                 <button type="button" class="sidebar-item hub-tab" data-target="riwayat-payout">
                     <i class="fas fa-history" aria-hidden="true"></i> Riwayat setoran
@@ -495,6 +500,9 @@
                 </div>
             </div>
 
+            <section class="tab-pane" id="laporan-fasilitas" data-facility-reports="user" aria-labelledby="facility-heading">
+                <noscript>Aktifkan JavaScript untuk membuka layanan laporan fasilitas.</noscript>
+            </section>
         </main>
 
         <!-- Footer -->

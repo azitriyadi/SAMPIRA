@@ -150,6 +150,7 @@ try {
     console.log('PASS Chromium User: login, dashboard, private history, profile, direct denial, logout, desktop/mobile.');
 
     await login('collector@phase1.invalid', '/petugas');
+    assert.equal(await js('document.querySelector("[data-facility-reports]") === null'), true);
     await text('#upcoming-task-list', 'PHASE1-QUEUE');
     const assigned = '[data-mission]';
     await waitFor(() => js('!!document.querySelector(' + JSON.stringify(assigned) + ')'), 'Assigned pickup missing');
@@ -181,6 +182,7 @@ try {
     console.log('PASS Chromium Admin: login, report shell, own session, Administrator denied, logout, desktop/mobile.');
 
     await login('administrator@phase1.invalid', '/administrator');
+    assert.equal(await js('document.querySelector("[data-facility-reports]") === null'), true);
     await text('#announcement-admin-list', 'Phase 1 legacy');
     await text('#reward-payment-list', 'PHASE2-WEIGH');
     const proof = join(profile, 'receipt-fixture.png');
@@ -217,12 +219,21 @@ try {
     console.log('PASS Chromium expired session redirected to login.');
     assert.deepEqual(exceptions, [], 'Uncaught JavaScript exceptions');
     assert.deepEqual(consoleErrors, [], 'Application console errors');
-    assert.deepEqual(responses.filter(r => r.url.startsWith(base) && r.status >= 400 && ![401, 403].includes(r.status)),
+    const expectedUnavailableReports = r => process.env.SAMPIRA_TEST_PHASE3_FE !== '1' && r.status === 404 &&
+        new URL(r.url).pathname === '/api/ecorecycle/facility-reports';
+    assert.deepEqual(responses.filter(r => r.url.startsWith(base) && r.status >= 400 &&
+        ![401, 403].includes(r.status) && !expectedUnavailableReports(r)),
         [], 'Unexpected local HTTP failures');
     assert.deepEqual(failed.filter(r => r.url?.startsWith(base)), [], 'Local network failures');
     const externalErrors = failed.filter(r => !r.url?.startsWith(base));
     console.log('External resource errors: ' + externalErrors.length + (externalErrors.length
         ? ' (' + [...new Set(externalErrors.map(r => r.error))].join(', ') + ')' : ''));
+    if (process.env.SAMPIRA_TEST_PHASE3_FE === '1') {
+        const {checkFacilityBrowser} = await import('./check-phase3-frontend.mjs');
+        await checkFacilityBrowser({send, js, nav, login, click, text, waitFor, waitPath, profile, password});
+        assert.deepEqual(exceptions, [], 'Uncaught JavaScript exceptions in Phase 3B');
+        assert.deepEqual(consoleErrors, [], 'Application console errors in Phase 3B');
+    }
 } finally {
     socket?.close();
     browser.kill();

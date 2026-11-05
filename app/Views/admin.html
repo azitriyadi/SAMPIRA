@@ -5,15 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin | SAMPIRA</title>
     <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase3b">
     <script src="/assets/js/portal-session.js?v=phase1-final" defer></script>
+    <script type="module" src="/assets/js/facility-reports.js?v=phase3b"></script>
 </head>
-<body>
-    <main class="container" aria-label="Portal Admin">
-        <h1>Admin SAMPIRA</h1>
-        <p>Portal verifikasi dan penanganan laporan fasilitas SAMPIRA. Alur laporan tersedia pada fase berikutnya.</p>
-        <form action="/logout" method="post">
-            <button class="btn btn-primary" type="submit">Keluar</button>
-        </form>
+<body class="facility-admin-page">
+    <header class="facility-admin-bar">
+        <div class="container">
+            <h1>Admin SAMPIRA</h1>
+            <form action="/logout" method="post">
+                <button class="facility-button" type="submit">Keluar</button>
+            </form>
+        </div>
+    </header>
+    <main class="container facility-admin-main" aria-label="Portal Admin">
+        <section data-facility-reports="admin" aria-labelledby="facility-heading">
+            <noscript>Aktifkan JavaScript untuk membuka antrean laporan fasilitas.</noscript>
+        </section>
     </main>
 </body>
 </html>
