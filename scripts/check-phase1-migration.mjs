@@ -85,6 +85,9 @@ try {
     if (process.env.SAMPIRA_TEST_PHASE3 === '1') {
         execFileSync(process.execPath, [resolve('scripts/check-phase3-reports.mjs')], {cwd, env, stdio: 'inherit'});
     }
+    if (process.env.SAMPIRA_TEST_PHASE4 === '1') {
+        execFileSync(process.execPath, [resolve('scripts/check-phase4-handling.mjs')], {cwd, env, stdio: 'inherit'});
+    }
     if (process.env.SAMPIRA_TEST_CHROME) {
         execFileSync(process.execPath, [resolve('scripts/check-phase1-browser.mjs')], {cwd, env, stdio: 'inherit'});
     }
