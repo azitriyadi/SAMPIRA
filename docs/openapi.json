@@ -1,14 +1,14 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "EcoRecycle API",
-    "description": "Dokumentasi REST API untuk EcoRecycle, platform manajemen penjemputan dan daur ulang sampah elektronik.",
-    "version": "2.0.0"
+    "title": "SAMPIRA API",
+    "description": "API same-origin untuk autentikasi, portal berbasis role, dan operasional penjemputan sampah SAMPIRA. Kredensial dan field mutasi dibaca dari body. Penulisan lintas origin ditolak. Permintaan penulisan dengan cookie memerlukan origin yang cocok atau metadata Fetch same-origin.",
+    "version": "2.3.0"
   },
   "servers": [
     {
       "url": "/",
-      "description": "Current EcoRecycle server"
+      "description": "Server SAMPIRA"
     }
   ],
   "tags": [
@@ -38,7 +38,7 @@
       "post": {
         "tags": ["Auth"],
         "summary": "Login pengguna",
-        "description": "Mengembalikan signed token HMAC untuk request API berikutnya.",
+        "description": "Menerbitkan sesi HMAC hingga 24 jam dan cookie HttpOnly. Login portal menerima id, name dan role. Integrasi menerima token Bearer.",
         "requestBody": {
           "required": true,
           "content": {
@@ -67,20 +67,37 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           },
+          "401": {
+            "description": "Kredensial atau role akun tidak valid."
+          },
+          "403": {
+            "description": "Permintaan lintas origin ditolak."
+          },
           "405": {
             "$ref": "#/components/responses/MethodNotAllowed"
           },
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "X-SAMPIRA-Portal",
+            "in": "header",
+            "description": "Nilai 1 meminta respons ringkas tanpa token.",
+            "schema": {
+              "type": "string",
+              "enum": ["1"]
+            }
+          }
+        ]
       }
     },
     "/api/auth/register": {
       "post": {
         "tags": ["Auth"],
         "summary": "Registrasi akun",
-        "description": "Membuat akun baru. Role yang valid: user, collector, admin. Jika role kosong atau tidak valid, otomatis menjadi user.",
+        "description": "Membuat akun role user. Nilai role apa pun yang dikirim klien diabaikan.",
         "requestBody": {
           "required": true,
           "content": {
@@ -91,8 +108,7 @@
               "example": {
                 "name": "Eco Warrior",
                 "email": "newuser@ecorecycle.com",
-                "password": "password123",
-                "role": "user"
+                "password": "password123"
               }
             }
           }
@@ -121,6 +137,9 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "responses": {
@@ -152,6 +171,9 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "requestBody": {
@@ -199,10 +221,13 @@
       "get": {
         "tags": ["Auth"],
         "summary": "Ambil daftar Eco Collector",
-        "description": "Mengambil daftar akun collector untuk penugasan pickup oleh admin.",
+        "description": "Alias untuk GET /api/users/petugas. Hanya Administrator.",
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "responses": {
@@ -225,7 +250,8 @@
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
-        }
+        },
+        "deprecated": true
       }
     },
     "/api/ecorecycle/request_pickup": {
@@ -236,6 +262,9 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "requestBody": {
@@ -290,10 +319,13 @@
       "post": {
         "tags": ["Pickup"],
         "summary": "Edit pengajuan pickup pending",
-        "description": "Eco Warrior dapat mengubah data pengajuan selama status masih pending atau belum diambil kolektor.",
+        "description": "Eco Warrior dapat mengubah data pengajuan selama status masih pending atau belum diambil Petugas.",
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "requestBody": {
@@ -330,6 +362,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "409": {
+            "description": "Pengajuan sudah tidak pending."
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
@@ -340,10 +375,13 @@
       "post": {
         "tags": ["Pickup"],
         "summary": "Batalkan pengajuan pickup pending",
-        "description": "Eco Warrior dapat membatalkan pengajuan selama status masih pending atau belum diambil kolektor.",
+        "description": "Eco Warrior dapat membatalkan pengajuan selama status masih pending atau belum diambil Petugas.",
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "requestBody": {
@@ -383,10 +421,13 @@
       "get": {
         "tags": ["Pickup"],
         "summary": "Ambil daftar penjemputan",
-        "description": "Mengambil daftar pickup berdasarkan role dan tipe query. type=user untuk Eco Warrior, type=collector untuk Eco Collector, type=all untuk Admin.",
+        "description": "type=user untuk pengajuan sendiri. type=petugas atau alias type=collector untuk antrean ringkas dan tugas sendiri. type=all dipertahankan sebagai nilai legacy dan ditolak. Antrean belum diklaim menyembunyikan data pribadi.",
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "parameters": [
@@ -396,7 +437,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": ["user", "collector", "all"],
+              "enum": ["user", "petugas", "collector", "all"],
               "default": "all"
             },
             "example": "user"
@@ -413,6 +454,9 @@
               }
             }
           },
+          "400": {
+            "description": "Tipe daftar tidak valid."
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
@@ -428,11 +472,14 @@
     "/api/ecorecycle/assign_collector": {
       "post": {
         "tags": ["Pickup"],
-        "summary": "Ambil atau tetapkan tugas kolektor",
-        "description": "Mengubah status pickup dari pending menjadi pickup. Role collector mengambil tugas untuk dirinya sendiri, role admin dapat mengisi collector_id.",
+        "summary": "Ambil atau tetapkan tugas Petugas",
+        "description": "Klaim atomik dari pending ke pickup untuk Petugas sendiri. Parameter collector_id legacy diabaikan.",
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "requestBody": {
@@ -478,10 +525,13 @@
       "get": {
         "tags": ["Tracking"],
         "summary": "Lacak pickup atau ambil statistik",
-        "description": "Gunakan tracking_number untuk detail pelacakan, atau type=stats untuk statistik dashboard admin.",
+        "description": "Detail dan histori dibaca dalam satu snapshot untuk pemilik atau Petugas yang ditugaskan. Statistik agregat hanya untuk Administrator dan memisahkan nilai historis dari pembayaran terkonfirmasi.",
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "parameters": [
@@ -529,6 +579,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "description": "Role atau cakupan penjemputan tidak diizinkan."
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
@@ -540,10 +593,13 @@
       "post": {
         "tags": ["Tracking"],
         "summary": "Perbarui status pickup",
-        "description": "Mengubah status pickup operasional. Transisi valid: pickup ke transit, lalu transit ke arrived. Hanya collector pemilik tugas atau admin.",
+        "description": "Petugas memperbarui tugas yang ditugaskan dengan transisi pickup ke transit ke arrived.",
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "requestBody": {
@@ -633,36 +689,54 @@
     "/api/ecorecycle/process_payout": {
       "post": {
         "tags": ["Reward"],
-        "summary": "Proses payout reward",
-        "description": "Memproses payout untuk pickup yang sudah arrived. Hanya role admin.",
+        "summary": "Catat pembayaran eksternal yang diverifikasi",
+        "description": "Hanya Administrator. Memerlukan multipart, nominal persis, referensi unik, bukti gambar unik, dan konfirmasi verifikasi eksternal. Aplikasi mencatat hasil verifikasi operator.",
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ProcessPayoutRequest"
-              },
-              "example": {
-                "pickup_id": 1
+                "type": "object",
+                "required": ["pickup_id", "amount", "reference", "proof", "confirm_payment"],
+                "properties": {
+                  "pickup_id": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "amount": {
+                    "type": "string",
+                    "example": "18000.00"
+                  },
+                  "reference": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 100
+                  },
+                  "proof": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "JPG, PNG atau WEBP maksimal 5 MiB."
+                  },
+                  "confirm_payment": {
+                    "type": "string",
+                    "enum": ["true"]
+                  }
+                }
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Payout berhasil diproses",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProcessPayoutResponse"
-                }
-              }
-            }
+            "description": "Pembayaran yang sudah diverifikasi operator tercatat."
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
@@ -676,6 +750,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "409": {
+            "description": "Bukti belum disertakan pada permintaan legacy, nominal berbeda, kewajiban tidak pending, atau referensi/bukti sudah digunakan."
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
@@ -686,10 +763,13 @@
       "post": {
         "tags": ["Reward"],
         "summary": "Verifikasi berat final pickup",
-        "description": "Admin memverifikasi berat final hasil timbangan hub sebelum payout reward diproses.",
+        "description": "Petugas yang ditugaskan mencatat berat aktual satu kali setelah tiba di hub. Satu transaksi menyimpan hasil, audit, status pickup completed, dan reward pending atau not_due.",
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "requestBody": {
@@ -730,6 +810,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "409": {
+            "description": "Berat aktual sudah tercatat."
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
@@ -740,10 +823,13 @@
       "get": {
         "tags": ["Announcements"],
         "summary": "Ambil pengumuman portal",
-        "description": "Mengambil pengumuman aktif untuk user/collector. Admin melihat semua pengumuman termasuk yang nonaktif.",
+        "description": "Pengumuman aktif untuk role pemohon. Administrator dapat melihat semua publikasi CMS.",
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "responses": {
@@ -768,10 +854,13 @@
       "post": {
         "tags": ["Announcements"],
         "summary": "Buat atau ubah status pengumuman",
-        "description": "Admin dapat membuat pengumuman baru. Untuk toggle status, kirim action=toggle, id, dan is_active.",
+        "description": "Membuat atau mengubah visibilitas pengumuman. Hanya Administrator.",
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "requestBody": {
@@ -794,7 +883,7 @@
                   "value": {
                     "title": "Jadwal pickup minggu ini",
                     "message": "Penjemputan wilayah Bandung Timur diprioritaskan pada hari Jumat.",
-                    "target_role": "collector"
+                    "target_role": "petugas"
                   }
                 },
                 "toggle": {
@@ -836,10 +925,13 @@
       "delete": {
         "tags": ["Announcements"],
         "summary": "Hapus pengumuman",
-        "description": "Menghapus pengumuman portal berdasarkan id. Hanya role admin.",
+        "description": "Menghapus pengumuman portal berdasarkan ID. Hanya Administrator.",
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
           }
         ],
         "parameters": [
@@ -875,6 +967,192 @@
           }
         }
       }
+    },
+    "/api/users/petugas": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Daftar Petugas",
+        "description": "Daftar akun Petugas aktif untuk Administrator.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar kolektor berhasil diambil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectorListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/administrator/session": {
+      "get": {
+        "summary": "Periksa sesi Administrator",
+        "description": "Role Administrator diperiksa dari database pada setiap permintaan.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sesi Administrator aktif"
+          },
+          "401": {
+            "description": "Token tidak valid atau kedaluwarsa"
+          },
+          "403": {
+            "description": "Akun tidak memiliki role Administrator"
+          }
+        }
+      }
+    },
+    "/uploads/{name}": {
+      "get": {
+        "summary": "Ambil foto penjemputan",
+        "description": "Foto hanya untuk pemilik pickup atau Petugas yang ditugaskan.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Foto penjemputan"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Akses foto ditolak"
+          },
+          "404": {
+            "description": "Foto tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/logout": {
+      "post": {
+        "summary": "Cabut sesi aktif",
+        "description": "Menghapus sesi server yang dirujuk cookie atau, untuk klien tanpa cookie, header Bearer. Menghapus cookie dan mengalihkan ke login.",
+        "security": [
+          {
+            "PortalCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "Sesi dicabut dan browser diarahkan ke login."
+          },
+          "403": {
+            "description": "Penulisan lintas origin ditolak."
+          },
+          "503": {
+            "description": "Sesi belum berhasil dicabut."
+          }
+        }
+      }
+    },
+    "/api/administrator/pickup-rewards": {
+      "get": {
+        "summary": "Daftar kewajiban reward",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar transaksi pending atau paid dengan ID pickup, tracking, nominal, status, referensi dan tanggal bayar."
+          },
+          "401": {
+            "description": "Autentikasi diperlukan."
+          },
+          "403": {
+            "description": "Hanya Administrator."
+          }
+        }
+      }
+    },
+    "/api/administrator/pickup-rewards/{id}/proof": {
+      "get": {
+        "summary": "Unduh bukti pembayaran",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berkas gambar bukti pembayaran."
+          },
+          "401": {
+            "description": "Autentikasi diperlukan."
+          },
+          "403": {
+            "description": "Hanya Administrator."
+          },
+          "404": {
+            "description": "Bukti tidak ditemukan."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -883,6 +1161,11 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "HMAC-SHA256 signed token"
+      },
+      "PortalCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sampira_session"
       }
     },
     "responses": {
@@ -1014,11 +1297,6 @@
             "type": "string",
             "format": "password",
             "minLength": 6
-          },
-          "role": {
-            "type": "string",
-            "enum": ["user", "collector", "admin"],
-            "default": "user"
           }
         }
       },
@@ -1037,7 +1315,7 @@
           },
           "role": {
             "type": "string",
-            "enum": ["user", "collector", "admin"]
+            "enum": ["user", "petugas", "admin", "administrator"]
           },
           "phone": {
             "type": "string",
@@ -1143,7 +1421,7 @@
                   },
                   "role": {
                     "type": "string",
-                    "enum": ["user", "collector", "admin"]
+                    "enum": ["user", "petugas", "admin", "administrator"]
                   },
                   "token": {
                     "type": "string"
@@ -1287,7 +1565,8 @@
             "type": "integer"
           },
           "user_id": {
-            "type": "integer"
+            "type": "integer",
+            "nullable": true
           },
           "collector_id": {
             "type": "integer",
@@ -1350,7 +1629,8 @@
             "nullable": true
           },
           "is_processed": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Penanda historis. Tidak menyatakan konfirmasi pembayaran."
           },
           "status": {
             "$ref": "#/components/schemas/PickupStatus"
@@ -1368,6 +1648,15 @@
           },
           "collector_name": {
             "type": "string"
+          },
+          "payment_status": {
+            "type": "string",
+            "enum": ["requires_reconciliation", "pending", "not_due", "paid"]
+          },
+          "reward_amount": {
+            "type": "string",
+            "nullable": true,
+            "description": "Nominal final kewajiban dengan dua desimal jika tersedia."
           }
         }
       },
@@ -1398,7 +1687,7 @@
           },
           "collector_id": {
             "type": "integer",
-            "description": "Opsional untuk role admin."
+            "description": "Field kompatibilitas. Nilai diabaikan."
           }
         }
       },
@@ -1448,6 +1737,11 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "actor_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "ID aktor. Baris historis dapat bernilai null."
           }
         }
       },
@@ -1464,6 +1758,17 @@
                 "items": {
                   "$ref": "#/components/schemas/PickupHistory"
                 }
+              },
+              "payment_reference": {
+                "type": "string",
+                "nullable": true,
+                "description": "Hanya untuk pemilik pickup."
+              },
+              "paid_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true,
+                "description": "Hanya untuk pemilik pickup."
               }
             }
           }
@@ -1496,10 +1801,12 @@
                 "type": "object",
                 "properties": {
                   "total_weight": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Berat aktual pickup dengan ledger Phase 2."
                   },
                   "total_reward_paid": {
-                    "type": "number"
+                    "type": "number",
+                    "description": "Jumlah pembayaran eksternal yang dicatat dengan bukti dan verifikasi operator."
                   },
                   "total_reward_pending": {
                     "type": "number"
@@ -1511,7 +1818,12 @@
                     "type": "integer"
                   },
                   "collectors_online": {
-                    "type": "integer"
+                    "type": "integer",
+                    "description": "Nama field legacy untuk jumlah akun Petugas aktif."
+                  },
+                  "historical_reward_recorded": {
+                    "type": "number",
+                    "description": "Jumlah reward pada catatan historis yang memerlukan rekonsiliasi."
                   }
                 }
               }
@@ -1709,7 +2021,7 @@
           },
           "target_role": {
             "type": "string",
-            "enum": ["all", "user", "collector"]
+            "enum": ["all", "user", "petugas"]
           },
           "is_active": {
             "type": "boolean"
@@ -1762,7 +2074,7 @@
           },
           "target_role": {
             "type": "string",
-            "enum": ["all", "user", "collector"],
+            "enum": ["all", "user", "petugas", "collector"],
             "default": "all"
           }
         }

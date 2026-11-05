@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Administrator | SAMPIRA</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/admin.css">
+    <link rel="stylesheet" href="/assets/css/portal-system.css">
+    <link rel="stylesheet" href="/assets/css/portal-controls.css">
+    <script src="/assets/js/portal-session.js?v=phase1-final" defer></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
+    <script src="/assets/js/admin.js?v=phase1-final" defer></script>
+    <script src="/assets/js/reward-payments.js?v=phase2" defer></script>
+</head>
+<body>
+    <main class="container">
+        <h1>Administrator SAMPIRA</h1>
+        <p>Sesi pengelola sistem aktif.</p>
+        <form action="/logout" method="post">
+            <button class="btn btn-primary" type="submit">Keluar</button>
+        </form>
+            <div id="content-view" class="view-section active">
+            <div class="page-header">
+                <div>
+                    <span class="portal-eyebrow">CMS Internal</span>
+                    <h1>Pusat Pengumuman Portal</h1>
+                    <p>Terbitkan informasi operasional untuk Eco Warrior dan Petugas tanpa mengubah landing page.</p>
+                </div>
+                <span class="cms-header-badge"><i class="fas fa-tower-broadcast"></i> Role-based content</span>
+            </div>
+
+            <div class="cms-layout">
+                <section class="panel-card cms-editor-panel">
+                    <div class="panel-heading-compact">
+                        <div>
+                            <span class="portal-eyebrow">Konten baru</span>
+                            <h3>Buat Pengumuman</h3>
+                        </div>
+                        <i class="fas fa-pen-to-square"></i>
+                    </div>
+
+                    <form id="announcement-form" class="cms-form">
+                        <div class="input-field">
+                            <label for="announcement-title">Judul pengumuman</label>
+                            <input id="announcement-title" type="text" maxlength="120" placeholder="Contoh: Jadwal pickup akhir pekan" required>
+                        </div>
+                        <div class="input-field">
+                            <label for="announcement-target">Target portal</label>
+                            <select id="announcement-target" required>
+                                <option value="all">Semua peran</option>
+                                <option value="user">Eco Warrior</option>
+                                <option value="petugas">Petugas</option>
+                            </select>
+                        </div>
+                        <div class="input-field">
+                            <label for="announcement-message">Isi informasi</label>
+                            <textarea id="announcement-message" maxlength="1000" rows="6" placeholder="Tulis informasi yang singkat dan dapat ditindaklanjuti." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary cms-publish-btn">
+                            <i class="fas fa-paper-plane"></i> Terbitkan Pengumuman
+                        </button>
+                    </form>
+                </section>
+
+                <section class="panel-card cms-list-panel">
+                    <div class="panel-heading-compact">
+                        <div>
+                            <span class="portal-eyebrow">Publikasi</span>
+                            <h3>Daftar Pengumuman</h3>
+                        </div>
+                        <span class="cms-count" id="announcement-count">0 konten</span>
+                    </div>
+                    <div id="announcement-admin-list" class="cms-announcement-list">
+                        <div class="portal-empty-state">Memuat pengumuman...</div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <section class="panel-card" aria-labelledby="reward-payments-title">
+            <h2 id="reward-payments-title">Pencatatan Pembayaran Reward</h2>
+            <p>Cocokkan transfer eksternal dengan kewajiban dan bukti sebelum mencatat pembayaran.</p>
+            <output id="reward-payment-status"></output>
+            <ul id="reward-payment-list"></ul>
+            <form id="reward-payment-form" class="cms-form" hidden>
+                <label for="reward-pickup-id">Penjemputan</label>
+                <select name="pickup_id" id="reward-pickup-id" required></select>
+                <label for="reward-payment-amount">Nominal yang dibayar (Rp)</label>
+                <input name="amount" id="reward-payment-amount" type="number" min="0.01" step="0.01" required>
+                <label for="reward-payment-reference">Referensi transfer</label>
+                <input name="reference" id="reward-payment-reference" minlength="6" maxlength="100" required>
+                <label for="reward-payment-proof">Bukti pembayaran (JPG, PNG, WEBP)</label>
+                <input name="proof" id="reward-payment-proof" type="file" accept="image/jpeg,image/png,image/webp" required>
+                <label for="reward-payment-confirm"><input id="reward-payment-confirm" type="checkbox" required> Saya telah memeriksa nominal, penerima, dan bukti pembayaran eksternal.</label>
+                <button class="btn btn-primary" type="submit">Catat pembayaran</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

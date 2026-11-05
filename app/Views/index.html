@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/landing.css?v=20261029-quality5">
     <script src="assets/js/waste-categories.js?v=20261029-categories2" defer></script>
-    <script src="assets/js/home.js?v=20261029-categories2" defer></script>
+    <script src="assets/js/home.js?v=phase12-audit" defer></script>
 </head>
 <body>
     <a class="skip-link" href="#main">Lewati ke konten</a>
@@ -83,9 +83,9 @@
         <section class="section container estimate-layout" id="estimator">
             <div class="estimate-copy"><p class="eyebrow">Estimasi reward</p><h2>Lihat estimasi reward-mu.</h2><p>Masukkan jenis barang dan perkiraan berat untuk mengetahui estimasi reward yang bisa kamu dapatkan. Nilai final mengikuti hasil penimbangan dan verifikasi.</p></div>
             <form class="estimator-card" id="estimator-form">
-                <div class="form-row"><div class="category-field"><label for="estimator-category">Kategori barang</label><select id="estimator-category" name="category"><option value="5000" data-fee="500">Gadget kecil</option><option value="7000" data-fee="1000" selected>Komputer</option><option value="10000" data-fee="5000">Peralatan rumah</option><option value="3000" data-fee="2000">Baterai</option></select></div><div><label for="estimator-weight">Perkiraan berat</label><div class="weight-field"><input type="number" id="estimator-weight" name="weight" value="2" min="0.1" max="100000" step="0.1" required><span>kg</span></div></div></div>
+                <div class="form-row"><div class="category-field"><label for="estimator-category">Kategori barang</label><select id="estimator-category" name="category"><option value="5000" data-fee="500">Gadget kecil</option><option value="7000" data-fee="1000" selected>Komputer</option><option value="10000" data-fee="5000">Peralatan rumah</option><option value="3000" data-fee="2000">Baterai</option></select></div><div><label for="estimator-weight">Perkiraan berat</label><div class="weight-field"><input type="number" id="estimator-weight" name="weight" value="2" min="0.01" max="99999.99" step="0.01" required><span>kg</span></div></div></div>
                 <button class="button primary calculate-button" type="submit">Hitung estimasi</button>
-                <div id="estimator-result-card" class="estimate-result" aria-live="polite"><div class="result-total"><span>Estimasi bersih</span><strong id="result-reward-val">Rp12.000</strong></div><div class="result-breakdown"><div><span id="result-rate-label">Rp7.000 × 2 kg</span><span>=</span><strong id="result-gross-val">Rp14.000</strong></div><div><span>Biaya operasional</span><span>−</span><strong id="result-fee-val">Rp2.000</strong></div><div class="breakdown-net"><span>Estimasi bersih</span><span>=</span><strong id="result-net-val">Rp12.000</strong></div></div></div>
+                <output id="estimator-status"></output><div id="estimator-result-card" class="estimate-result" aria-live="polite" hidden><div class="result-total"><span>Estimasi bersih</span><strong id="result-reward-val">—</strong></div><div class="result-breakdown"><div><span id="result-rate-label">—</span><span>=</span><strong id="result-gross-val">—</strong></div><div><span>Biaya operasional</span><span>−</span><strong id="result-fee-val">—</strong></div><div class="breakdown-net"><span>Estimasi bersih</span><span>=</span><strong id="result-net-val">—</strong></div></div></div>
                 <output class="calculator-note" id="estimator-category-note">Nilai final mengikuti hasil penimbangan dan verifikasi.</output><p class="calculator-note">Tarif anorganik adalah acuan awal dari <a href="https://banksampahindonesia.com/daftar-harga/" target="_blank" rel="noopener noreferrer">Bank Sampah Indonesia</a> (diakses 29 Oktober 2026), bukan harga pasti Bandung. Material harus bersih dan terpilah. Organik serta B3 umum tanpa reward awal; biaya kategori baru belum diberlakukan.</p>
             </form>
         </section>

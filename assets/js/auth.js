@@ -3,19 +3,22 @@ function authFormPayload(kind) {
     const email = document.getElementById(kind + '-email').value;
     const password = document.getElementById(kind + '-password').value;
     if (kind === 'login') return {email, password};
-    return {name: document.getElementById('register-name').value, email, password, role: 'user'};
+    return {name: document.getElementById('register-name').value, email, password};
+}
+
+function authNotice(options) {
+    if (window.Swal) return Swal.fire(options);
+    window.alert(options.text || options.title);
 }
 
 async function finishAuthentication(kind, data) {
     if (kind === 'register') {
-        await Swal.fire({icon: 'success', title: 'Registrasi Berhasil', text: 'Akun Anda telah dibuat. Silakan login.', confirmButtonText: 'Login Sekarang'});
+        await authNotice({icon: 'success', title: 'Registrasi Berhasil', text: 'Akun Anda telah dibuat. Silakan login.', confirmButtonText: 'Login Sekarang'});
         window.location.href = 'login';
         return;
     }
-    localStorage.setItem('user', JSON.stringify(data));
-    await Swal.fire({icon: 'success', title: 'Login Berhasil', text: 'Selamat datang kembali di EcoRecycle!', timer: 1500, showConfirmButton: false});
-    const destinations = {admin: 'admin', collector: 'collector'};
-    window.location.href = destinations[data.role] || 'dashboard';
+    const destinations = {user: 'dashboard', petugas: 'petugas', admin: 'admin', administrator: 'administrator'};
+    window.location.href = destinations[data.role] || 'login';
 }
 
 async function submitAuthForm(event, kind) {
@@ -26,12 +29,12 @@ async function submitAuthForm(event, kind) {
     button.disabled = true;
     button.style.opacity = '0.8';
     try {
-        const response = await fetch('api/auth/' + kind, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(authFormPayload(kind))});
+        const response = await fetch('api/auth/' + kind, {method: 'POST', headers: {'Content-Type': 'application/json', 'X-SAMPIRA-Portal': '1'}, body: JSON.stringify(authFormPayload(kind))});
         const result = await response.json();
         if (result.status === 'success') await finishAuthentication(kind, result.data);
-        else await Swal.fire({icon: 'error', title: kind === 'login' ? 'Login Gagal' : 'Registrasi Gagal', text: result.message});
+        else await authNotice({icon: 'error', title: kind === 'login' ? 'Login Gagal' : 'Registrasi Gagal', text: result.message});
     } catch {
-        await Swal.fire({icon: 'error', title: 'Kesalahan', text: 'Gagal terhubung ke server.'});
+        await authNotice({icon: 'error', title: 'Kesalahan', text: 'Gagal terhubung ke server.'});
     } finally {
         button.innerText = originalText;
         button.disabled = false;

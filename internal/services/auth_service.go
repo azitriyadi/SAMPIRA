@@ -2,35 +2,45 @@ package services
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
 	"ecorecycle/internal/models"
 )
 
+const SessionTTL = 24 * time.Hour
+
 type AuthService struct {
 	secret string
 }
 
-func NewAuthService(secret string) *AuthService {
-	if secret == "" {
-		secret = "EcoRecycleSecretKey_2026_SecureHMAC"
+func NewAuthService(secret string) (*AuthService, error) {
+	if len(strings.TrimSpace(secret)) < 32 || secret == "EcoRecycleSecretKey_2026_SecureHMAC" || secret == "MasukkanSecretKeyHmacSha256YangSangatRahasiaDiSini" {
+		return nil, fmt.Errorf("JWT_SECRET wajib berisi secret acak minimal 32 byte")
 	}
-	return &AuthService{secret: secret}
+	return &AuthService{secret: secret}, nil
 }
 
 func (s *AuthService) GenerateToken(userID int, role, name string) (string, error) {
+	if userID <= 0 || !models.ValidRole(role) {
+		return "", fmt.Errorf("invalid account")
+	}
+	nonce := make([]byte, 24)
+	if _, err := rand.Read(nonce); err != nil {
+		return "", err
+	}
 	payload := models.TokenPayload{
-		ID:   userID,
-		Role: role,
-		Name: name,
-		Exp:  time.Now().Unix() + (3600 * 24),
+		Nonce: hex.EncodeToString(nonce),
+		ID:    userID,
+		Role:  role,
+		Name:  name,
+		Exp:   time.Now().Add(SessionTTL).Unix(),
 	}
 	jsonBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -72,35 +82,9 @@ func (s *AuthService) ValidateToken(tokenStr string) (*models.TokenPayload, erro
 	if err := json.Unmarshal(decodedPayload, &payload); err != nil {
 		return nil, err
 	}
-	if payload.Exp <= time.Now().Unix() {
+	if payload.ID <= 0 || payload.Exp <= time.Now().Unix() {
 		return nil, fmt.Errorf("token expired")
 	}
 
 	return &payload, nil
-}
-
-func (s *AuthService) UserFromRequest(r *http.Request) (*models.TokenPayload, error) {
-	token := ""
-	authHeader := r.Header.Get("Authorization")
-	if authHeader != "" {
-		if strings.HasPrefix(authHeader, "Bearer ") {
-			token = strings.TrimPrefix(authHeader, "Bearer ")
-		} else {
-			token = authHeader
-		}
-	}
-	if token == "" {
-		token = r.URL.Query().Get("token")
-	}
-	if token == "" {
-		token = r.FormValue("token")
-	}
-	if token == "" {
-		return nil, fmt.Errorf("token autentikasi tidak ditemukan. Silakan login")
-	}
-	payload, err := s.ValidateToken(token)
-	if err != nil {
-		return nil, fmt.Errorf("sesi tidak valid atau telah kedaluwarsa. Silakan login kembali")
-	}
-	return payload, nil
 }

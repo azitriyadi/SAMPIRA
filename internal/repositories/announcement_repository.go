@@ -19,7 +19,7 @@ func (r *AnnouncementRepository) EnsureSchema() error {
 		id INT(11) AUTO_INCREMENT PRIMARY KEY,
 		title VARCHAR(120) NOT NULL,
 		message TEXT NOT NULL,
-		target_role ENUM('all', 'user', 'collector') NOT NULL DEFAULT 'all',
+		target_role ENUM('all', 'user', 'petugas') NOT NULL DEFAULT 'all',
 		is_active BOOLEAN NOT NULL DEFAULT TRUE,
 		created_by INT(11) DEFAULT NULL,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

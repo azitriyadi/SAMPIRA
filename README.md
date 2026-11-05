@@ -1,6 +1,8 @@
-# EcoRecycle - Pengelolaan Sampah Terpilah (Go Edition)
+# SAMPIRA — Sampah, Informasi, Pelaporan, dan Respons Aksi
 
-EcoRecycle adalah platform inovatif yang dirancang untuk mengelola rantai pasok pengumpulan dan daur ulang sampah organik, anorganik terpilah, elektronik, dan B3 rumah tangga di wilayah Bandung (Kota, Kabupaten, dan KBB). Platform ini memfasilitasi alur pengelolaan sampah mulai dari akhir penggunaan (end-of-life) hingga proses daur ulang yang bertanggung jawab di hub daur ulang, sambil memberikan insentif ekonomi digital secara langsung kepada pengguna.
+Phase 2 mengintegrasikan pickup, timbang aktual, dan pencatatan pembayaran eksternal yang diverifikasi. Lihat [progres Phase 2](docs/progress/PHASE_02_PICKUP_WORKFLOW.md), [audit kumulatif](docs/progress/SAMPIRA_PHASE_01_02_COMPREHENSIVE_REPORT.md), dan [changelog](docs/progress/SAMPIRA_PHASE_01_02_CHANGELOG.md).
+
+SAMPIRA mengembangkan alur penjemputan sampah terpilah EcoRecycle. Phase 1 mengamankan autentikasi dan akses ke portal Masyarakat, Petugas, Admin, serta Administrator. Lihat [panduan operasi](docs/phase-01-operations.md) dan [laporan verifikasi final](docs/progress/PHASE_01_FINAL_VERIFICATION.md).
 
 
 ## Cakupan kategori (29 Oktober 2026)
@@ -9,10 +11,10 @@ Landing page, estimator, pengajuan, portal kolektor/admin, dan profil sudah mend
 
 Tarif anorganik memakai acuan awal Bank Sampah Indonesia; organik dan B3 rumah tangga umum adalah setoran tanpa reward awal. Biaya pemrosesan kategori baru belum diberlakukan. Tarif elektronik sebelumnya dipertahankan. Lihat [riset, asumsi tarif, dan batas kategori](docs/waste-categories.md).
 
-**Database yang sudah ada:** jalankan `db_init/add_waste_categories.sql` pada database aplikasi. Migrasi ini hanya menambah kategori yang belum ada. **Jangan menjalankan ulang initializer `db_init/db_init.go` untuk pembaruan: initializer menghapus database.** Inisialisasi baru mencakup seluruh kategori.
+**Database yang sudah ada:** jalankan `db_init/add_waste_categories.sql` pada database aplikasi. Migrasi ini hanya menambah kategori yang belum ada. Untuk migrasi empat role, ikuti [panduan operasi Phase 1](docs/phase-01-operations.md). Inisialisasi database baru mencakup seluruh kategori.
 
 ## ðŸŒŸ Deskripsi Proyek
-Masalah sampah rumah tangga terus meningkat secara eksponensial. EcoRecycle hadir sebagai jembatan yang menghubungkan konsumen (**Eco Warriors**), mitra penjemputan lapangan (**Eco Collectors**), dan manajer keuangan/operasional (**Eco Managers/Admin**). Dengan sistem pelacakan berbasis tracking number unik dan pembayaran reward langsung (tunai/transfer manual), platform ini memastikan sampah tidak berakhir di TPA, melainkan didaur ulang secara aman demi mendukung ekonomi sirkular.
+Masyarakat mengajukan penjemputan dan memantau progresnya. Petugas mengambil permintaan dari antrean. Petugas yang ditugaskan juga mencatat berat aktual di hub. Admin memiliki portal laporan fasilitas. Administrator mengelola pengumuman portal.
 
 ---
 
@@ -21,13 +23,10 @@ Masalah sampah rumah tangga terus meningkat secara eksponensial. EcoRecycle hadi
 1. **Carbon & Eco-Reward Estimator**: Hitung potensi reward menurut kategori serta simulasi karbon dengan faktor tetap 2,5 kg CO2/kg; simulasi ini belum memakai faktor emisi terverifikasi per material.
 2. **Sampah Tracking Timeline**: Lacak perjalanan sampah terpilah Anda dengan timeline interaktif (Pending âž” Dijemput âž” Transit âž” Tiba di Hub âž” Selesai & Dibayar).
 3. **Photo Upload Verification**: Fitur unggah foto sampah saat mengajukan penjemputan untuk memudahkan kolektor melakukan verifikasi visual kondisi awal barang secara remote.
-4. **Direct Eco-Rewards Payout**: Pembayaran kompensasi reward secara langsung (tunai atau transfer bank manual) oleh Eco Manager sesaat setelah sampah terpilah tiba di hub dan diverifikasi timbangan fisiknya.
+4. **Verifikasi berat dan reward final**. Petugas yang ditugaskan mencatat berat aktual untuk perhitungan reward. Setelah timbang, reward positif menunggu pembayaran eksternal. Administrator mencatat pembayaran yang telah diverifikasi dengan bukti.
 5. **Gamified Eco-Level & Impact Score**: Klasifikasi tingkatan pengguna berdasarkan akumulasi berat sampah terpilah yang didonasikan (Bronze Saver, Silver Guardian, Emerald Hero) yang dihitung secara dinamis.
 6. **Interactive Maps (Leaflet.js)**: Pemetaan visual rute perjalanan dan penentuan titik koordinat penjemputan donor oleh kolektor secara interaktif di wilayah Bandung.
-7. **Multi-Role Dashboard**: Panel terintegrasi untuk 3 target pengguna utama:
-   - **Eco Warriors** (Melihat status donasi, grafik tren bulanan, estimasi karbon, unggah foto sampah, & history payout).
-   - **Eco Collectors** (Menerima antrean pickup Bandung, navigasi maps, & klaim komisi hasil penjemputan).
-   - **Eco Managers / Admin** (Analitik volume sampah, live map kolektor, & validasi pembayaran reward secara manual).
+7. **Portal berbasis role**. Masyarakat, Petugas, Admin dan Administrator memakai portal masing-masing.
 
 ---
 
@@ -56,8 +55,9 @@ Masalah sampah rumah tangga terus meningkat secara eksponensial. EcoRecycle hadi
 |       |-- login.html                 # Autentikasi masuk
 |       |-- register.html              # Pendaftaran akun
 |       |-- dashboard.html             # Portal Eco Warrior
-|       |-- collector.html             # Portal Eco Collector
-|       |-- admin.html                 # Portal Eco Manager/Admin
+|       |-- collector.html             # Portal Petugas
+|       |-- admin.html                 # Portal Admin laporan fasilitas
+|       |-- administrator.html         # Portal Administrator dan CMS
 |       `-- profile.html               # Manajemen profil pengguna
 |-- assets/
 |   |-- css/                           # Styling frontend
@@ -82,7 +82,7 @@ Masalah sampah rumah tangga terus meningkat secara eksponensial. EcoRecycle hadi
 |   |   |-- pickup_handler.go
 |   |   |-- tracking_handler.go
 |   |   `-- payout_handler.go
-|   |-- middleware/                    # CORS, request parser, response helper
+|   |-- middleware/                    # Request parser dan response helper
 |   |   `-- auth_middleware.go
 |   |-- models/                        # Model dan konstanta domain
 |   |   |-- user.go
@@ -112,10 +112,10 @@ Basis data `ecorecycle` menggunakan relasi data yang optimal dengan skema beriku
 
 ### Keamanan Web Service
 1. **SQL Injection Prevention**: Seluruh operasi query database menggunakan parameter placeholder `?` (`db.Prepare()` atau `db.QueryRow()`, `db.Exec()`) bawaan driver Go MySQL.
-2. **Stateless API Authentication**: Menggunakan sistem **Signed Token kustom** berbasis algoritma **HMAC SHA-256** untuk menjamin keamanan request API tanpa menggunakan session (mencegah pembajakan sesi).
+2. **Autentikasi API**. Token HMAC-SHA256 berlaku hingga 24 jam. API menerima Bearer atau cookie HttpOnly same-origin. Server memeriksa sesi, status akun dan role terkini setiap kali. Logout mencabut sesi di server.
 3. **Pemisahan Kredensial**: Semua data sensitif (password DB, JWT Secret Key) disimpan di file `.env` yang diabaikan oleh Git.
 4. **Server-Side Input Validation**: 
-   - Validasi format email secara presisi.
+   - Pemeriksaan dasar format email.
    - Validasi kekuatan kata sandi minimal 6 karakter saat registrasi.
    - Validasi tipe data numerik positif untuk berat limbah (mencegah nilai negatif).
 
@@ -124,7 +124,7 @@ Basis data `ecorecycle` menggunakan relasi data yang optimal dengan skema beriku
 2. **Tabel `waste_categories`**: Daftar kategori sampah terpilah dan rate reward per kilogram (KG).
 3. **Tabel `pickups`**: Tabel transaksi donasi utama. Dilengkapi kolom `photo_url` untuk foto limbah dan kolom `collector_id` untuk pemetaan kurir penjemput.
 4. **Tabel `pickup_history`**: Mencatat detail lini masa dan riwayat mutasi status donasi.
-5. **Tabel `transactions`**: Menyimpan log audit transaksi payout reward langsung ke masyarakat.
+5. **Tabel `transactions`**: Menyimpan riwayat transaksi. Status historis memerlukan rekonsiliasi bukti eksternal.
 
 ---
 
@@ -140,12 +140,12 @@ Basis data `ecorecycle` menggunakan relasi data yang optimal dengan skema beriku
    ```bash
    cp .env.example .env
    ```
-2. Sesuaikan kredensial basis data Anda (seperti port, user, password DB) di dalam `.env`.
+2. Sesuaikan kredensial database dan isi `JWT_SECRET` dengan nilai acak minimal 32 byte. Setel `SAMPIRA_LISTEN_HOST=127.0.0.1` untuk pengembangan lokal. Untuk HTTPS di belakang reverse proxy tepercaya, aktifkan `SAMPIRA_SECURE_COOKIE=true`.
 
 ### 3. Inisialisasi Database
-Jalankan skrip inisialisasi basis data dan pengisian awal data seeder:
+Untuk skema baru, jalankan initializer berikut. Untuk skema yang sudah ada, ikuti [prosedur migrasi](docs/phase-01-operations.md#migrasi-database-yang-sudah-ada).
 ```powershell
-go run db_init/db_init.go
+go run ./db_init
 ```
 *(Catatan: Folder dinamai `db_init` agar Windows UAC tidak memblokir jalannya file executable biner dengan label "setup" / "install" saat eksekusi)*
 
@@ -157,31 +157,29 @@ go build -o ecorecycle.exe ./cmd/server
 ```
 Buka browser pada alamat: **`http://localhost:8080`**
 
-### 5. Kredensial Akun Demo
-Login menggunakan kredensial demo berikut (password default: `password123`):
-* **Eco Manager (Admin)**: `admin@ecorecycle.com`
-* **Eco Collector (Kolektor)**: `collector@ecorecycle.com`
-* **Eco Warrior (User)**: `user@ecorecycle.com`
+### 5. Akun aplikasi
+
+Registrasi publik menghasilkan akun Masyarakat. Ikuti [prosedur bootstrap](docs/phase-01-operations.md#bootstrap-administrator) untuk membuat Administrator.
 
 ---
 
 ## ðŸŒ Dokumentasi API (Web Service)
 
-Semua request API mengembalikan respons JSON seragam dengan header CORS dan HTTP response status codes yang tepat (misal: 201 Created, 401 Unauthorized, 405 Method Not Allowed).
+Semua request API mengembalikan respons JSON seragam dengan HTTP response status codes yang tepat (misal: 201 Created, 401 Unauthorized, 405 Method Not Allowed).
 
 ### 1. Autentikasi Pengguna
 * **Login**: `POST /api/auth/login`
   - Input: `{"email": "...", "password": "..."}`
   - Output: Mengembalikan Signed Token (HMAC SHA256) untuk hak akses di request berikutnya.
 * **Register**: `POST /api/auth/register`
-  - Input: `{"name": "...", "email": "...", "password": "...", "role": "user"}`
+  - Input: `{"name": "...", "email": "...", "password": "..."}`
   - Fitur: Memvalidasi format email dan panjang sandi minimal 6 karakter.
 
 ### 2. Pengelolaan Sampah (Memerlukan Token Autentikasi)
 * **Request Penjemputan**: `POST /api/ecorecycle/request_pickup` (Multipart Form-Data)
   - Header: `Authorization: Bearer <token>`
   - Input: `item_description` (text), `pickup_address` (text), `contact_phone` (text), `weight_kg` (numeric > 0), `category` (text), `photo` (file gambar - opsional)
-* **Ambil Tugas (Kolektor)**: `POST /api/ecorecycle/assign_collector`
+* **Ambil Tugas (Petugas)**: `POST /api/ecorecycle/assign_collector`
   - Header: `Authorization: Bearer <token>`
   - Input: `{"tracking_number": "ECR-XXXX-XXXXX"}`
 * **Pembaruan Status Misi**: `POST /api/ecorecycle/pickup_status`
@@ -191,7 +189,7 @@ Semua request API mengembalikan respons JSON seragam dengan header CORS dan HTTP
 * **Kalkulator Estimator**: `POST /api/ecorecycle/estimate_reward`
   - Input: `{"category": "...", "weight_kg": ...}`
   - Fitur: Mengambil data tarif terkini dari database MySQL secara real-time.
-* **Pencairan Reward (Admin)**: `POST /api/ecorecycle/process_payout`
+* **Pencatatan Pembayaran Eksternal (Administrator)**: `POST /api/ecorecycle/process_payout`
   - Header: `Authorization: Bearer <token>`
   - Input: `{"pickup_id": ...}`
 
@@ -202,9 +200,8 @@ Semua request API mengembalikan respons JSON seragam dengan header CORS dan HTTP
 ```mermaid
 sequenceDiagram
     participant User as Eco Warrior (Masyarakat)
-    participant Coll as Eco Collector (Kolektor)
+    participant Coll as Petugas
     participant Sys as Sistem EcoRecycle (Go Server)
-    participant Admin as Eco Manager (Admin)
  
     User->>Sys: Hitung reward di estimator & Ajukan Penjemputan (Unggah Info + Foto)
     Sys-->>User: Berikan Nomor Pelacakan Unik (ECR-YYYYMMDD-XXXXX)
@@ -212,24 +209,23 @@ sequenceDiagram
     Sys-->>Coll: Tampilkan Navigasi Peta Rute & Detail Foto Limbah
     Coll->>Sys: Perbarui Status ke Penjemputan & Di Perjalanan (TRANSIT)
     Coll->>Sys: Tiba di Hub & Serahkan Limbah ke Pusat Daur Ulang (ARRIVED)
-    Admin->>Sys: Validasi Berat Fisik & Bayarkan Reward (Tunai / Transfer Manual)
-    Sys->>Sys: Ubah Status ke Selesai (COMPLETED) & Simpan Log Audit Transaksi
-    Sys-->>User: Riwayat Payout Diperbarui & Saldo Reward Diterima
+    Coll->>Sys: Catat Berat Aktual di Hub
+    Sys-->>User: Tampilkan Progres dan Berat Aktual
 ```
 
 ---
 
 ## ðŸ› ï¸ Pemecahan Masalah (Troubleshooting)
 
-1. **UAC Elevation Required saat setup**: Windows secara default menolak eksekusi biner dengan nama yang mengandung kata "setup". Gunakan build rename: `go build -o db_installer.exe setup.go` lalu jalankan `.\db_installer.exe`.
+1. **UAC Elevation Required saat setup**: Windows secara default menolak eksekusi biner dengan nama yang mengandung kata "setup". Gunakan build rename: `go build -o db_installer.exe ./db_init` lalu jalankan `.\db_installer.exe`.
 2. **Koneksi Database Terputus / Refused**: Pastikan MySQL di XAMPP Control Panel sudah aktif. Jika Anda menggunakan port non-standar (misalnya `3307`), buka file `.env` dan ubah `DB_HOST=localhost` menjadi `DB_HOST=localhost:3307`.
 3. **API Mengembalikan Error 401**: Pastikan header `Authorization` dikirimkan dalam format `Bearer <token>` dan token belum kadaluwarsa (berlaku 24 jam setelah login).
-4. **Tombol Log Out Menghasilkan 404**: Ini sudah diperbaiki secara menyeluruh dengan memperbarui target link pengalihan dari `'auth'` menjadi `'login'` yang valid di berkas JS frontend.
+4. **Sesi portal kedaluwarsa**. Login kembali untuk memperbarui cookie dan token.
 
 ---
 
 ## ðŸ“ˆ Persentase Progress Aplikasi saat ini
-### **Progress Aplikasi: 100% Selesai & Siap Digunakan**
+### Riwayat konversi backend EcoRecycle
 Backend platform telah sepenuhnya dikonversi ke **Go (Golang)**:
 - [x] **Inisialisasi Modul & Dependensi Go** (100% Selesai)
 - [x] **Installer Database setup.go & db_installer.exe** (100% Selesai)

@@ -262,19 +262,17 @@
 
             fetch('api/auth/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-SAMPIRA-Portal': '1' },
                 body: JSON.stringify({ email, password })
             })
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
                     alert('Login berhasil! Selamat datang, ' + data.data.name);
-                    localStorage.setItem('user', JSON.stringify(data.data));
 
                     // Redirect based on role
-                    if(data.data.role === 'admin') window.location.href = 'admin';
-                    else if(data.data.role === 'kurir') window.location.href = 'kurir';
-                    else window.location.href = 'dashboard';
+                    const destinations = {user: 'dashboard', petugas: 'petugas', admin: 'admin', administrator: 'administrator'};
+                    window.location.href = destinations[data.data.role] || 'login';
                 } else {
                     alert('Error: ' + data.message);
                 }
@@ -291,8 +289,8 @@
 
             fetch('api/auth/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password, role: 'user' }) // Default register as user
+                headers: { 'Content-Type': 'application/json', 'X-SAMPIRA-Portal': '1' },
+                body: JSON.stringify({ name, email, password }) // Default register as user
             })
             .then(res => res.json())
             .then(data => {

@@ -12,14 +12,10 @@
     async function load(sectionId, listId) {
         const section = document.getElementById(sectionId);
         const list = document.getElementById(listId);
-        const session = localStorage.getItem('user');
-        if (!section || !list || !session) return;
+        if (!section || !list) return;
 
         try {
-            const user = JSON.parse(session);
-            const response = await fetch('api/ecorecycle/announcements', {
-                headers: { 'Authorization': 'Bearer ' + user.token }
-            });
+            const response = await portalFetch('/api/ecorecycle/announcements');
             const result = await response.json();
             if (result.status !== 'success' || !result.data || result.data.length === 0) {
                 section.style.display = 'none';

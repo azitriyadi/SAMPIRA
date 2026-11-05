@@ -13,20 +13,8 @@ type Response struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
-func CORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
 func SendResponse(w http.ResponseWriter, status string, message string, data interface{}, httpCode int) {
+	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(httpCode)
 	json.NewEncoder(w).Encode(Response{
@@ -56,11 +44,8 @@ func RequestData(r *http.Request) map[string]string {
 		return data
 	}
 
-	r.ParseMultipartForm(10 << 20)
-	for k, v := range r.Form {
-		if len(v) > 0 {
-			data[k] = v[0]
-		}
+	if err := r.ParseMultipartForm(10 << 20); err != nil && err != http.ErrNotMultipart {
+		return data
 	}
 	for k, v := range r.PostForm {
 		if len(v) > 0 {

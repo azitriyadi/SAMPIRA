@@ -2,7 +2,7 @@
 // Checks the regressions reported by the editor without needing SonarQube.
 const fs = require('node:fs');
 const assert = require('node:assert/strict');
-const pages = ['admin', 'collector', 'dashboard', 'index', 'login', 'register', 'profile', 'auth'];
+const pages = ['admin', 'administrator', 'collector', 'dashboard', 'index', 'login', 'register', 'profile', 'auth'];
 function cssBlockEnd(css, open, file) {
     let depth = 1, quote = '';
     for (let end = open + 1; end < css.length; end++) {
@@ -69,4 +69,4 @@ const profile = fs.readFileSync('app/Views/profile.html', 'utf8');
 assert(profile.includes('prefers-reduced-motion'), 'profile: missing reduced-motion support');
 assert(!/transition\s*:\s*(?:all\b|\.?\d+(?:ms|s)\s*[;}])/.test(profile), 'profile: unspecified transition properties');
 assert(!profile.includes("getAttribute('data-target')"), 'profile: prefer dataset');
-console.log('PASS: 8 HTML views checked for CDN integrity/pinning, keyboard controls, native semantics, labels, and zoom; target CSS has no duplicate selectors, !important, or unspecified transitions.');
+console.log(`PASS: ${pages.length} HTML views checked for CDN integrity/pinning, keyboard controls, native semantics, labels, and zoom; target CSS has no duplicate selectors, !important, or unspecified transitions.`);

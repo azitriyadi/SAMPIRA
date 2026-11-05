@@ -2,8 +2,12 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	httpx "ecorecycle/internal/middleware"
 	"ecorecycle/internal/models"
@@ -27,36 +31,11 @@ func (p *apiProblem) write(w http.ResponseWriter) {
 	httpx.SendResponse(w, "error", p.message, nil, p.status)
 }
 
-func pickupRequestData(r *http.Request) map[string]string {
-	err := r.ParseMultipartForm(10 << 20)
-	if err != nil || r.MultipartForm == nil || len(r.MultipartForm.Value) == 0 {
-		return httpx.RequestData(r)
-	}
-	data := make(map[string]string)
-	for key, values := range r.MultipartForm.Value {
-		if len(values) > 0 {
-			data[key] = values[0]
-		}
-	}
-	return data
-}
-
 func optionalString(value *string) string {
 	if value == nil {
 		return ""
 	}
 	return *value
-}
-
-func assignmentCollectorID(user *models.TokenPayload, rawID string) int {
-	if user.Role != "admin" || rawID == "" {
-		return user.ID
-	}
-	id, err := strconv.Atoi(rawID)
-	if err != nil {
-		return user.ID
-	}
-	return id
 }
 
 func valueOrDefault(value, fallback string) string {
@@ -78,8 +57,23 @@ func validPickupTransition(current, next string) bool {
 }
 
 func ownsPickupStatus(user *models.TokenPayload, collectorID sql.NullInt64) bool {
-	if user.Role == "admin" {
-		return true
+	return user.Role == models.RolePetugas && collectorID.Valid && int(collectorID.Int64) == user.ID
+}
+
+var decimalWeight = regexp.MustCompile(`^[0-9]{1,5}(\.[0-9]{1,2})?$`)
+var pickupContact = regexp.MustCompile(`^(\+62|62|0)8[0-9]{8,13}$`)
+
+func pickupWeight(raw string) (float64, error) {
+	raw = strings.TrimSpace(raw)
+	weight, err := strconv.ParseFloat(raw, 64)
+	if err != nil || !decimalWeight.MatchString(raw) || weight <= 0 {
+		return 0, fmt.Errorf("berat harus positif dan memiliki paling banyak dua desimal")
 	}
-	return collectorID.Valid && int(collectorID.Int64) == user.ID
+	return weight, nil
+}
+
+func validPickupContact(address, phone string) bool {
+	digits := strings.NewReplacer(" ", "", "-", "").Replace(phone)
+	return utf8.RuneCountInString(address) >= 15 && len(address) <= 1000 &&
+		len(phone) <= 20 && pickupContact.MatchString(digits)
 }
