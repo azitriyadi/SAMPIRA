@@ -82,6 +82,9 @@ try {
     }
     assert(ready && server.exitCode === null, 'Isolated HTTP server failed to start.');
     execFileSync(process.execPath, [resolve('scripts/check-api-regressions.mjs')], {cwd, env, stdio: 'inherit'});
+    if (process.env.SAMPIRA_TEST_PHASE3 === '1') {
+        execFileSync(process.execPath, [resolve('scripts/check-phase3-reports.mjs')], {cwd, env, stdio: 'inherit'});
+    }
     if (process.env.SAMPIRA_TEST_CHROME) {
         execFileSync(process.execPath, [resolve('scripts/check-phase1-browser.mjs')], {cwd, env, stdio: 'inherit'});
     }

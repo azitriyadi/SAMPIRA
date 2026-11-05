@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"ecorecycle/db_init/migrations"
 	"ecorecycle/internal/handlers"
 	"ecorecycle/internal/models"
 	"ecorecycle/internal/repositories"
@@ -121,6 +123,9 @@ func main() {
 	if err := app.Announcements.EnsureSchema(); err != nil {
 		log.Fatalf("Gagal menyiapkan tabel CMS portal: %v", err)
 	}
+	if err := migrations.ApplyFacilityReports(context.Background(), db); err != nil {
+		log.Fatalf("Gagal menyiapkan skema laporan fasilitas: %v", err)
+	}
 
 	mux := http.NewServeMux()
 
@@ -188,6 +193,7 @@ func main() {
 	mux.HandleFunc("GET /api/ecorecycle/announcements", app.ListAnnouncementsHandler)
 	mux.HandleFunc("POST /api/ecorecycle/announcements", app.ManageAnnouncementsHandler)
 	mux.HandleFunc("DELETE /api/ecorecycle/announcements", app.DeleteAnnouncementHandler)
+	app.RegisterFacilityReports(mux)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
