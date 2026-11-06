@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="sampira-routing-url" content="">
+    <meta name="sampira-routing-profile" content="driving">
     <title>Collector Portal | EcoRecycle</title>
 
     <!-- Google Fonts -->
@@ -20,13 +22,14 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/collector-base.css?v=quality4">
+    <link rel="stylesheet" href="/assets/css/location-map.css?v=phase5b">
     <link rel="stylesheet" href="assets/css/collector-inline.css?v=quality4">
-    <link rel="stylesheet" href="assets/css/portal-system.css?v=20261029-quality5">
+    <link rel="stylesheet" href="assets/css/portal-system.css?v=phase5b">
     <link rel="stylesheet" href="assets/css/portal-controls.css?v=20261029-quality5">
-    <script src="/assets/js/portal-session.js?v=phase1-final"></script>
+    <script src="/assets/js/portal-session.js?v=phase5b"></script>
     <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase4b">
     <link rel="stylesheet" href="/assets/css/facility-handling.css?v=phase4b">
-    <script type="module" src="/assets/js/facility-handling.js?v=phase4b"></script>
+    <script type="module" src="/assets/js/facility-handling.js?v=phase5b"></script>
 </head>
 
 <body class="portal-page role-collector">
@@ -197,11 +200,8 @@
                     </section>
                 </div>
 
+                <div id="mission-location" aria-live="polite"></div>
                 <div class="mission-actions">
-                    <button type="button" class="collector-action-btn secondary" onclick="openMissionRoute()">
-                        <i class="fas fa-diamond-turn-right"></i>
-                        <span>Buka rute</span>
-                    </button>
                     <button type="button" class="collector-action-btn primary" id="mission-btn">
                         <i class="fas fa-circle-check"></i>
                         <span>Perbarui status misi</span>
@@ -282,7 +282,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="assets/js/portal-announcements.js?v=phase1-final"></script>
-    <script src="assets/js/collector.js?v=phase2"></script>
+    <script src="assets/js/collector.js?v=phase5b"></script>
 </body>
 
 </html>

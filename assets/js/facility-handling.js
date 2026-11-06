@@ -1,7 +1,8 @@
-import {base, request} from './facility-api.js?v=phase4b';
+import {base, request} from './facility-api.js?v=phase5b';
 import {categories, element, options} from './facility-report-ui.js?v=phase4b';
 import {button, handlingCard, handlingEvent, handlingStatuses, handlingSummary} from './facility-handling-ui.js?v=phase4b';
 import {handlingActions, openHandlingForm} from './facility-handling-form.js?v=phase4b';
+import {mountLocationDetail} from './location-map.js?v=phase5b';
 
 const listPath = base + '/handling';
 const pageLimit = 20;
@@ -153,6 +154,7 @@ function workspace(root) {
     let detailSequence = 0;
     let cursor = null;
     let selected;
+    let disposeLocation;
     function handleReadError(error, destination) {
         if (error.status === 401) sessionEnded(errorBox);
         else destination.textContent = message(error);
@@ -188,6 +190,7 @@ function workspace(root) {
     function showList() {
         ++detailSequence;
         selected = null;
+        disposeLocation?.();
         detailBody.replaceChildren();
         detailView.hidden = true;
         listView.hidden = false;
@@ -203,6 +206,7 @@ function workspace(root) {
         listView.hidden = true;
         detailHeading.focus();
         const status = element('output', 'Memuat detail penanganan…', 'facility-muted');
+        disposeLocation?.();
         detailBody.replaceChildren(status);
         refresh.disabled = true;
         try {
@@ -235,8 +239,34 @@ function workspace(root) {
                     }
                 }, () => sessionEnded(errorBox));
             }, true));
-            detailBody.replaceChildren(handlingSummary(report, role), actions, history.root);
+            const location = element('div');
+            detailBody.replaceChildren(handlingSummary(report, role), location, actions, history.root);
+            disposeLocation = mountLocationDetail(location, {
+                title: 'Titik lokasi fasilitas', point: report, address: report.address, reported: true,
+                navigation: admin ? null : {authorize, recheck: true}
+            });
             void history.load();
+
+            async function authorize() {
+                if (sequence !== detailSequence || root.hidden || !root.getClientRects().length) return false;
+                try {
+                    const latest = await request(detailPath(id));
+                    if (sequence !== detailSequence || !root.getClientRects().length) return false;
+                    if (['latitude', 'longitude', 'address'].some(field => latest[field] !== report[field])) {
+                        void openDetail(id);
+                        return false;
+                    }
+                    return true;
+                } catch (error) {
+                    if (sequence !== detailSequence) return false;
+                    if ([401, 403, 404].includes(error.status)) {
+                        handleReadError(error, errorBox);
+                        showList();
+                        return false;
+                    }
+                    throw new Error('Akses tugas belum dapat diperiksa. Coba lagi saat koneksi tersedia.');
+                }
+            }
         } catch (error) {
             if (sequence !== detailSequence) return;
             handleReadError(error, errorBox);
@@ -260,6 +290,7 @@ function workspace(root) {
     if (admin) document.querySelector('[data-open-verification]').addEventListener('click', event => {
         ++detailSequence;
         ++listSequence;
+        disposeLocation?.();
         detailBody.replaceChildren();
         root.hidden = true;
         const verification = document.querySelector('[data-facility-reports="admin"]');
@@ -267,6 +298,13 @@ function workspace(root) {
         verification.querySelector('h2')?.focus();
         event.currentTarget.setAttribute('aria-pressed','true');
         document.querySelector('[data-open-handling]').setAttribute('aria-pressed','false');
+    });
+    if (!admin) window.addEventListener('sampira:collector-view', () => {
+        if (root.getClientRects().length) return;
+        ++detailSequence;
+        selected = null;
+        disposeLocation?.();
+        detailBody.replaceChildren();
     });
 }
 

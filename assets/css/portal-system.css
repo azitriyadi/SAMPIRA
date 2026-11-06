@@ -825,7 +825,7 @@ body.portal-page footer {
         transform: translateX(0);
     }
 
-    .role-collector .sidebar {
+    body.role-collector .sidebar {
         display: none;
     }
 

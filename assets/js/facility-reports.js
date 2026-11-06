@@ -1,7 +1,8 @@
-import {mountReportForm} from './facility-report-form.js?v=phase4b';
+import {mountReportForm} from './facility-report-form.js?v=phase5b';
 import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=phase4b';
-import {base, request} from './facility-api.js?v=phase4b';
-import {mountPublicHandling} from './facility-handling.js?v=phase4b';
+import {base, request} from './facility-api.js?v=phase5b';
+import {mountPublicHandling} from './facility-handling.js?v=phase5b';
+import {mountLocationDetail} from './location-map.js?v=phase5b';
 
 const pageLimit = 20;
 
@@ -44,11 +45,13 @@ function init(root) {
     let retryCursor = null;
     let historyCursor = null;
     let selected;
+    let detailID;
     let editing;
     let postAttempt;
     let busy = false;
     let initialized = false;
     let sessionEnding = false;
+    let disposeLocation;
     if (admin) $('status').value = 'pending';
 
     function announce(text, error = false) {
@@ -69,6 +72,7 @@ function init(root) {
 
     function show(view) {
         if (view !== 'list') ++listRequest;
+        if (view !== 'detail') disposeLocation?.();
         for (const panel of ['list', 'detail', 'form']) {
             const section = $(panel + '-view');
             if (section) section.hidden = panel !== view;
@@ -119,6 +123,7 @@ function init(root) {
     function showList() {
         ++detailRequest;
         selected = null;
+        detailID = null;
         announce('');
         show('list');
         void loadList();
@@ -131,9 +136,11 @@ function init(root) {
 
     async function loadDetail(id) {
         if (!Number.isSafeInteger(id) || id < 1) return;
+        detailID = id;
         const sequence = ++detailRequest;
         selected = null;
         show('detail');
+        disposeLocation?.();
         $('detail').replaceChildren();
         history.replaceChildren();
         $('history-section').hidden = true;
@@ -147,7 +154,11 @@ function init(root) {
             if (sequence !== detailRequest) return;
             selected = report;
             $('detail-message').hidden = true;
-            $('detail').replaceChildren(reportDetails(report, admin, base));
+            const location = document.createElement('div');
+            $('detail').replaceChildren(reportDetails(report, admin, base), location);
+            disposeLocation = mountLocationDetail(location, {
+                title: 'Titik lokasi fasilitas', point: report, address: report.address, reported: true
+            });
             if (!admin) mountPublicHandling($('detail'), report);
             action.hidden = admin ? report.status !== 'pending' : report.status !== 'revision_required';
             if (admin) {
@@ -376,6 +387,13 @@ function init(root) {
     for (const button of backButtons) button.addEventListener('click', showList);
     if (admin) {
         initAdmin();
+        document.querySelector('[data-open-handling]').addEventListener('click', () => {
+            ++detailRequest;
+            disposeLocation?.();
+        });
+        document.querySelector('[data-open-verification]').addEventListener('click', () => {
+            if (detailID) void loadDetail(detailID);
+        });
         void loadList();
     } else {
         initUser();

@@ -1,8 +1,23 @@
 // EcoRecycle Collector Portal Logic
 
 let map;
-let activeTrackingNum = null;
 let globalActiveMission = null;
+let missionSequence = 0;
+let disposeMissionLocation;
+const missionLocation = document.getElementById('mission-location');
+const missionMaps = import('/assets/js/location-map.js?v=phase5b');
+
+function clearMissionLocation() {
+    ++missionSequence;
+    disposeMissionLocation?.();
+    disposeMissionLocation = null;
+    missionLocation.replaceChildren();
+    document.getElementById('mission-dest').textContent = '—';
+    document.getElementById('mission-details').replaceChildren();
+    const button = document.getElementById('mission-btn');
+    button.disabled = true;
+    button.onclick = null;
+}
 
 const upcomingList = document.getElementById('upcoming-task-list');
 const historyBody = document.getElementById('history-table-body');
@@ -65,12 +80,14 @@ function initMap() {
 }
 
 function switchView(viewId, element) {
+    if (viewId !== 'active-mission') clearMissionLocation();
     document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
     const target = document.getElementById('view-' + viewId);
     if (target) {
         target.classList.add('active');
         if (viewId === 'dashboard') setTimeout(initMap, 100);
     }
+    window.dispatchEvent(new Event('sampira:collector-view'));
 
     document.querySelectorAll('.sidebar-item, .nav-item').forEach(item => item.classList.remove('active'));
     if (element) {
@@ -89,7 +106,7 @@ function switchView(viewId, element) {
 
 function openActiveMission() {
     if (globalActiveMission) {
-        viewActiveMission(globalActiveMission);
+        void viewActiveMission(globalActiveMission.tracking_number);
     } else {
         Swal.fire({
             icon: 'info',
@@ -101,8 +118,64 @@ function openActiveMission() {
     }
 }
 
-function viewActiveMission(item) {
-    activeTrackingNum = item.tracking_number;
+async function fetchMission(tracking) {
+    const query = new URLSearchParams({tracking_number: tracking});
+    const response = await portalFetch('/api/ecorecycle/pickup_status?' + query);
+    if ([401, 403, 404].includes(response.status)) return null;
+    const body = await response.json();
+    if (!response.ok || !body.data) throw new Error('Detail tugas belum dapat dimuat. Coba lagi.');
+    return body.data;
+}
+
+async function viewActiveMission(tracking) {
+    clearMissionLocation();
+    switchView('active-mission');
+    const sequence = missionSequence;
+    document.getElementById('mission-resi').textContent = '—';
+    document.getElementById('mission-status').textContent = 'Memuat';
+    missionLocation.textContent = 'Memuat lokasi penjemputan…';
+    try {
+        const item = await fetchMission(tracking);
+        if (sequence !== missionSequence) return;
+        if (!item) {
+            missionLocation.textContent = 'Detail pickup tidak tersedia untuk akun ini.';
+            void loadCollectorData();
+            return;
+        }
+        renderMission(item);
+        try {
+            const {mountLocationDetail} = await missionMaps;
+            if (sequence !== missionSequence) return;
+            disposeMissionLocation = mountLocationDetail(missionLocation, {
+                title: 'Titik tujuan penjemputan', point: item, address: item.pickup_address,
+                navigation: {authorize}
+            });
+        } catch {
+            missionLocation.textContent = 'Peta belum tersedia. Gunakan alamat penjemputan.';
+        }
+
+        async function authorize() {
+            if (sequence !== missionSequence) return false;
+            const latest = await fetchMission(tracking);
+            if (sequence !== missionSequence) return false;
+            if (!latest) {
+                clearMissionLocation();
+                missionLocation.textContent = 'Akses tugas berakhir. Kembali ke daftar tugas.';
+                void loadCollectorData();
+                return false;
+            }
+            if (['latitude', 'longitude', 'pickup_address'].some(field => latest[field] !== item[field])) {
+                void viewActiveMission(tracking);
+                return false;
+            }
+            return true;
+        }
+    } catch (error) {
+        if (sequence === missionSequence) missionLocation.textContent = error.message;
+    }
+}
+
+function renderMission(item) {
     globalActiveMission = item;
     const statusMeta = getCollectorStatusMeta(item.status);
     
@@ -146,7 +219,6 @@ function viewActiveMission(item) {
             btn.onclick = () => recordActualWeight(item.id);
         }
     }
-    switchView('active-mission');
 }
 
 async function recordActualWeight(pickupId) {
@@ -169,21 +241,6 @@ async function recordActualWeight(pickupId) {
     } catch (error) {
         await Swal.fire({icon: 'error', title: 'Gagal mencatat berat', text: error.message});
     }
-}
-
-function openMissionRoute() {
-    if (!globalActiveMission?.pickup_address) {
-        Swal.fire({
-            icon: 'info',
-            title: 'Alamat Belum Tersedia',
-            text: 'Pilih misi aktif terlebih dahulu untuk membuka rute.',
-            confirmButtonColor: '#087a5b'
-        });
-        return;
-    }
-
-    const destination = encodeURIComponent(globalActiveMission.pickup_address);
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank', 'noopener,noreferrer');
 }
 
 async function updateMissionStatus(trackingNum, newStatus, location, notes) {
@@ -216,6 +273,7 @@ async function claimPickup(trackingNum) {
         }
         await Swal.fire({icon: 'success', title: 'Tugas Diambil!', text: 'Silakan lihat rincian alamat penjemputan masyarakat di tab Misi Aktif.', confirmButtonColor: '#126048'});
         loadCollectorData();
+        void viewActiveMission(trackingNum);
     } catch {
         await Swal.fire({icon: 'error', title: 'Kesalahan', text: 'Gagal menghubungi server.', confirmButtonColor: '#126048'});
     }
@@ -240,7 +298,7 @@ function renderAssignedCollectorTask(item) {
     const colors = {transit: ['#276e57', '#f0fdfa'], arrived: ['#15803d', '#f0fdf4']};
     const [badgeColor, badgeBg] = colors[item.status] || ['#1d4ed8', '#eff6ff'];
     return `
-                            <button type="button" class="task-item" data-mission="${encodeURIComponent(JSON.stringify(item))}" onclick="viewActiveMission(JSON.parse(decodeURIComponent(this.dataset.mission)))">
+                            <button type="button" class="task-item" data-mission="${escapePortalHTML(item.tracking_number)}" onclick="viewActiveMission(this.dataset.mission)">
                                 <div style="display:flex; align-items:center; gap:14px;">
                                     <div style="background:#ecfdf5; color: #087443; width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.2rem;"><i class="fas fa-truck-pickup"></i></div>
                                     <div>

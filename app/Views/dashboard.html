@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+    <link rel="stylesheet" href="/assets/css/location-map.css?v=phase5b">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.6.1/dist/chart.umd.min.js" integrity="sha384-Emf5ZVIUiarAdhkgtqK+5/Z5qIvM6QoVrS+qAVtfyZVuD5lIHrac0me485+Antp0" crossorigin="anonymous"></script>
 
@@ -23,9 +24,9 @@
     <link rel="stylesheet" href="assets/css/user-inline.css?v=20261029-quality5">
     <link rel="stylesheet" href="assets/css/user-flat.css?v=20261029-quality5">
     <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase4b">
-    <script src="/assets/js/portal-session.js?v=phase1-final"></script>
+    <script src="/assets/js/portal-session.js?v=phase5b"></script>
     <link rel="stylesheet" href="/assets/css/facility-handling.css?v=phase4b">
-    <script type="module" src="/assets/js/facility-reports.js?v=phase4b"></script>
+    <script type="module" src="/assets/js/facility-reports.js?v=phase5b"></script>
 </head>
 
 <body class="portal-page role-warrior">
@@ -258,6 +259,7 @@
                                 <textarea id="form-pickup-address" placeholder="Tulis alamat lengkap penjemputan beserta kec/desa" required data-inline-style="width: 100%; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 16px 14px 44px; font-family: inherit; font-size: 0.95rem; background: var(--bg-muted); height: 80px; resize: none;" class="u-adfa9cad7f"></textarea>
                             </div>
                         </div>
+                        <div id="pickup-location-picker"></div>
                         </div>
 
                         <div class="pickup-step-block">
@@ -358,12 +360,7 @@
                         <button class="btn btn-secondary u-4fef9156b4" onclick="searchTracking()" data-inline-style="border-radius:12px; font-weight:700; padding:0 24px;">Lacak</button>
                     </div>
 
-                    <section class="user-map-panel" aria-labelledby="user-map-title">
-                        <div class="user-map-heading"><div><h3 id="user-map-title">Peta penjemputan</h3><p>Bandung dan sekitarnya</p></div><button type="button" id="user-map-reset" aria-label="Kembalikan peta ke area Bandung"><i class="fas fa-crosshairs" aria-hidden="true"></i> Area Bandung</button></div>
-                        <section id="user-tracking-map" aria-label="Peta interaktif area Bandung"></section>
-                        <div class="user-map-details"><div><strong id="user-map-tracking">Alamat penjemputan</strong><p id="user-map-address">Cari nomor pelacakan untuk melihat alamat setoranmu.</p></div><a id="user-map-address-link" target="_blank" rel="noopener noreferrer" hidden>Lihat alamat di Google Maps ↗</a></div>
-                        <div class="user-map-footnote">Peta menunjukkan area Bandung. Titik penjemputan dan posisi GPS kolektor belum tersedia. <a href="https://www.openstreetmap.org/#map=11/-6.9175/107.6191" target="_blank" rel="noopener noreferrer">Buka peta penuh ↗</a><output id="user-map-load-status"></output></div>
-                    </section>
+                    <div id="user-tracking-location"></div>
                     <!-- Timeline Hasil Lacak -->
                     <div id="tracking-timeline-container" data-inline-style="display: none; animation: fadeIn 0.4s ease;" class="u-316af56250">
                         <div data-inline-style="display:flex; justify-content:space-between; align-items:flex-start; background: var(--gray-50); border: 1px solid var(--gray-200); padding: 24px; border-radius: 16px; margin-bottom: 32px; flex-wrap:wrap; gap:16px;" class="u-8b9476c4c7">
@@ -517,9 +514,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="assets/js/portal-announcements.js?v=phase1-final"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
-    <script src="assets/js/user-map.js?v=20261029-map"></script>
+    <script src="assets/js/user-map.js?v=phase5b"></script>
     <script src="assets/js/waste-categories.js?v=20261029-categories2"></script>
-    <script src="assets/js/dashboard.js?v=phase12-audit"></script>
+    <script src="assets/js/dashboard.js?v=phase5b"></script>
 </body>
 
 </html>
