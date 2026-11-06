@@ -59,7 +59,7 @@ for (const page of pages) {
         assert(labelled, `${page}: input missing label: ${id || input}`);
     }
 }
-for (const file of ['auth-flat', 'landing', 'user-flat', 'collector', 'admin', 'portal-system', 'admin-inline', 'user-inline']) {
+for (const file of ['auth-flat', 'landing', 'user-flat', 'collector', 'admin', 'portal-system', 'admin-inline', 'user-inline', 'facility-reports']) {
     const css = fs.readFileSync(`assets/css/${file}.css`, 'utf8');
     checkCssBlocks(css.replace(/\/\*[\s\S]*?\*\//g, ''), file);
     assert(!/!important/.test(css), `${file}: important override`);
