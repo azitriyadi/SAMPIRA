@@ -3,7 +3,7 @@
   "info": {
     "title": "SAMPIRA API",
     "description": "API same-origin untuk autentikasi, portal berbasis role, penjemputan sampah, dan verifikasi laporan fasilitas SAMPIRA. Kredensial dan field mutasi dibaca dari body. Penulisan lintas origin ditolak. Permintaan penulisan dengan cookie memerlukan origin yang cocok atau metadata Fetch same-origin.",
-    "version": "3.0.0"
+    "version": "4.0.0"
   },
   "servers": [
     {
@@ -12,6 +12,10 @@
     }
   ],
   "tags": [
+    {
+      "name": "Facility handling",
+      "description": "Penugasan, aktivitas lapangan, validasi, dan pencatatan koordinasi laporan fasilitas."
+    },
     {
       "name": "Facility reports",
       "description": "Pengajuan laporan fasilitas oleh User dan verifikasi oleh Admin."
@@ -38,6 +42,762 @@
     }
   ],
   "paths": {
+    "/api/ecorecycle/facility-reports/handling": {
+      "get": {
+        "tags": ["Facility handling"],
+        "summary": "Daftar penanganan",
+        "description": "Admin membaca laporan approved. Petugas membaca tugas miliknya. Filter status approved menunjukkan laporan siap ditugaskan.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Status penanganan.",
+            "schema": {
+              "type": "string",
+              "enum": ["approved", "assigned", "assessment_in_progress", "handling_in_progress", "resolution_submitted", "resolution_revision_required", "completed"]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Kategori fasilitas.",
+            "schema": {
+              "type": "string",
+              "enum": ["tps", "collection_site", "waste_bank", "other"]
+            }
+          },
+          {
+            "name": "before_id",
+            "in": "query",
+            "description": "Cursor next_before_id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Ukuran halaman.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Halaman penanganan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityHandlingListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/ecorecycle/facility-reports/handling/officers": {
+      "get": {
+        "tags": ["Facility handling"],
+        "summary": "Daftar Petugas aktif",
+        "description": "Khusus Admin. Respons hanya memuat ID dan nama.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "before_id",
+            "in": "query",
+            "description": "Cursor next_before_id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Ukuran halaman.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Halaman Petugas aktif.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityHandlingOfficersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/ecorecycle/facility-reports/{id}/handling": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "ID laporan.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Facility handling"],
+        "summary": "Detail penanganan",
+        "description": "Admin, User pemilik atau Petugas yang saat ini berwenang. Versi penanganan terpisah dari verifikasi Phase 3A.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ringkasan penanganan fasilitas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityHandlingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/ecorecycle/facility-reports/{id}/handling/history": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "ID laporan.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Facility handling"],
+        "summary": "Histori penanganan",
+        "description": "Admin, User pemilik atau Petugas yang saat ini berwenang. Field internal dan metadata foto diproyeksikan sesuai izin.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "before_version",
+            "in": "query",
+            "description": "Cursor next_before_version.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Ukuran halaman.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Halaman histori.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityHandlingHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/ecorecycle/facility-reports/{id}/handling/history/{version}/photo": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "ID laporan.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        },
+        {
+          "name": "version",
+          "in": "path",
+          "description": "Versi event yang menyimpan foto.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Facility handling"],
+        "summary": "Foto bukti privat",
+        "description": "Admin membaca semua bukti. Petugas yang berwenang membaca foto lapangan. Pemilik membaca foto pilihan Admin yang dipublikasikan saat validasi.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Foto asli. Cache-Control no-store.",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/ecorecycle/facility-reports/{id}/handling/assignment": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "ID laporan.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      ],
+      "post": {
+        "tags": ["Facility handling"],
+        "summary": "Tugaskan atau alihkan laporan",
+        "description": "Khusus Admin. Hanya laporan approved dapat ditugaskan. Pengalihan ke Petugas lain memerlukan internal_note.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacilityHandlingAssignmentInput"
+              },
+              "example": {
+                "version": 0,
+                "petugas_id": 102,
+                "internal_note": "Periksa kondisi fasilitas."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ringkasan penanganan fasilitas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityHandlingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Versi, transisi, Petugas tujuan, atau referensi bukti tidak sesuai.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body terlalu besar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Media type tidak sesuai.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/ecorecycle/facility-reports/{id}/handling/activity": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "ID laporan.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      ],
+      "post": {
+        "tags": ["Facility handling"],
+        "summary": "Catat aktivitas lapangan",
+        "description": "Khusus Petugas aktif yang ditugaskan. Batas body 6 MiB.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/FacilityHandlingActivityInput"
+              },
+              "example": {
+                "version": 2,
+                "action": "record_assessment",
+                "condition": "Engsel macet.",
+                "assessment": "Perlu pemeriksaan pengunci."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ringkasan penanganan fasilitas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityHandlingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Versi, transisi, Petugas tujuan, atau referensi bukti tidak sesuai.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body terlalu besar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Media type tidak sesuai.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/ecorecycle/facility-reports/{id}/handling/review": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "ID laporan.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      ],
+      "post": {
+        "tags": ["Facility handling"],
+        "summary": "Validasi atau minta revisi hasil",
+        "description": "Khusus Admin. Batas body 16 KiB. Aksi berlaku saat resolution_submitted.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacilityHandlingReviewInput"
+              },
+              "example": {
+                "version": 8,
+                "decision": "complete",
+                "public_note": "Pengunci diuji dan berfungsi.",
+                "public_evidence_version": 8
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ringkasan penanganan fasilitas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityHandlingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Versi, transisi, Petugas tujuan, atau referensi bukti tidak sesuai.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body terlalu besar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Media type tidak sesuai.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/ecorecycle/facility-reports/{id}/handling/coordination": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "ID laporan.",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      ],
+      "post": {
+        "tags": ["Facility handling"],
+        "summary": "Catat koordinasi eksternal",
+        "description": "Khusus Admin. Status komunikasi bergerak satu tahap. Catatan tidak mengubah status lapangan. Batas body 6 MiB.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/FacilityHandlingCoordinationInput"
+              },
+              "example": {
+                "version": 4,
+                "status": "forwarded",
+                "agency": "Dinas Lingkungan Hidup",
+                "channel": "Surat resmi",
+                "forwarded_at": "2026-11-05T03:00:00Z",
+                "internal_note": "Surat dikirim melalui kanal resmi."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ringkasan penanganan fasilitas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityHandlingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Versi, transisi, Petugas tujuan, atau referensi bukti tidak sesuai.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body terlalu besar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Media type tidak sesuai.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/api/ecorecycle/facility-reports": {
       "get": {
         "tags": [
@@ -1825,6 +2585,475 @@
       }
     },
     "schemas": {
+      "FacilityHandlingAssignmentInput": {
+        "type": "object",
+        "required": ["version", "petugas_id"],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "petugas_id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "internal_note": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Alasan wajib untuk pengalihan."
+          }
+        },
+        "additionalProperties": false
+      },
+      "FacilityHandlingActivityInput": {
+        "type": "object",
+        "required": ["version", "action"],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "action": {
+            "type": "string",
+            "enum": ["start_assessment", "record_assessment", "record_progress", "submit_resolution"]
+          },
+          "condition": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Wajib untuk record_assessment."
+          },
+          "assessment": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Wajib untuk record_assessment."
+          },
+          "action_taken": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Wajib untuk record_progress."
+          },
+          "result": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Wajib untuk submit_resolution."
+          },
+          "internal_note": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "public_note": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "photo": {
+            "type": "string",
+            "format": "binary",
+            "description": "Foto opsional selain start_assessment. Satu JPEG/PNG, 5 MiB dan 16 megapiksel."
+          }
+        },
+        "additionalProperties": false
+      },
+      "FacilityHandlingReviewInput": {
+        "type": "object",
+        "required": ["version", "decision"],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "decision": {
+            "type": "string",
+            "enum": ["request_revision", "complete"]
+          },
+          "internal_note": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Wajib untuk request_revision."
+          },
+          "public_note": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Wajib untuk complete."
+          },
+          "public_evidence_version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "nullable": true,
+            "description": "Hanya untuk complete, dari aktivitas berfoto pada assignment yang mengajukan hasil."
+          }
+        },
+        "additionalProperties": false
+      },
+      "FacilityHandlingCoordinationInput": {
+        "type": "object",
+        "required": ["version", "status", "internal_note"],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": ["forwarded", "receipt_confirmed", "follow_up_reported", "resolution_verified"]
+          },
+          "internal_note": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "agency": {
+            "type": "string",
+            "maxLength": 160,
+            "description": "Wajib khusus forwarded."
+          },
+          "channel": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Wajib khusus forwarded."
+          },
+          "forwarded_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Wajib khusus forwarded, RFC 3339 dan tidak di masa depan."
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Referensi atau foto wajib pada receipt_confirmed dan resolution_verified."
+          },
+          "photo": {
+            "type": "string",
+            "format": "binary",
+            "description": "JPEG atau PNG. Maksimal satu berkas, 5 MiB dan 16 megapiksel."
+          }
+        },
+        "additionalProperties": false
+      },
+      "FacilityHandlingAssignment": {
+        "type": "object",
+        "required": ["id", "petugas_id", "assigned_by", "status", "assigned_at", "ended_at"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "petugas_id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "assigned_by": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "completed"]
+          },
+          "assigned_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ended_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "FacilityHandlingSummary": {
+        "type": "object",
+        "required": ["report_id", "tracking_number", "title", "description", "category", "address", "latitude", "longitude", "verification_status", "status", "version", "assignment_status", "coordination_status", "public_result", "public_evidence_version", "updated_at"],
+        "properties": {
+          "report_id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "tracking_number": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["tps", "collection_site", "waste_bank", "other"]
+          },
+          "address": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "nullable": true
+          },
+          "verification_status": {
+            "type": "string",
+            "enum": ["pending", "revision_required", "approved", "rejected"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["approved", "assigned", "assessment_in_progress", "handling_in_progress", "resolution_submitted", "resolution_revision_required", "completed", null],
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "assignment_status": {
+            "type": "string",
+            "enum": ["unassigned", "active", "completed", null],
+            "nullable": true
+          },
+          "assignment": {
+            "$ref": "#/components/schemas/FacilityHandlingAssignment"
+          },
+          "coordination_status": {
+            "type": "string",
+            "enum": ["not_forwarded", "forwarded", "receipt_confirmed", "follow_up_reported", "resolution_verified", null],
+            "nullable": true
+          },
+          "public_result": {
+            "type": "string",
+            "nullable": true
+          },
+          "public_evidence_version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "FacilityHandlingEvent": {
+        "type": "object",
+        "required": ["version", "action", "from_status", "to_status", "created_at", "public_note", "coordination_status", "has_photo"],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "action": {
+            "type": "string",
+            "enum": ["start_assessment", "record_assessment", "record_progress", "submit_resolution", "assign", "reassign", "request_revision", "complete", "coordinate"]
+          },
+          "from_status": {
+            "type": "string",
+            "enum": ["approved", "assigned", "assessment_in_progress", "handling_in_progress", "resolution_submitted", "resolution_revision_required", "completed"]
+          },
+          "to_status": {
+            "type": "string",
+            "enum": ["approved", "assigned", "assessment_in_progress", "handling_in_progress", "resolution_submitted", "resolution_revision_required", "completed"]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "public_note": {
+            "type": "string",
+            "nullable": true
+          },
+          "coordination_status": {
+            "type": "string",
+            "enum": ["not_forwarded", "forwarded", "receipt_confirmed", "follow_up_reported", "resolution_verified", null],
+            "nullable": true
+          },
+          "has_photo": {
+            "type": "boolean"
+          },
+          "actor_id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "assignment_id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "petugas_id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "internal_note": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "assessment": {
+            "type": "string"
+          },
+          "action_taken": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "agency": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "forwarded_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reference": {
+            "type": "string"
+          }
+        }
+      },
+      "FacilityHandlingOfficer": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "FacilityHandlingResponse": {
+        "type": "object",
+        "required": ["status", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success"]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FacilityHandlingSummary"
+          }
+        }
+      },
+      "FacilityHandlingListResponse": {
+        "type": "object",
+        "required": ["status", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success"]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "required": ["items", "next_before_id"],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FacilityHandlingSummary"
+                }
+              },
+              "next_before_id": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 1,
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "FacilityHandlingOfficersResponse": {
+        "type": "object",
+        "required": ["status", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success"]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "required": ["items", "next_before_id"],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FacilityHandlingOfficer"
+                }
+              },
+              "next_before_id": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 1,
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "FacilityHandlingHistoryResponse": {
+        "type": "object",
+        "required": ["status", "message", "data"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["success"]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "required": ["items", "next_before_version"],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FacilityHandlingEvent"
+                }
+              },
+              "next_before_version": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 1,
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
       "FacilityReportForm": {
         "type": "object",
         "properties": {

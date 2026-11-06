@@ -186,6 +186,10 @@ func (a *App) facilityPhoto(w http.ResponseWriter, r *http.Request) {
 		facilityFailure(w, err)
 		return
 	}
+	writeFacilityPhoto(w, photo, mediaType)
+}
+
+func writeFacilityPhoto(w http.ResponseWriter, photo []byte, mediaType string) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")

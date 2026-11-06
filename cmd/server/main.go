@@ -126,6 +126,9 @@ func main() {
 	if err := migrations.ApplyFacilityReports(context.Background(), db); err != nil {
 		log.Fatalf("Gagal menyiapkan skema laporan fasilitas: %v", err)
 	}
+	if err := migrations.ApplyFacilityHandling(context.Background(), db); err != nil {
+		log.Fatalf("Gagal menyiapkan skema penanganan fasilitas: %v", err)
+	}
 
 	mux := http.NewServeMux()
 
@@ -194,6 +197,7 @@ func main() {
 	mux.HandleFunc("POST /api/ecorecycle/announcements", app.ManageAnnouncementsHandler)
 	mux.HandleFunc("DELETE /api/ecorecycle/announcements", app.DeleteAnnouncementHandler)
 	app.RegisterFacilityReports(mux)
+	app.RegisterFacilityHandling(mux)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
