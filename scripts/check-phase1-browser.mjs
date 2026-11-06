@@ -234,6 +234,18 @@ try {
         assert.deepEqual(exceptions, [], 'Uncaught JavaScript exceptions in Phase 3B');
         assert.deepEqual(consoleErrors, [], 'Application console errors in Phase 3B');
     }
+    if (process.env.SAMPIRA_TEST_PHASE4_FE === '1') {
+        const {checkHandlingBrowser} = await import('./check-phase4-frontend.mjs');
+        await checkHandlingBrowser({send, js, login, click, text, waitFor, profile, password});
+        assert.deepEqual(exceptions, [], 'Uncaught JavaScript exceptions in Phase 4B');
+        assert.deepEqual(consoleErrors, [], 'Application console errors in Phase 4B');
+    }
+    if (process.env.SAMPIRA_TEST_PHASE5_FE === '1') {
+        const {checkLocationBrowser} = await import('./check-phase5-frontend.mjs');
+        await checkLocationBrowser({send, js, login, click, text, waitFor, profile, password});
+        assert.deepEqual(exceptions, [], 'Uncaught JavaScript exceptions in Phase 5B');
+        assert.deepEqual(consoleErrors, [], 'Application console errors in Phase 5B');
+    }
 } finally {
     socket?.close();
     browser.kill();

@@ -2,8 +2,11 @@
 try { localStorage.removeItem('user'); } catch { /* Storage can be unavailable. */ }
 
 async function portalFetch(url, options) {
-    const response = await fetch(url, options);
-    if (response.status === 401) window.location.replace('/login');
+    const response = await fetch(url, {credentials: 'same-origin', ...options});
+    if (response.status === 401) {
+        window.dispatchEvent(new Event('sampira:session-ended'));
+        window.location.replace('/login');
+    }
     return response;
 }
 
@@ -15,6 +18,7 @@ async function portalUser(role) {
 }
 
 function logoutPortal() {
+    window.dispatchEvent(new Event('sampira:session-ended'));
     const form = document.createElement('form');
     form.method = 'post';
     form.action = '/logout';

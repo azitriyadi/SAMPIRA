@@ -16,7 +16,7 @@ const dateFormat = new Intl.DateTimeFormat('id-ID', {
     dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta'
 });
 
-function dateLabel(value) {
+export function dateLabel(value) {
     const date = new Date(value);
     return value && Number.isFinite(date.valueOf()) ? dateFormat.format(date) + ' WIB' : '—';
 }
@@ -87,7 +87,7 @@ export function reportDetails(report, admin, base) {
     }
     content.append(top, element('h4', report.title), element('p', report.description, 'facility-copy'), meta);
     if (report.status === 'approved') {
-        content.append(element('p', 'Laporan lolos verifikasi. Tindak lanjut fasilitas menunggu tahap berikutnya.', 'facility-notice'));
+        content.append(element('p', 'Laporan lolos verifikasi.', 'facility-notice'));
     }
     if (report.verification_note) {
         const note = element('div');

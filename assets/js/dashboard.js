@@ -140,7 +140,7 @@ tabs.forEach(tab => {
         if (targetPane) {
             targetPane.classList.add('active');
         }
-        if (target === 'lacak-pickup') requestAnimationFrame(initUserTrackingMap);
+        if (target !== 'lacak-pickup') resetTracking();
 
         // Close sidebar on mobile
         closeSidebar();
@@ -314,8 +314,36 @@ function openTrackingDetail(trackingNumber) {
 }
 
 
-async function editPendingPickup(encodedItem) {
-    const item = JSON.parse(decodeURIComponent(encodedItem));
+let loadingPickupEdit = false;
+
+function showPickupEditConflict() {
+    Swal.fire({icon: 'warning', title: 'Pengajuan sudah berubah', text: 'Pengajuan ini sudah tidak bisa diedit. Status terbaru dimuat ulang.'});
+    void loadDashboardData();
+}
+
+async function editPendingPickup(trackingNumber) {
+    if (loadingPickupEdit) return;
+    loadingPickupEdit = true;
+    let item;
+    try {
+        const query = new URLSearchParams({tracking_number: trackingNumber});
+        const response = await portalFetch('/api/ecorecycle/pickup_status?' + query);
+        if (response.status === 401) return;
+        const {data, message} = await response.json();
+        if (!response.ok || !data) throw new Error(message || 'Detail pickup belum tersedia.');
+        item = data;
+    } catch (error) {
+        Swal.fire({icon: 'error', title: 'Gagal membuka pengajuan', text: error.message});
+        return;
+    } finally {
+        loadingPickupEdit = false;
+    }
+    if (item.status !== 'pending') {
+        showPickupEditConflict();
+        return;
+    }
+    let editPicker;
+    let editOpen = true;
     const result = await Swal.fire({
         title: 'Edit Pengajuan Pending',
         html: `
@@ -324,6 +352,7 @@ async function editPendingPickup(encodedItem) {
                 <textarea id="edit-item-description" class="swal2-textarea" style="margin:0 0 10px; width:100%;">${escapePortalHTML(item.item_description || '')}</textarea>
                 <label class="swal-form-label">Alamat penjemputan</label>
                 <textarea id="edit-pickup-address" class="swal2-textarea" style="margin:0 0 10px; width:100%;">${escapePortalHTML(item.pickup_address || '')}</textarea>
+                <div id="edit-pickup-location"></div>
                 <label class="swal-form-label">Nomor HP / WhatsApp</label>
                 <input id="edit-contact-phone" class="swal2-input" style="margin:0 0 10px; width:100%;" value="${escapePortalHTML(item.contact_phone || '')}">
                 <label class="swal-form-label">Kategori</label>
@@ -340,6 +369,22 @@ async function editPendingPickup(encodedItem) {
         cancelButtonColor: '#64748b',
         confirmButtonText: 'Simpan Perubahan',
         cancelButtonText: 'Batal',
+        didOpen: async popup => {
+            const host = popup.querySelector('#edit-pickup-location');
+            try {
+                const {mountLocationPicker} = await locationMaps;
+                if (!editOpen || !host.isConnected) return;
+                editPicker = mountLocationPicker(host, {
+                    title: 'Titik Lokasi Penjemputan', prefix: 'edit-pickup', digits: 7, saved: item
+                });
+            } catch {
+                host.textContent = 'Peta belum tersedia. Titik yang tersimpan akan dipertahankan.';
+            }
+        },
+        willClose: () => {
+            editOpen = false;
+            editPicker?.dispose();
+        },
         preConfirm: () => {
             const payload = {
                 tracking_number: item.tracking_number,
@@ -353,7 +398,8 @@ async function editPendingPickup(encodedItem) {
                 Swal.showValidationMessage('Lengkapi deskripsi, alamat, kontak, dan berat dengan benar.');
                 return undefined;
             }
-            return payload;
+            const fields = editPicker ? editPicker.fields() : {};
+            return fields ? {...payload, ...fields} : false;
         }
     });
 
@@ -365,11 +411,13 @@ async function editPendingPickup(encodedItem) {
         headers,
         body: JSON.stringify(result.value)
     })
-    .then(res => res.json())
-    .then(data => {
+    .then(async res => ({code: res.status, data: await res.json()}))
+    .then(({code, data}) => {
         if (data.status === 'success') {
             Swal.fire({ icon: 'success', title: 'Pengajuan Diperbarui', text: 'Perubahan berhasil disimpan sebelum pickup diambil petugas.', confirmButtonColor: '#10b981' });
             loadDashboardData();
+        } else if (code === 409) {
+            showPickupEditConflict();
         } else {
             Swal.fire({ icon: 'error', title: 'Gagal', text: data.message, confirmButtonColor: '#10b981' });
         }
@@ -458,9 +506,8 @@ function renderUserActivePickup(item) {
     const weight = Number.parseFloat(item.weight_kg);
     const statusMeta = getPickupStatusMeta(item.status);
     const badgeClass = getStatusBadgeClass(item.status);
-    const encodedItem = encodeURIComponent(JSON.stringify(item));
     const pendingActions = item.status === 'pending' ? `
-                        <button type="button" class="btn btn-outline pickup-flow-track-btn" data-item="${encodedItem}" onclick="editPendingPickup(this.dataset.item)">Edit</button>
+                        <button type="button" class="btn btn-outline pickup-flow-track-btn" data-edit-tracking="${escapePortalHTML(item.tracking_number)}" onclick="editPendingPickup(this.dataset.editTracking)">Edit</button>
                         <button type="button" class="btn btn-outline pickup-flow-track-btn danger" data-tracking="${escapePortalHTML(item.tracking_number)}" onclick="cancelPendingPickup(this.dataset.tracking)">Batalkan</button>
                     ` : '';
     return `
@@ -572,6 +619,13 @@ async function loadDashboardData() {
 // 5. Submit New Pickup Form
 const pickupForm = document.getElementById('pickup-request-form');
 if (pickupForm) {
+    let picker;
+    const host = document.getElementById('pickup-location-picker');
+    locationMaps.then(({mountLocationPicker}) => {
+        picker = mountLocationPicker(host, {title: 'Titik Lokasi Penjemputan', prefix: 'pickup', digits: 7});
+    }).catch(() => {
+        host.textContent = 'Peta belum tersedia. Kamu dapat mengirim alamat lengkap saja.';
+    });
     pickupForm.addEventListener('submit', function (e) {
         e.preventDefault();
 
@@ -603,6 +657,8 @@ if (pickupForm) {
             return;
         }
 
+        const fields = picker ? picker.fields() : {};
+        if (!fields) return;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
         btn.disabled = true;
 
@@ -612,6 +668,7 @@ if (pickupForm) {
         formData.append('contact_phone', phone);
         formData.append('weight_kg', weight);
         formData.append('category', document.getElementById('form-waste-category').value);
+        for (const [key, value] of Object.entries(fields)) formData.set(key, value);
 
         const photoInput = document.getElementById('form-waste-photo');
         if (photoInput && photoInput.files.length > 0) {
@@ -633,6 +690,9 @@ if (pickupForm) {
                     confirmButtonText: 'Lacak Status'
                 }).then(() => {
                     pickupForm.reset();
+                    picker?.reset();
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
                     clearPhotoPreview();
                     syncCategoryCards('Small Gadgets');
                     calculateFormPreview();
@@ -667,6 +727,16 @@ if (pickupForm) {
 }
 
 // 6. Track Search
+let trackingSequence = 0;
+
+function resetTracking() {
+    ++trackingSequence;
+    clearUserPickupMap();
+    const container = document.getElementById('tracking-timeline-container');
+    container.style.display = 'none';
+    document.getElementById('track-timeline-list').replaceChildren();
+}
+
 function searchTracking() {
     const input = document.getElementById('track-number-search');
     const container = document.getElementById('tracking-timeline-container');
@@ -684,11 +754,14 @@ function searchTracking() {
         return;
     }
 
+    resetTracking();
+    const sequence = trackingSequence;
     portalFetch(`api/ecorecycle/pickup_status?tracking_number=${encodeURIComponent(trackingNum)}`, {
         method: 'GET',
     })
     .then(res => res.json())
     .then(data => {
+        if (sequence !== trackingSequence) return;
         if (data.status === 'success') {
             const item = data.data;
             const history = item.history || [];
@@ -751,6 +824,7 @@ function searchTracking() {
         }
     })
     .catch(err => {
+        if (sequence !== trackingSequence) return;
         Swal.fire({
             icon: 'error',
             title: 'Kesalahan',

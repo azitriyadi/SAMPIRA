@@ -1,23 +1,9 @@
-import {categories, options} from './facility-report-ui.js?v=phase3b';
+import {categories, options} from './facility-report-ui.js?v=phase4b';
+import {mountLocationPicker} from './location-map.js?v=phase5b';
 
 const textLengths = {title: [5, 120], description: [10, 3000], address: [5, 300]};
-const coordinatePattern = /^-?[0-9]{1,3}(\.[0-9]{1,6})?$/;
 
-function validateCoordinates(form, values) {
-    const {latitude, longitude} = values;
-    if (!latitude && !longitude) return;
-    if (!latitude || !longitude) {
-        form.elements[latitude ? 'longitude' : 'latitude'].setCustomValidity('Isi kedua koordinat atau kosongkan keduanya.');
-        return;
-    }
-    for (const [name, limit] of [['latitude', 90], ['longitude', 180]]) {
-        if (!coordinatePattern.test(values[name]) || Math.abs(Number(values[name])) > limit) {
-            form.elements[name].setCustomValidity('Gunakan angka −' + limit + ' sampai ' + limit + ' dengan maksimal enam digit desimal.');
-        }
-    }
-}
-
-async function checkImage(file, url) {
+export async function checkImage(file, url) {
     const signature = new Uint8Array(await file.slice(0, 8).arrayBuffer());
     const png = /\.png$/i.test(file.name) && signature.length === 8 &&
         [137, 80, 78, 71, 13, 10, 26, 10].every((byte, index) => signature[index] === byte);
@@ -55,18 +41,7 @@ export function mountReportForm(root) {
                         <textarea id="facility-address" name="address" rows="2" minlength="5" required aria-describedby="facility-address-help"></textarea>
                         <small id="facility-address-help">5–300 karakter.</small>
                     </div>
-                    <fieldset class="facility-stack" aria-describedby="facility-coordinates-help">
-                        <legend><strong>Koordinat (opsional)</strong></legend>
-                        <p id="facility-coordinates-help" class="facility-muted">Isi keduanya dengan titik desimal, misalnya −6.9235 dan 107.6112.</p>
-                        <div class="facility-form-grid">
-                            <label for="facility-latitude" class="facility-field">Latitude
-                                <input id="facility-latitude" name="latitude" type="text" inputmode="decimal" maxlength="11">
-                            </label>
-                            <label for="facility-longitude" class="facility-field">Longitude
-                                <input id="facility-longitude" name="longitude" type="text" inputmode="decimal" maxlength="11">
-                            </label>
-                        </div>
-                    </fieldset>
+                    <div id="facility-location-picker"></div>
                     <div class="facility-field"><label for="facility-photo">Foto (opsional)</label>
                         <input type="file" id="facility-photo" name="photo" accept=".jpg,.jpeg,.png,image/jpeg,image/png" aria-describedby="facility-photo-help facility-photo-status">
                         <small id="facility-photo-help">JPEG atau PNG, maksimal 5 MiB dan 16 megapiksel.</small>
@@ -84,6 +59,9 @@ export function mountReportForm(root) {
         </section>
     `);
     const form = root.querySelector('#facility-form');
+    const picker = mountLocationPicker(root.querySelector('#facility-location-picker'), {
+        title: 'Titik Lokasi Fasilitas yang Dilaporkan', prefix: 'facility', digits: 6, includeSaved: true
+    });
     const preview = root.querySelector('#facility-preview');
     const photoStatus = root.querySelector('#facility-photo-status');
     const fileInput = form.elements.photo;
@@ -134,16 +112,13 @@ export function mountReportForm(root) {
     form.addEventListener('input', event => {
         if (event.target === fileInput) return;
         event.target.setCustomValidity('');
-        if (event.target.name === 'latitude' || event.target.name === 'longitude') {
-            form.elements.latitude.setCustomValidity('');
-            form.elements.longitude.setCustomValidity('');
-        }
     });
 
     function reset(report) {
         form.reset();
+        picker.reset(report);
         clearPreview();
-        for (const name of ['category', 'title', 'description', 'address', 'latitude', 'longitude']) {
+        for (const name of ['category', 'title', 'description', 'address']) {
             form.elements[name].value = report?.[name] ?? '';
             form.elements[name].setCustomValidity('');
         }
@@ -157,17 +132,18 @@ export function mountReportForm(root) {
     function payload() {
         if (submit.disabled || !form.reportValidity()) return null;
         const values = {};
-        for (const name of ['category', 'title', 'description', 'address', 'latitude', 'longitude']) {
+        for (const name of ['category', 'title', 'description', 'address']) {
             values[name] = form.elements[name].value.trim();
         }
         for (const [name, [min, max]] of Object.entries(textLengths)) {
             const count = [...values[name]].length;
             if (count < min || count > max) form.elements[name].setCustomValidity('Isi ' + min + '–' + max + ' karakter.');
         }
-        validateCoordinates(form, values);
         if (!form.reportValidity()) return null;
+        const coordinates = picker.fields();
+        if (!coordinates) return null;
         const body = new FormData();
-        for (const [name, value] of Object.entries(values)) body.set(name, value);
+        for (const [name, value] of Object.entries({...values, ...coordinates})) body.set(name, value);
         if (fileInput.files[0]) body.set('photo', fileInput.files[0]);
         return body;
     }

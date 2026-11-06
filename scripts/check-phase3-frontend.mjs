@@ -79,8 +79,9 @@ export async function checkFacilityBrowser({send, js, nav, login, click, text, w
     await value('facility-title', title);
     await value('facility-latitude', '-6.923501');
     await submit('facility-form');
-    assert.match(await js('document.querySelector("#facility-longitude").validationMessage'), /kedua koordinat/);
+    await text('#facility-location-picker .location-coordinate-grid + .location-status', 'Isi kedua koordinat');
     await value('facility-longitude', '107.611209');
+    await click('#facility-location-picker .location-actions .primary');
 
     const invalid = join(profile, 'invalid-facility.png');
     const valid = join(profile, 'facility-fixture.png');
@@ -187,7 +188,7 @@ export async function checkFacilityBrowser({send, js, nav, login, click, text, w
     await openCard(title);
     await decision('approved');
     await confirm();
-    await text('#facility-detail', 'Tindak lanjut fasilitas menunggu tahap berikutnya.');
+    await text('#facility-detail', 'Laporan lolos verifikasi.');
     await text('#facility-history', 'Menunggu Verifikasi → Disetujui');
 
     await click('#facility-detail-view [data-facility-back]');
