@@ -176,10 +176,12 @@ try {
     sql('DROP TRIGGER phase3_fixture_history_failure;');
 }
 
-const resubmitted = (await expect(detail, 200, revision(2, {title: 'Kondisi pintu terbaru'}, replacement))).body.data;
+const resubmitted = (await expect(detail, 200, revision(2, {
+    title: 'Kondisi pintu terbaru', latitude: '-6.917463', longitude: '107.619122'
+}, replacement))).body.data;
 assert.equal(resubmitted.status, 'pending');
 assert.equal(resubmitted.version, 3);
-assert.equal(resubmitted.latitude, null);
+assert.deepEqual([resubmitted.latitude, resubmitted.longitude], [-6.917463, 107.619122]);
 assert.equal(resubmitted.verification_note, null);
 assert.equal(resubmitted.reviewed_by, null);
 assert.deepEqual((await expect(photo, 200, {user})).body, replacement);
@@ -190,6 +192,8 @@ assert.deepEqual(approvals.map(result => result.code).sort(), [200, 409]);
 const approved = approvals.find(result => result.code === 200).body.data;
 assert.equal(approved.status, 'approved');
 assert.equal(approved.version, 4);
+const adminDetail = (await expect(detail, 200, {user: admin})).body.data;
+assert.deepEqual([adminDetail.latitude, adminDetail.longitude], [-6.917463, 107.619122]);
 await expect(verification, 409, verify(4, 'rejected', 'Tidak dapat diubah'));
 await expect(detail, 409, revision(4));
 const firstHistory = (await expect(history + '?limit=2', 200, {user})).body.data;
@@ -206,6 +210,7 @@ assert.equal(replay.version, 4);
 
 const another = (await expect(reports, 201, creation(form({category: 'waste_bank'}), key, other))).body.data;
 assert.equal(another.photo_url, null);
+assert.deepEqual([another.latitude, another.longitude], [null, null]);
 await expect(reports + '/' + another.id + '/photo', 404, {user: other});
 const rejection = (await expect(reports + '/' + another.id + '/verification', 200, verify(1, 'rejected', 'Laporan duplikat.'))).body.data;
 assert.equal(rejection.status, 'rejected');

@@ -1592,7 +1592,7 @@
       "post": {
         "tags": ["Pickup"],
         "summary": "Ajukan penjemputan e-waste",
-        "description": "Membuat permohonan penjemputan baru. Hanya dapat digunakan oleh role user atau Eco Warrior.",
+        "description": "Membuat permohonan penjemputan baru. Hanya dapat digunakan oleh role user atau Eco Warrior. latitude dan longitude opsional dan harus dikirim berpasangan dalam body. Pasangan yang kosong atau tidak dikirim menghasilkan lokasi tanpa titik.",
         "security": [
           {
             "bearerAuth": []
@@ -1609,6 +1609,11 @@
                 "$ref": "#/components/schemas/RequestPickupForm"
               }
             },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPickupJson"
+              }
+            },
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RequestPickupJson"
@@ -1618,7 +1623,9 @@
                 "pickup_address": "Jl. Asia Afrika No. 1, Bandung",
                 "contact_phone": "08123456789",
                 "weight_kg": 3,
-                "category": "Small Gadgets"
+                "category": "Small Gadgets",
+                "latitude": "-6.9174639",
+                "longitude": "107.6191228"
               }
             }
           }
@@ -1653,7 +1660,7 @@
       "post": {
         "tags": ["Pickup"],
         "summary": "Edit pengajuan pickup pending",
-        "description": "Eco Warrior dapat mengubah data pengajuan selama status masih pending atau belum diambil Petugas.",
+        "description": "Eco Warrior dapat mengubah pengajuan sendiri selama masih pending. Jika kedua field koordinat dihilangkan, titik lama dipertahankan. Kirim keduanya kosong atau null untuk menghapus titik, atau kirim pasangan lengkap untuk menggantinya.",
         "security": [
           {
             "bearerAuth": []
@@ -1675,7 +1682,19 @@
                 "pickup_address": "Jl. Asia Afrika No. 1, Bandung",
                 "contact_phone": "08123456789",
                 "weight_kg": 3.2,
-                "category": "Small Gadgets"
+                "category": "Small Gadgets",
+                "latitude": "-6.9174639",
+                "longitude": "107.6191228"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePickupRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePickupRequest"
               }
             }
           }
@@ -1755,7 +1774,7 @@
       "get": {
         "tags": ["Pickup"],
         "summary": "Ambil daftar penjemputan",
-        "description": "type=user untuk pengajuan sendiri. type=petugas atau alias type=collector untuk antrean ringkas dan tugas sendiri. type=all dipertahankan sebagai nilai legacy dan ditolak. Antrean belum diklaim menyembunyikan data pribadi.",
+        "description": "type=user untuk pengajuan sendiri. type=petugas atau alias type=collector untuk antrean ringkas dan tugas sendiri. type=all dipertahankan sebagai nilai legacy dan ditolak. Antrean belum diklaim menyembunyikan data pribadi dan selalu mengembalikan latitude dan longitude null.",
         "security": [
           {
             "bearerAuth": []
@@ -1859,7 +1878,7 @@
       "get": {
         "tags": ["Tracking"],
         "summary": "Lacak pickup atau ambil statistik",
-        "description": "Detail dan histori dibaca dalam satu snapshot untuk pemilik atau Petugas yang ditugaskan. Statistik agregat hanya untuk Administrator dan memisahkan nilai historis dari pembayaran terkonfirmasi.",
+        "description": "Detail, lokasi tersimpan, dan histori dibaca dalam satu snapshot untuk pemilik atau Petugas yang ditugaskan. Pickup tanpa titik mengembalikan latitude dan longitude null. Statistik agregat hanya untuk Administrator, tanpa koordinat, dan memisahkan nilai historis dari pembayaran terkonfirmasi.",
         "security": [
           {
             "bearerAuth": []
@@ -3649,6 +3668,16 @@
         "type": "object",
         "required": ["item_description", "pickup_address", "contact_phone", "weight_kg", "category"],
         "properties": {
+          "latitude": {
+            "type": "string",
+            "pattern": "^\\s*(-?[0-9]{1,3}(\\.[0-9]{1,7})?)?\\s*$",
+            "description": "WGS84, antara -90 dan 90. Kirim kedua field sebagai pasangan."
+          },
+          "longitude": {
+            "type": "string",
+            "pattern": "^\\s*(-?[0-9]{1,3}(\\.[0-9]{1,7})?)?\\s*$",
+            "description": "WGS84, antara -180 dan 180. Kirim kedua field sebagai pasangan."
+          },
           "item_description": {
             "type": "string"
           },
@@ -3678,6 +3707,20 @@
         "type": "object",
         "required": ["item_description", "pickup_address", "contact_phone", "weight_kg", "category"],
         "properties": {
+          "latitude": {
+            "description": "WGS84 dalam desimal biasa hingga tujuh angka pecahan, tanpa eksponen. Kirim kedua field sebagai pasangan.",
+            "oneOf": [
+              {"type": "number", "minimum": -90, "maximum": 90},
+              {"type": "string", "nullable": true, "pattern": "^\\s*(-?[0-9]{1,3}(\\.[0-9]{1,7})?)?\\s*$"}
+            ]
+          },
+          "longitude": {
+            "description": "WGS84 dalam desimal biasa hingga tujuh angka pecahan, tanpa eksponen. Kirim kedua field sebagai pasangan.",
+            "oneOf": [
+              {"type": "number", "minimum": -180, "maximum": 180},
+              {"type": "string", "nullable": true, "pattern": "^\\s*(-?[0-9]{1,3}(\\.[0-9]{1,7})?)?\\s*$"}
+            ]
+          },
           "item_description": {
             "type": "string"
           },
@@ -3701,6 +3744,20 @@
         "type": "object",
         "required": ["tracking_number", "item_description", "pickup_address", "contact_phone", "weight_kg", "category"],
         "properties": {
+          "latitude": {
+            "description": "WGS84 dalam desimal biasa hingga tujuh angka pecahan, tanpa eksponen. Kirim kedua field sebagai pasangan.",
+            "oneOf": [
+              {"type": "number", "minimum": -90, "maximum": 90},
+              {"type": "string", "nullable": true, "pattern": "^\\s*(-?[0-9]{1,3}(\\.[0-9]{1,7})?)?\\s*$"}
+            ]
+          },
+          "longitude": {
+            "description": "WGS84 dalam desimal biasa hingga tujuh angka pecahan, tanpa eksponen. Kirim kedua field sebagai pasangan.",
+            "oneOf": [
+              {"type": "number", "minimum": -180, "maximum": 180},
+              {"type": "string", "nullable": true, "pattern": "^\\s*(-?[0-9]{1,3}(\\.[0-9]{1,7})?)?\\s*$"}
+            ]
+          },
           "tracking_number": {
             "type": "string"
           },
@@ -3774,6 +3831,22 @@
       "Pickup": {
         "type": "object",
         "properties": {
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "minimum": -90,
+            "maximum": 90,
+            "nullable": true,
+            "description": "Latitude WGS84 tujuan pickup. Null jika titik tidak tersimpan atau antrean belum diklaim."
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "minimum": -180,
+            "maximum": 180,
+            "nullable": true,
+            "description": "Longitude WGS84 tujuan pickup. Null jika titik tidak tersimpan atau antrean belum diklaim."
+          },
           "id": {
             "type": "integer"
           },

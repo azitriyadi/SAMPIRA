@@ -129,6 +129,9 @@ func main() {
 	if err := migrations.ApplyFacilityHandling(context.Background(), db); err != nil {
 		log.Fatalf("Gagal menyiapkan skema penanganan fasilitas: %v", err)
 	}
+	if err := migrations.ApplyPreciseLocations(context.Background(), db); err != nil {
+		log.Fatalf("Gagal menyiapkan skema lokasi penjemputan: %v", err)
+	}
 
 	mux := http.NewServeMux()
 

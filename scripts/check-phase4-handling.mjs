@@ -109,6 +109,10 @@ const review=(version,decision,fields={})=>post(admin,{version,decision,...field
 const coordination=(version,status,fields={},photo)=>post(admin,form({version,status,internal_note:'Catatan koordinasi privat.',...fields},photo));
 const beforeDetail=(await expect(detail,200,{user})).body.data;
 const beforeHistory=(await expect(detail+'/history',200,{user})).body.data;
+async function expectLocation(actor) {
+    const {body:{data}}=await expect(path,200,{user:actor});
+    assert.deepEqual([data.latitude,data.longitude,data.address],[-6.923501,107.611209,'Jalan Fixture Bandung']);
+}
 for(const route of [list,path,history,photoPath(1),list+'/officers']) await expect(route,401);
 for(const route of [list,path,history,photoPath(1),list+'/officers']) await expect(route,403,{user:administrator});
 await expect(list,403,{user});
@@ -130,7 +134,8 @@ assert.equal(unassigned.status,'approved');
 assert.equal(unassigned.version,0);
 assert.equal(unassigned.assignment_status,'unassigned');
 assert.equal(unassigned.coordination_status,'not_forwarded');
-assert.equal(unassigned.latitude,-6.923501);
+await expectLocation(admin);
+await expectLocation(user);
 assert.equal((await expect(list+'?status=approved&category=tps&limit=1',200,{user:admin})).body.data.next_before_id,raceID);
 await expect(list+'?status=pending',400,{user:admin});
 assert.equal((await expect(list+'/officers?limit=1',200,{user:admin})).body.data.items[0].id,second.id);
@@ -159,6 +164,7 @@ assert.deepEqual(assignments.map(item=>item.code).sort(),[200,409]);
 const initial=assignments.find(item=>item.code===200).body.data;
 assert.equal(initial.assignment.petugas_id,officer.id);
 assert.equal(initial.version,1);
+await expectLocation(officer);
 assert.throws(()=>sql("INSERT INTO facility_assignments (report_id,petugas_id,assigned_by,status,assigned_at) VALUES ("+
     [id,second.id,admin.id].join(',')+",'active',UTC_TIMESTAMP(6))"),err=>String(err.stderr).includes('uq_handling_active_report'));
 assert.deepEqual((await expect(list,200,{user:officer})).body.data.items.map(item=>item.report_id),[id]);
@@ -230,6 +236,7 @@ await mutate('assignment',assign(current.version,second.id,admin,'Alihkan ke pet
 assert.equal(current.status,'assigned');
 assert.equal(sql("SELECT status FROM facility_assignments WHERE id="+initial.assignment.id),'reassigned');
 await expect(path,404,{user:officer});
+await expectLocation(second);
 await expect(history,404,{user:officer});
 await expect(photoPath(oldEvidence),404,{user:officer});
 await expect(path+'/activity',404,activity(officer,current.version-1,'record_progress',{action_taken:'Perubahan lama'}));
@@ -255,7 +262,7 @@ assert.equal(current.assignment.status,'completed');
 assert.equal(current.coordination_status,'follow_up_reported');
 await expect(path+'/assignment',409,assign(current.version,officer.id,admin,'Sudah selesai.'));
 await expect(path+'/activity',404,activity(second,current.version,'record_progress',{action_taken:'Setelah tutup'}));
-await expect(path,200,{user:second});
+await expectLocation(second);
 await mutate('coordination',coordination(current.version,'resolution_verified',{reference:'VERIF-FIXTURE'}));
 assert.equal(current.status,'completed');
 assert.equal(current.coordination_status,'resolution_verified');

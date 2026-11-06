@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -34,18 +33,7 @@ func facilityTextLength(text string, min, max int) bool {
 }
 
 func parseFacilityCoordinates(latitude, longitude string) (*float64, *float64, bool) {
-	if latitude == "" && longitude == "" {
-		return nil, nil, true
-	}
-	if !facilityCoordinatePattern.MatchString(latitude) || !facilityCoordinatePattern.MatchString(longitude) {
-		return nil, nil, false
-	}
-	lat, latErr := strconv.ParseFloat(latitude, 64)
-	lon, lonErr := strconv.ParseFloat(longitude, 64)
-	if latErr != nil || lonErr != nil || lat < -90 || lat > 90 || lon < -180 || lon > 180 {
-		return nil, nil, false
-	}
-	return &lat, &lon, true
+	return parseCoordinatePair(latitude, longitude, facilityCoordinatePattern)
 }
 
 func facilityBody(r *http.Request, mediaType string) *apiProblem {
