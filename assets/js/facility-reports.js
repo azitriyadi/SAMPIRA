@@ -1,4 +1,4 @@
-import {mountReportForm} from './facility-report-form.js?v=phase5b';
+import {mountReportForm} from './facility-report-form.js?v=phase6b3';
 import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=phase4b';
 import {base, request} from './facility-api.js?v=phase5b';
 import {mountPublicHandling} from './facility-handling.js?v=phase5b';
@@ -157,7 +157,7 @@ function init(root) {
             const location = document.createElement('div');
             $('detail').replaceChildren(reportDetails(report, admin, base), location);
             disposeLocation = mountLocationDetail(location, {
-                title: 'Titik lokasi fasilitas', point: report, address: report.address, reported: true
+                title: 'Titik lokasi fasilitas', point: report, address: report.address, reported: true, autoTiles: true
             });
             if (!admin) mountPublicHandling($('detail'), report);
             action.hidden = admin ? report.status !== 'pending' : report.status !== 'revision_required';
@@ -387,6 +387,13 @@ function init(root) {
     for (const button of backButtons) button.addEventListener('click', showList);
     if (admin) {
         initAdmin();
+        window.addEventListener('sampira:report-detail', event => {
+            if (!root.hidden) openFromList(event.detail.id);
+        });
+        root.addEventListener('sampira:close', () => {
+            ++detailRequest;
+            disposeLocation?.();
+        });
         document.querySelector('[data-open-handling]').addEventListener('click', () => {
             ++detailRequest;
             disposeLocation?.();
@@ -397,6 +404,18 @@ function init(root) {
         void loadList();
     } else {
         initUser();
+        $('list-heading').insertAdjacentHTML('beforebegin', `
+            <div class="sp-history-switch" aria-label="Jenis riwayat">
+                <button type="button" class="sp-button sp-button--quiet" data-sp-user-tab="riwayat-payout">Riwayat Penjemputan</button>
+                <button type="button" class="sp-button" aria-current="page">Riwayat Laporan Fasilitas</button>
+            </div>
+        `);
+        window.addEventListener('sampira:user-report-view', event => {
+            if (!root.classList.contains('active') || busy || sessionEnding) return;
+            if (event.detail.view === 'new') $('new').click();
+            else if (event.detail.view === 'detail') openFromList(event.detail.id);
+            else if (event.detail.view === 'list' && $('list-view').hidden) showList();
+        });
         document.querySelector('[data-target="laporan-fasilitas"]').addEventListener('click', () => {
             $('heading').focus();
             if (!initialized) {

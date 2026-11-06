@@ -34,7 +34,7 @@ function renderAdminAnnouncements() {
     }
 
     const escape = escapePortalHTML;
-    const roleLabels = { all: 'Semua peran', user: 'Eco Warrior', petugas: 'Petugas' };
+    const roleLabels = { all: 'Semua peran', user: 'Warga', petugas: 'Petugas' };
     list.innerHTML = globalAnnouncements.map(item => {
         const date = new Date(item.created_at).toLocaleDateString('id-ID', {
             day: 'numeric', month: 'short', year: 'numeric'
@@ -51,10 +51,10 @@ function renderAdminAnnouncements() {
                 </div>
                 <div class="cms-announcement-actions">
                     <button type="button" class="cms-icon-btn ${item.is_active ? 'active' : ''}" title="${item.is_active ? 'Nonaktifkan' : 'Aktifkan'}" onclick="toggleAnnouncement(${item.id}, ${!item.is_active})">
-                        <i class="fas ${item.is_active ? 'fa-toggle-on' : 'fa-toggle-off'}"></i>
+                        ${item.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                     </button>
                     <button type="button" class="cms-icon-btn danger" title="Hapus" onclick="deleteAnnouncement(${item.id})">
-                        <i class="fas fa-trash"></i>
+                        Hapus
                     </button>
                 </div>
             </article>

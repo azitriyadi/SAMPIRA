@@ -78,7 +78,7 @@ try {
         if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
         return result.result.value;
     };
-    const waitPath = path => waitFor(() => js('location.pathname === ' + JSON.stringify(path) + ' && document.readyState !== "loading"'), 'Navigation failed for ' + path);
+    const waitPath = path => waitFor(() => js('location.pathname + location.search === ' + JSON.stringify(path) + ' && document.readyState !== "loading"'), 'Navigation failed for ' + path);
     const nav = async path => { await send('Page.navigate', {url: base + path}); await waitPath(path); };
     const text = (selector, expected) => waitFor(() => js(
         'document.querySelector(' + JSON.stringify(selector) + ')?.innerText.includes(' + JSON.stringify(expected) + ')'),
@@ -87,7 +87,7 @@ try {
     const apiCode = path => js('fetch(' + JSON.stringify(path) + ').then(r => r.status)');
 
     async function login(email, destination) {
-        await nav('/login');
+        if (!await js('location.pathname === "/login" && !location.search')) await nav('/login');
         await waitFor(() => js('document.readyState === "complete"'), 'Login did not finish loading');
         await js(`document.querySelector('#login-email').value = ${JSON.stringify(email)};
             document.querySelector('#login-password').value = ${JSON.stringify(password)};
@@ -126,6 +126,7 @@ try {
 
     await nav('/');
     await waitFor(() => js('document.readyState === "complete"'), 'Landing incomplete');
+    await click('#estimator summary');
     await js(`document.querySelector('#estimator-category').value = 'Small Gadgets';
         document.querySelector('#estimator-weight').value = '2';
         document.querySelector('#estimator-form').requestSubmit(); void 0`);
@@ -245,6 +246,18 @@ try {
         await checkLocationBrowser({send, js, login, click, text, waitFor, profile, password});
         assert.deepEqual(exceptions, [], 'Uncaught JavaScript exceptions in Phase 5B');
         assert.deepEqual(consoleErrors, [], 'Application console errors in Phase 5B');
+    }
+    if (process.env.SAMPIRA_TEST_PHASE6_FE === '1') {
+        const {checkAuthBrowser} = await import('./check-auth-frontend.mjs');
+        await checkAuthBrowser({send, js, nav, click, text, waitFor, waitPath, profile});
+        const {checkLandingBrowser} = await import('./check-landing-frontend.mjs');
+        await checkLandingBrowser({send, js, nav, click, text, waitFor, profile});
+        const {checkPhase6Browser} = await import('./check-phase6-frontend.mjs');
+        await checkPhase6Browser({send, js, nav, login, click, text, waitFor, profile});
+        const {checkUserWorkspace} = await import('./check-user-frontend.mjs');
+        await checkUserWorkspace({send, js, nav, login, click, text, waitFor, profile});
+        assert.deepEqual(exceptions, [], 'Uncaught JavaScript exceptions in Phase 6B');
+        assert.deepEqual(consoleErrors, [], 'Application console errors in Phase 6B');
     }
 } finally {
     socket?.close();

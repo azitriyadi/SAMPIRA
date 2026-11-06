@@ -12,22 +12,34 @@
     <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="/assets/js/admin.js?v=phase1-final" defer></script>
     <script src="/assets/js/reward-payments.js?v=phase2" defer></script>
+    <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/assets/css/sampira.css?v=phase6b-live">
+    <script type="module" src="/assets/js/operations.js?v=phase6b"></script>
 </head>
-<body>
-    <main class="container">
-        <h1>Administrator SAMPIRA</h1>
-        <p>Sesi pengelola sistem aktif.</p>
+<body class="sp-console sp-system">
+    <main class="container sp-system-main" id="sp-system-main">
+        <header class="sp-system-header"><a class="sp-brand" href="/home"><img src="/assets/img/sampira-mark.svg" width="28" height="28" alt=""> SAMPIRA</a><h1>Administrator SAMPIRA</h1>
+
         <form action="/logout" method="post">
             <button class="btn btn-primary" type="submit">Keluar</button>
         </form>
+        </header>
+        <nav class="sp-system-nav" aria-label="Navigasi Administrator">
+            <a href="#sp-system-metrics">Ringkasan</a><a href="#content-view">Pengumuman</a><a href="#reward-payments-title">Pembayaran Reward</a>
+        </nav>
+        <section class="sp-panel" id="sp-system-metrics" aria-labelledby="sp-metrics-title">
+    <p class="sp-kicker">Ringkasan sistem</p><h2 id="sp-metrics-title">Aktivitas penjemputan dan reward</h2>
+    <p role="status">Memuat ringkasan…</p>
+    <dl class="sp-metric-grid"><div><dt>Total penjemputan</dt><dd data-metric="total_pickups" >—</dd></div><div><dt>Menunggu petugas</dt><dd data-metric="pending_verifications" >—</dd></div><div><dt>Berat terverifikasi (kg)</dt><dd data-metric="total_weight" >—</dd></div><div><dt>Akun petugas aktif</dt><dd data-metric="collectors_online" >—</dd></div><div><dt>Reward menunggu pembayaran</dt><dd data-metric="total_reward_pending" data-currency>—</dd></div><div><dt>Reward dibayar</dt><dd data-metric="total_reward_paid" data-currency>—</dd></div></dl>
+</section>
             <div id="content-view" class="view-section active">
             <div class="page-header">
                 <div>
                     <span class="portal-eyebrow">CMS Internal</span>
-                    <h1>Pusat Pengumuman Portal</h1>
-                    <p>Terbitkan informasi operasional untuk Eco Warrior dan Petugas tanpa mengubah landing page.</p>
+                    <h2>Pusat Pengumuman Portal</h2>
+                    <p>Terbitkan informasi operasional untuk Warga dan Petugas tanpa mengubah landing page.</p>
                 </div>
-                <span class="cms-header-badge"><i class="fas fa-tower-broadcast"></i> Role-based content</span>
+                <span class="cms-header-badge"><i class="fas fa-tower-broadcast"></i> Pengumuman per peran</span>
             </div>
 
             <div class="cms-layout">
@@ -49,7 +61,7 @@
                             <label for="announcement-target">Target portal</label>
                             <select id="announcement-target" required>
                                 <option value="all">Semua peran</option>
-                                <option value="user">Eco Warrior</option>
+                                <option value="user">Warga</option>
                                 <option value="petugas">Petugas</option>
                             </select>
                         </div>

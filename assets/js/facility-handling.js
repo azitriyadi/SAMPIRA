@@ -198,7 +198,7 @@ function workspace(root) {
         void loadList();
     }
 
-    async function openDetail(id) {
+    async function openDetail(id, navigation) {
         if (!Number.isSafeInteger(id) || id < 1) return;
         selected = id;
         const sequence = ++detailSequence;
@@ -242,8 +242,8 @@ function workspace(root) {
             const location = element('div');
             detailBody.replaceChildren(handlingSummary(report, role), location, actions, history.root);
             disposeLocation = mountLocationDetail(location, {
-                title: 'Titik lokasi fasilitas', point: report, address: report.address, reported: true,
-                navigation: admin ? null : {authorize, recheck: true}
+                title: 'Titik lokasi fasilitas', point: report, address: report.address, reported: true, autoTiles: true,
+                navigation: admin ? null : {...navigation, authorize, recheck: true}
             });
             void history.load();
 
@@ -275,6 +275,15 @@ function workspace(root) {
         } finally { if (sequence === detailSequence) refresh.disabled = false; }
     }
 
+    window.addEventListener('sampira:handling-detail', event => {
+        if (root.getClientRects().length) void openDetail(event.detail.id, event.detail.navigation);
+    });
+    root.addEventListener('sampira:close', () => {
+        ++detailSequence;
+        ++listSequence;
+        disposeLocation?.();
+        detailBody.replaceChildren();
+    });
     for (const trigger of document.querySelectorAll('[data-open-handling]')) {
         trigger.addEventListener('click', () => {
             if (admin) {

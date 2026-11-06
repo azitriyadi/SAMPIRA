@@ -1,4 +1,4 @@
-// EcoRecycle Eco Warrior Dashboard Logic
+// Portal warga SAMPIRA
 
 let monthlyChart = null;
 
@@ -121,6 +121,21 @@ function renderStatusStepper(currentStatus) {
 // Tab Switching
 const tabs = document.querySelectorAll('.hub-tab');
 const panes = document.querySelectorAll('.tab-pane');
+const workspaceLabel = document.getElementById('workspace-label');
+const headerMenus = document.querySelectorAll('.sp-header-menu');
+
+for (const menu of headerMenus) {
+    menu.addEventListener('keydown', event => {
+        if (event.key !== 'Escape' || !menu.open) return;
+        menu.open = false;
+        menu.querySelector('summary').focus();
+    });
+}
+document.addEventListener('click', event => {
+    for (const menu of headerMenus) {
+        if (!menu.contains(event.target) || event.target.closest('[data-sp-user-tab]')) menu.open = false;
+    }
+});
 
 tabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
@@ -132,8 +147,13 @@ tabs.forEach(tab => {
         tab.setAttribute('aria-current', 'page');
 
         const target = tab.dataset.target;
-        const workspaceLabel = document.getElementById('workspace-label');
-        if (workspaceLabel) workspaceLabel.textContent = target === 'beranda' ? 'Beranda / Ringkasan' : `Ruang pengguna / ${tab.textContent.trim()}`;
+        if (target === 'lacak-pickup') {
+            const historyTab = document.querySelector('.hub-tab[data-target="riwayat-payout"]');
+            historyTab.classList.add('active');
+            historyTab.setAttribute('aria-current', 'page');
+            tab.removeAttribute('aria-current');
+        }
+        workspaceLabel.textContent = target === 'beranda' ? workspaceLabel.dataset.greeting : tab.textContent.trim();
         panes.forEach(p => p.classList.remove('active'));
         
         const targetPane = document.getElementById(target);
@@ -141,6 +161,8 @@ tabs.forEach(tab => {
             targetPane.classList.add('active');
         }
         if (target !== 'lacak-pickup') resetTracking();
+        window.dispatchEvent(new CustomEvent('sampira:user-view', {detail: target}));
+        window.scrollTo({top: 0, behavior: 'instant'});
 
         // Close sidebar on mobile
         closeSidebar();
@@ -211,11 +233,12 @@ const formWeight = document.getElementById('form-waste-weight');
 const formCat = document.getElementById('form-waste-category');
 
 if (formWeight) formWeight.addEventListener('input', calculateFormPreview);
-if (formCat) formCat.addEventListener('change', calculateFormPreview);
 
 function syncCategoryCards(category) {
     document.querySelectorAll('.category-helper-card').forEach(card => {
-        card.classList.toggle('active', card.dataset.category === category);
+        const selected = card.dataset.category === category;
+        card.classList.toggle('active', selected);
+        card.setAttribute('aria-pressed', String(selected));
     });
 }
 
@@ -300,15 +323,10 @@ function logoutUser() {
     logoutPortal();
 }
 
-// System Notification Alert Close
-function closeNotification() {
-    document.getElementById('system-notification-box').style.display = 'none';
-}
-
 function openTrackingDetail(trackingNumber) {
     const trackInput = document.getElementById('track-number-search');
     if (trackInput) trackInput.value = trackingNumber;
-    const trackingTab = document.querySelector('.sidebar-item[data-target="lacak-pickup"]');
+    const trackingTab = document.querySelector('.hub-tab[data-target="lacak-pickup"]');
     if (trackingTab) trackingTab.click();
     searchTracking();
 }
@@ -490,13 +508,13 @@ function renderUserHistoryRow(item) {
     const statusMeta = getPickupStatusMeta(item.status);
     const badgeClass = getStatusBadgeClass(item.status);
     return `
-                    <tr>
-                        <td style="padding: 16px;">${dateStr}</td>
-                        <td style="padding: 16px;"><button type="button" class="btn btn-outline pickup-flow-track-btn" data-tracking="${escapePortalHTML(item.tracking_number)}" onclick="openTrackingDetail(this.dataset.tracking)">${escapePortalHTML(item.tracking_number)}</button></td>
-                        <td style="padding: 16px;">${escapePortalHTML(item.category_name)}</td>
-                        <td style="padding: 16px; font-weight:700;">${weight} KG${item.final_weight_kg == null ? "" : " / Aktual " + item.final_weight_kg + " KG"}</td>
-                        <td style="padding: 16px; font-weight:800; color:#087443;">${pickupRewardLabel(item)}<br><small>${pickupPaymentLabel(item)}</small></td>
-                        <td style="padding: 16px;"><span class="status-badge ${badgeClass}">${statusMeta.label}</span></td>
+                    <tr role="row" class="sp-pickup-history-row">
+                        <td role="cell" data-label="Tanggal">${dateStr}</td>
+                        <td role="cell" data-label="No. Tracking"><button type="button" class="btn btn-outline pickup-flow-track-btn" data-tracking="${escapePortalHTML(item.tracking_number)}" onclick="openTrackingDetail(this.dataset.tracking)">${escapePortalHTML(item.tracking_number)}</button></td>
+                        <td role="cell" data-label="Kategori">${escapePortalHTML(item.category_name)}</td>
+                        <td role="cell" data-label="Berat"><strong>${weight} KG${item.final_weight_kg == null ? "" : " / Aktual " + item.final_weight_kg + " KG"}</strong></td>
+                        <td role="cell" data-label="Reward" class="sp-history-reward"><strong>${pickupRewardLabel(item)}</strong><br><small>${pickupPaymentLabel(item)}</small></td>
+                        <td role="cell" data-label="Status"><span class="status-badge ${badgeClass}">${statusMeta.label}</span></td>
                     </tr>
                 `;
 }
@@ -532,9 +550,11 @@ function renderUserActivePickup(item) {
 }
 
 function summarizeUserPickups(pickups) {
-    const summary = {totalWeight: 0, totalCarbon: 0, totalReward: 0, activeHtml: '', historyHtml: '', monthlyWeights: {}};
+    const summary = {totalWeight: 0, totalCarbon: 0, totalReward: 0, activeCount: 0, completedCount: 0, activeHtml: '', monthlyWeights: {}};
     for (const item of pickups) {
-        if (item.status === 'completed' && item.reward_amount != null && item.final_weight_kg != null) {
+        if (item.status === 'completed') summary.completedCount++;
+        else if (item.status !== 'cancelled') summary.activeCount++;
+        if (item.status === 'completed' && item.final_weight_kg != null) {
             const weight = Number(item.final_weight_kg);
             summary.totalWeight += weight;
             summary.totalCarbon += weight * 2.5;
@@ -542,7 +562,6 @@ function summarizeUserPickups(pickups) {
             summary.monthlyWeights[month] = (summary.monthlyWeights[month] || 0) + weight;
         }
         if (item.payment_status === 'paid') summary.totalReward += Number(item.reward_amount);
-        summary.historyHtml += renderUserHistoryRow(item);
         summary.activeHtml += renderUserActivePickup(item);
     }
     return summary;
@@ -554,13 +573,43 @@ function setDashboardMarkup(id, markup, emptyMarkup) {
 }
 
 function showPickupNotification(item) {
-    if (!item || item.status === 'completed') return;
-    const box = document.getElementById('system-notification-box');
     const message = document.getElementById('notification-message');
-    if (!box || !message) return;
-    message.innerHTML = 'Penjemputan <strong>' + escapePortalHTML(item.tracking_number) + '</strong> dalam status: <strong>' + escapePortalHTML(item.status.toUpperCase()) + '</strong>.';
-    box.style.display = 'flex';
+    document.getElementById('sp-notification-dot').hidden = !item;
+    message.textContent = item
+        ? `Penjemputan ${item.tracking_number} · ${getPickupStatusMeta(item.status).label}.`
+        : 'Tidak ada pemberitahuan terbaru.';
 }
+
+const historyFilters = {
+    status: document.getElementById('pickup-history-status'),
+    category_name: document.getElementById('pickup-history-category')
+};
+const historyPrev = document.getElementById('pickup-history-prev');
+const historyNext = document.getElementById('pickup-history-next');
+const historyMessage = document.getElementById('pickup-history-message');
+let pickupHistory = [];
+let pickupPage = 0;
+
+function renderPickupHistory() {
+    const pageSize = 10;
+    const matching = pickupHistory.filter(item => Object.entries(historyFilters)
+        .every(([key, filter]) => !filter.value || item[key] === filter.value));
+    pickupPage = Math.max(0, Math.min(pickupPage, Math.ceil(matching.length / pageSize) - 1));
+    const offset = pickupPage * pageSize;
+    const page = matching.slice(offset, offset + pageSize);
+    setDashboardMarkup('payout-history-table-body', page.map(renderUserHistoryRow).join(''),
+        '<tr><td colspan="6">Tidak ada penjemputan untuk pilihan ini.</td></tr>');
+    historyMessage.textContent = matching.length ? `${offset + 1}–${offset + page.length} dari ${matching.length} penjemputan` : '0 penjemputan';
+    historyPrev.disabled = pickupPage === 0;
+    historyNext.disabled = offset + pageSize >= matching.length;
+}
+
+for (const filter of Object.values(historyFilters)) filter.addEventListener('change', () => {
+    pickupPage = 0;
+    renderPickupHistory();
+});
+historyPrev.addEventListener('click', () => { pickupPage--; renderPickupHistory(); });
+historyNext.addEventListener('click', () => { pickupPage++; renderPickupHistory(); });
 
 function renderUserDashboard(pickups) {
     const summary = summarizeUserPickups(pickups);
@@ -572,11 +621,37 @@ function renderUserDashboard(pickups) {
     document.getElementById('metric-total-weight').innerText = summary.totalWeight.toFixed(1);
     document.getElementById('metric-total-carbon').innerText = summary.totalCarbon.toFixed(1);
     document.getElementById('metric-total-reward').innerText = new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR', minimumFractionDigits: 0}).format(summary.totalReward);
-    setDashboardMarkup('payout-history-table-body', summary.historyHtml, '<tr><td colspan="6" style="text-align:center; padding:24px;">Belum ada riwayat donasi sampah.</td></tr>');
+    document.getElementById('metric-active-pickups').textContent = summary.activeCount;
+    document.getElementById('metric-completed-pickups').textContent = summary.completedCount;
+    const latest = pickups.reduce((current, item) =>
+        !current || Date.parse(item.created_at) > Date.parse(current.created_at) ? item : current, null);
+    document.getElementById('sp-home-latest-status').textContent = latest ? getPickupStatusMeta(latest.status).label : 'Belum ada';
+    pickupHistory = pickups;
+    for (const [key, filter] of Object.entries(historyFilters)) {
+        const selected = filter.value;
+        const values = Array.from(new Set(pickups.map(item => item[key]).filter(Boolean)));
+        filter.replaceChildren(filter.options[0], ...values.map(value => new Option(
+            key === 'status' ? getPickupStatusMeta(value).label : value, value)));
+        if (values.includes(selected)) filter.value = selected;
+    }
+    renderPickupHistory();
+    window.dispatchEvent(new CustomEvent('sampira:user-pickups', {detail: pickups}));
     setDashboardMarkup('active-pickups-container', summary.activeHtml, '<div style="text-align:center; padding:24px;">Tidak ada penjemputan sampah aktif saat ini.</div>');
-    if (summary.activeHtml) showPickupNotification(pickups.find(item => !['completed', 'cancelled'].includes(item.status)));
+    showPickupNotification(pickups.find(item => !['completed', 'cancelled'].includes(item.status)));
     renderChart(summary.monthlyWeights);
 }
+
+function renderAccountName(name) {
+    document.getElementById('hero-welcome').innerText = `Halo, ${name}!`;
+    document.getElementById('user-display-name').innerText = name;
+    document.getElementById('profile-avatar').innerText = name.substring(0, 2).toUpperCase();
+    workspaceLabel.dataset.greeting = `Selamat datang kembali, ${name.trim().split(/\s+/)[0]}! 👋`;
+    if (document.getElementById('beranda').classList.contains('active')) {
+        workspaceLabel.textContent = workspaceLabel.dataset.greeting;
+    }
+}
+
+workspaceLabel.dataset.greeting = workspaceLabel.textContent;
 
 // 4. Load User Data & Pickups
 async function loadDashboardData() {
@@ -584,9 +659,7 @@ async function loadDashboardData() {
     if (!user) return;
     
     // Set Profile Info
-    document.getElementById('hero-welcome').innerText = `Halo, ${user.name}!`;
-    document.getElementById('user-display-name').innerText = user.name;
-    document.getElementById('profile-avatar').innerText = user.name.substring(0, 2).toUpperCase();
+    renderAccountName(user.name);
     
     const settingsName = document.getElementById('settings-name');
     const settingsEmail = document.getElementById('settings-email');
@@ -596,22 +669,24 @@ async function loadDashboardData() {
     const donorNameInput = document.getElementById('form-donor-name');
     if (donorNameInput) donorNameInput.value = user.name;
     populateProfileFields(user);
-    populateProfileFields(user);
 
     // Fetch Pickups from API
     portalFetch('api/ecorecycle/list_pickups?type=user', {
         method: 'GET',
     })
     .then(res => {
-        if (res.status === 401) {
+        if (res.status === 401 || res.status === 403) {
             logoutUser();
         }
         return res.json();
     })
     .then(data => {
         if (data.status === 'success') renderUserDashboard(data.data);
+        else window.dispatchEvent(new Event('sampira:user-pickups-failed'));
     })
     .catch(err => {
+        historyMessage.textContent = 'Riwayat penjemputan belum dapat dimuat.';
+        window.dispatchEvent(new Event('sampira:user-pickups-failed'));
         console.error('Error fetching dashboard data:', err);
     });
 }
@@ -620,6 +695,78 @@ async function loadDashboardData() {
 const pickupForm = document.getElementById('pickup-request-form');
 if (pickupForm) {
     let picker;
+    let step = 0;
+    const stages = Array.from(pickupForm.querySelectorAll('[data-pickup-step]'));
+    const indicators = pickupForm.querySelectorAll('.sp-pickup-steps li');
+    const previous = document.getElementById('pickup-prev');
+    const backHome = document.getElementById('pickup-back-home');
+    const mapPanel = document.getElementById('pickup-map-panel');
+    const next = document.getElementById('pickup-next');
+    const review = document.getElementById('pickup-review');
+    const submit = pickupForm.querySelector('button[type="submit"]');
+    const confirmation = stages.length - 1;
+    pickupForm.noValidate = true;
+
+    function openStep(index, focus = true) {
+        step = index;
+        stages.forEach((stage, position) => {
+            stage.hidden = index !== position;
+            if (index === position) indicators[position].setAttribute('aria-current', 'step');
+            else indicators[position].removeAttribute('aria-current');
+        });
+        previous.hidden = index === 0;
+        backHome.hidden = index !== 0;
+        mapPanel.hidden = index > 1;
+        next.hidden = index === confirmation;
+        submit.hidden = index !== confirmation;
+        const heading = index === 1 ? mapPanel.querySelector('h3') : stages[index].querySelector('h3');
+        heading.tabIndex = -1;
+        if (focus) heading.focus();
+    }
+
+    function checkStep(index) {
+        const invalid = Array.from(stages[index].querySelectorAll('input, select, textarea'))
+            .find(input => !input.validity.valid);
+        if (!invalid) return true;
+        if (step !== index) openStep(index, false);
+        invalid.reportValidity();
+        return false;
+    }
+
+    function reviewPickup(fields) {
+        const selected = document.getElementById('form-waste-category');
+        const entries = [
+            ['Kategori', selected.selectedOptions[0]?.textContent],
+            ['Estimasi berat', document.getElementById('form-waste-weight').value + ' kg'],
+            ['Deskripsi', document.getElementById('form-item-description').value.trim()],
+            ['Kontak', document.getElementById('form-donor-phone').value.trim()],
+            ['Alamat', document.getElementById('form-pickup-address').value.trim()],
+            ['Titik lokasi', fields.latitude ? fields.latitude + ', ' + fields.longitude : 'Menggunakan alamat']
+        ];
+        review.replaceChildren(...entries.map(([label, value]) => {
+            const entry = document.createElement('div');
+            const term = document.createElement('dt');
+            const description = document.createElement('dd');
+            term.textContent = label;
+            description.textContent = value || '—';
+            entry.append(term, description);
+            return entry;
+        }));
+    }
+
+    next.addEventListener('click', () => {
+        if (!checkStep(step)) return;
+        if (step === 1 || step === confirmation - 1) {
+            const fields = picker ? picker.fields() : {};
+            if (!fields) {
+                if (step !== 1) openStep(1);
+                return;
+            }
+            if (step === confirmation - 1) reviewPickup(fields);
+        }
+        openStep(step + 1);
+    });
+    previous.addEventListener('click', () => openStep(step - 1));
     const host = document.getElementById('pickup-location-picker');
     locationMaps.then(({mountLocationPicker}) => {
         picker = mountLocationPicker(host, {title: 'Titik Lokasi Penjemputan', prefix: 'pickup', digits: 7});
@@ -628,8 +775,8 @@ if (pickupForm) {
     });
     pickupForm.addEventListener('submit', function (e) {
         e.preventDefault();
-
-        const btn = this.querySelector('button[type="submit"]');
+        if (step !== confirmation || submit.disabled || !stages.slice(0, confirmation).every((_, index) => checkStep(index))) return;
+        const btn = submit;
         const originalHtml = btn.innerHTML;
 
         const phone = document.getElementById('form-donor-phone').value.trim();
@@ -658,7 +805,7 @@ if (pickupForm) {
         }
 
         const fields = picker ? picker.fields() : {};
-        if (!fields) return;
+        if (!fields) { openStep(1); picker.fields(); return; }
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
         btn.disabled = true;
 
@@ -691,6 +838,7 @@ if (pickupForm) {
                 }).then(() => {
                     pickupForm.reset();
                     picker?.reset();
+                    openStep(0, false);
                     btn.innerHTML = originalHtml;
                     btn.disabled = false;
                     clearPhotoPreview();
@@ -699,7 +847,7 @@ if (pickupForm) {
                     loadDashboardData();
                     const trackInput = document.getElementById('track-number-search');
                     if (trackInput) trackInput.value = data.data.tracking_number;
-                    document.querySelector('.sidebar-item[data-target="lacak-pickup"]').click();
+                    document.querySelector('.hub-tab[data-target="lacak-pickup"]').click();
                     searchTracking();
                 });
             } else {
@@ -728,6 +876,10 @@ if (pickupForm) {
 
 // 6. Track Search
 let trackingSequence = 0;
+window.addEventListener('sampira:session-ended', resetTracking);
+document.getElementById('track-number-search')?.addEventListener('keydown', event => {
+    if (event.key === 'Enter') searchTracking();
+});
 
 function resetTracking() {
     ++trackingSequence;
@@ -885,9 +1037,7 @@ if (settingsForm) {
         .then(data => {
             if (data.status === 'success') {
                 populateProfileFields(data.data);
-                document.getElementById('hero-welcome').innerText = `Halo, ${data.data.name}!`;
-                document.getElementById('user-display-name').innerText = data.data.name;
-                document.getElementById('profile-avatar').innerText = data.data.name.substring(0, 2).toUpperCase();
+                renderAccountName(data.data.name);
                 Swal.fire({
                     icon: 'success',
                     title: 'Profil Disimpan',
@@ -926,15 +1076,18 @@ function renderChart(monthlyWeights) {
     const labels = Object.keys(monthlyWeights).reverse();
     const weights = Object.values(monthlyWeights).reverse();
 
-    // Fallback if empty
-    if (labels.length === 0) {
-        labels.push('Mei');
-        weights.push(0);
-    }
-
     if (monthlyChart) {
         monthlyChart.destroy();
+        monthlyChart = null;
     }
+    const hasChart = labels.length > 0 && typeof Chart === 'function';
+    ctx.parentElement.hidden = !hasChart;
+    const emptyMessage = document.getElementById('monthly-waste-empty');
+    emptyMessage.hidden = hasChart;
+    emptyMessage.textContent = labels.length
+        ? 'Grafik kontribusi tidak dapat dimuat.'
+        : 'Grafik akan tampil setelah berat penjemputan diverifikasi.';
+    if (!hasChart) return;
 
     monthlyChart = new Chart(ctx, {
         type: 'bar',

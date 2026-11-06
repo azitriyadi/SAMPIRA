@@ -51,9 +51,11 @@ export async function checkFacilityBrowser({send, js, nav, login, click, text, w
     await value('register-name', 'Facility browser fixture');
     await value('register-email', email);
     await value('register-password', password);
+    await value('register-confirm-password', password);
     await submit('register-form');
-    await waitFor(() => js('location.pathname === "/login" || document.querySelector(".swal2-title")?.textContent === "Registrasi Berhasil"'), 'Registration did not succeed');
-    if (await visible('.swal2-confirm')) await click('.swal2-confirm');
+    await waitFor(() => visible('#register-success'), 'Registration success was not shown');
+    await text('#register-success', 'Pendaftaran berhasil');
+    await click('#register-success a');
     await waitPath('/login');
     await login(email, '/dashboard');
     await setViewport(390);

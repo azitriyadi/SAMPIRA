@@ -54,10 +54,11 @@ function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false} = {}) {
     root.append(tools, frame);
 
     async function attachTiles() {
-        if (!map || !visible || tiles) return;
+        if (!map || !visible || tiles || authorizingTiles) return;
         loadTiles.disabled = true;
         if (autoTiles) loadTiles.hidden = true;
         if (authorize) {
+            authorizingTiles = true;
             try {
                 if (!await authorize() || !map || !visible) {
                     loadTiles.disabled = false;
@@ -66,7 +67,10 @@ function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false} = {}) {
             } catch {
                 tileStatus.textContent = 'Akses tugas belum dapat diperiksa. Coba lagi saat koneksi tersedia.';
                 loadTiles.disabled = false;
+                loadTiles.hidden = false;
                 return;
+            } finally {
+                authorizingTiles = false;
             }
         }
         tileStatus.textContent = autoTiles ? '' : 'Peta jalan diminta dari OpenStreetMap.';
@@ -88,6 +92,7 @@ function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false} = {}) {
 
     let map;
     let tiles;
+    let authorizingTiles = false;
     let visible = false;
     let geometry;
     const points = new Map();
@@ -335,7 +340,7 @@ export function mountLocationPicker(host, {title, prefix, digits, saved, include
     return {reset, fields, dispose};
 }
 
-export function mountLocationDetail(host, {title, point, address, reported = false, navigation, external = false}) {
+export function mountLocationDetail(host, {title, point, address, reported = false, navigation, external = false, autoTiles = false}) {
     const root = panel(host, title);
     const destination = locationPoint(point?.latitude, point?.longitude);
     const label = typeof address === 'string' ? address.trim() : '';
@@ -354,9 +359,10 @@ export function mountLocationDetail(host, {title, point, address, reported = fal
         }
     }
     const map = destination ? mapPanel(root, navigation ? (lat, lon) => navigationUI?.select(lat, lon) : undefined, {
-        onHide: () => navigationUI?.clear(), authorize: navigation?.authorize
+        onHide: () => navigationUI?.clear(), authorize: navigation?.authorize, autoTiles
     }) : null;
     map?.marker('B', destination, true);
+    if (destination && autoTiles) root.append(node('p', 'Peta dasar OpenStreetMap memuat area yang terlihat.', 'location-privacy'));
     const navigationUI = navigation ? mountNavigation(root, map, destination, label, navigation) : null;
     function dispose() {
         activePanels.delete(dispose);
@@ -368,7 +374,7 @@ export function mountLocationDetail(host, {title, point, address, reported = fal
     return dispose;
 }
 
-function mountNavigation(root, map, destination, address, {authorize, recheck = false}) {
+function mountNavigation(root, map, destination, address, {authorize, recheck = false, origin: initialOrigin, action: initialAction}) {
     let origin;
     let controller;
     let gpsSequence = 0;
@@ -505,6 +511,13 @@ function mountNavigation(root, map, destination, address, {authorize, recheck = 
         else if (recheck) void checkAccess();
     }
     document.addEventListener('visibilitychange', onVisibility);
+    if (initialOrigin && destination) select(...initialOrigin);
+    if (initialAction === 'route') {
+        routeButton?.focus();
+        if (initialOrigin && destination) void calculate();
+    } else if (initialAction === 'external') {
+        controls.lastChild.focus();
+    }
 
     return {select, clear, dispose() {
         disposed = true;

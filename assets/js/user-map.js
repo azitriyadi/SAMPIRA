@@ -17,7 +17,7 @@ async function showPickupOnUserMap(pickup) {
         const {mountLocationDetail} = await locationMaps;
         if (sequence !== userLocationSequence) return;
         disposeUserLocation = mountLocationDetail(host, {
-            title: 'Titik lokasi penjemputan', point: pickup, address: pickup.pickup_address, external: true
+            title: 'Titik lokasi penjemputan', point: pickup, address: pickup.pickup_address, external: true, autoTiles: true
         });
     } catch {
         if (sequence === userLocationSequence) host.textContent = pickup.pickup_address || 'Alamat penjemputan belum tersedia.';

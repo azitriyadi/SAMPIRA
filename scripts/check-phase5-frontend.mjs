@@ -107,6 +107,11 @@ export async function checkLocationBrowser({send, js, login, click, text, waitFo
 
     await login(ownerEmail, '/dashboard');
     await click('[data-target="setor-sampah"]');
+    for (const [selector, next] of [
+        ['#form-donor-phone', '081234567890'], ['#form-pickup-address', 'Jalan Pengujian Peta 10 Bandung'],
+        ['#form-item-description', description], ['#form-waste-weight', '2'], ['#form-waste-category', 'Computers']
+    ]) await value(selector, next);
+    await click('#pickup-next');
     await ready(pickupPicker + ' .leaflet-tile-loaded');
     assert(await js('document.querySelector("#pickup-location-picker .location-map-tools button").hidden'));
     await layout(pickupPicker + ' .location-map');
@@ -121,10 +126,6 @@ export async function checkLocationBrowser({send, js, login, click, text, waitFo
     await send('Network.setBlockedURLs', {urls: []});
     await action(pickupPicker, 'Coba muat peta lagi');
     await ready(pickupPicker + ' .leaflet-tile-loaded');
-    for (const [selector, next] of [
-        ['#form-donor-phone', '081234567890'], ['#form-pickup-address', 'Jalan Pengujian Peta 10 Bandung'],
-        ['#form-item-description', description], ['#form-waste-weight', '2'], ['#form-waste-category', 'Computers']
-    ]) await value(selector, next);
     await ready(pickupPicker + ' .location-pin-T');
     await text(pickupPicker, 'Geser pin awal');
     assert.equal(await readValue('#pickup-latitude'), '', 'The starting pin is only a visual guide');
@@ -132,7 +133,7 @@ export async function checkLocationBrowser({send, js, login, click, text, waitFo
     await js('document.querySelector("#pickup-location-picker .location-map").scrollIntoView({behavior:"instant",block:"center"}); void 0');
     await dragMarker(pickupPicker + ' .location-pin-T');
     await text(pickupPicker, 'Titik dipilih');
-    await submit('#pickup-request-form');
+    await click('#pickup-next');
     await text(pickupPicker, 'Konfirmasi titik sebelum menyimpan');
 
     await send('Browser.setPermission', {origin, permission: {name: 'geolocation'}, setting: 'granted'});
@@ -153,10 +154,13 @@ export async function checkLocationBrowser({send, js, login, click, text, waitFo
     const selected = await readValue('#pickup-longitude');
     await dragMarker(pickupPicker + ' .location-pin-T');
     await waitFor(async () => (await readValue('#pickup-longitude')) !== selected, 'Pickup marker drag did not update coordinate');
-    await submit('#pickup-request-form');
+    await click('#pickup-next');
     await text(pickupPicker, 'Konfirmasi titik sebelum menyimpan');
     await click(pickupPicker + confirm);
     const saved = [Number(await readValue('#pickup-latitude')), Number(await readValue('#pickup-longitude'))];
+    await click('#pickup-next');
+    await click('#pickup-next');
+    await text('#pickup-review', description);
     await js('window.requestPickupFetch = fetch; window.fetch = (url, options) => String(url).endsWith("/request_pickup")' +
         ' ? Promise.resolve(Response.json({status:"error",message:"Fixture server gagal"}, {status:503})) : requestPickupFetch(url, options); void 0');
     await submit('#pickup-request-form');
@@ -250,10 +254,30 @@ export async function checkLocationBrowser({send, js, login, click, text, waitFo
     assert(report.photo_url);
 
     await login(adminEmail, '/admin');
+    assert.equal(await js('window.L?.version'), '1.9.4');
+    await js(`window.destinationMarkers = [];
+        L.Marker.addInitHook(function() {
+            if (this.options.icon?.options.className?.includes('location-pin-B')) {
+                const {lat, lng} = this.getLatLng();
+                window.destinationMarkers.push([lat, lng]);
+            }
+        }); void 0`);
     await openReport(reportTitle);
     await text('#facility-detail .location-panel', 'Titik dari pelapor');
     await text('#facility-detail .location-panel', facilityPoint.join(', '));
     await ready('#facility-detail .location-pin-B');
+    assert.deepEqual(await js('destinationMarkers.at(-1)'), facilityPoint);
+    await ready('#facility-detail .leaflet-tile-loaded');
+    await layout('#facility-detail .location-map');
+    await click('[data-open-handling]');
+    await send('Network.setBlockedURLs', {urls: ['https://tile.openstreetmap.org/*']});
+    await click('[data-open-verification]');
+    await text('#facility-detail .location-panel', 'Peta jalan gagal dimuat');
+    await ready('#facility-detail .location-pin-B');
+    await send('Network.setBlockedURLs', {urls: []});
+    await action('#facility-detail .location-panel', 'Coba muat peta lagi');
+    await ready('#facility-detail .leaflet-tile-loaded');
+    assert.equal(await js('document.querySelectorAll("#facility-detail .leaflet-container").length'), 1);
     const verification = reports + '/' + report.id + '/verification';
     await request(verification, 200, admin.token, {status: 'revision_required', version: report.version, note: 'Pastikan titik dan alamat fasilitas sudah cocok.'});
 
@@ -302,6 +326,17 @@ export async function checkLocationBrowser({send, js, login, click, text, waitFo
     await openReport(reportTitle, handling + ' .facility-cards');
     await text(handling + ' .location-panel', finalPoint.join(', '));
     await ready(handling + ' .location-pin-B');
+    await ready(handling + ' .leaflet-tile-loaded');
+    await layout(handling + ' .location-map');
+    await action(handling, 'Kembali ke daftar');
+    await openReport(legacyFacility.title, handling + ' .facility-cards');
+    await text(handling + ' .location-panel', 'Titik presisi belum tersedia');
+    assert(await absent(handling + ' .location-pin-B'));
+    await click('[data-open-verification]');
+    await js('{ const filter = document.querySelector("#facility-status"); filter.value = "approved"; filter.dispatchEvent(new Event("change")); } void 0');
+    await openReport(legacyFacility.title);
+    await text('#facility-detail .location-panel', 'Titik presisi belum tersedia');
+    assert(await absent('#facility-detail .location-pin-B'));
     await request(pickupPath(tracking), 403, admin.token);
     const addressOnly = 'Jalan Tujuan Tanpa Titik Bandung';
     const addressPickup = await request(api + 'request_pickup', 201, owner.token, {
@@ -325,6 +360,7 @@ export async function checkLocationBrowser({send, js, login, click, text, waitFo
     await click('.swal2-confirm');
     await text(mission + ' .location-panel', updated.join(', '));
     await ready(mission + ' .location-pin-B');
+    await ready(mission + ' .leaflet-tile-loaded');
     await action(mission, 'Lihat Rute');
     await text(mission, 'Layanan rute belum dikonfigurasi');
     assert(await absent(mission + ' path.leaflet-interactive'));
@@ -433,6 +469,7 @@ export async function checkLocationBrowser({send, js, login, click, text, waitFo
     await openReport(reportTitle, handling + ' .facility-cards');
     await text(handling + ' .location-panel', finalPoint.join(', '));
     await ready(handling + ' .location-pin-B');
+    await ready(handling + ' .leaflet-tile-loaded');
     await layout(handling + ' .location-map');
     await clickMap(handling + ' .location-map');
     await ready(handling + ' .location-pin-A');
