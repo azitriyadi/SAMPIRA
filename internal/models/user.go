@@ -1,10 +1,27 @@
 package models
 
+const (
+	RoleUser          = "user"
+	RolePetugas       = "petugas"
+	RoleAdmin         = "admin"
+	RoleAdministrator = "administrator"
+)
+
+func ValidRole(role string) bool {
+	switch role {
+	case RoleUser, RolePetugas, RoleAdmin, RoleAdministrator:
+		return true
+	default:
+		return false
+	}
+}
+
 type TokenPayload struct {
-	ID   int    `json:"id"`
-	Role string `json:"role"`
-	Name string `json:"name"`
-	Exp  int64  `json:"exp"`
+	ID    int    `json:"id"`
+	Role  string `json:"role"`
+	Name  string `json:"name"`
+	Nonce string `json:"jti"`
+	Exp   int64  `json:"exp"`
 }
 
 type User struct {

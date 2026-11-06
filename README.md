@@ -2,7 +2,11 @@
 
 **Tagline:** *Laporkan Sampah, Pantau Perubahannya.*
 
-SAMPIRA adalah platform aplikasi web yang dikembangkan untuk mendukung pengelolaan informasi dan layanan persampahan melalui fitur pengajuan penjemputan sampah, pelacakan proses, pengelolaan petugas, serta informasi bagi pengguna dan admin. Pengembangan selanjutnya diarahkan untuk memperluas platform dengan pelaporan permasalahan sampah, pemantauan tindak lanjut, dan visualisasi data pengelolaan sampah.
+SAMPIRA adalah aplikasi web untuk mengajukan dan melacak penjemputan sampah terpilah. Pengembangan selanjutnya mencakup pelaporan permasalahan sampah, pemantauan tindak lanjut, dan visualisasi data pengelolaan sampah.
+
+Phase 1 mengamankan autentikasi dan akses ke portal Masyarakat, Petugas, Admin, serta Administrator. Lihat [panduan operasi](docs/phase-01-operations.md) dan [laporan verifikasi final](docs/progress/PHASE_01_FINAL_VERIFICATION.md).
+
+Phase 2 mengintegrasikan pickup, timbang aktual, dan pencatatan pembayaran eksternal yang diverifikasi. Lihat [progres Phase 2](docs/progress/PHASE_02_PICKUP_WORKFLOW.md), [audit kumulatif](docs/progress/SAMPIRA_PHASE_01_02_COMPREHENSIVE_REPORT.md), dan [changelog](docs/progress/SAMPIRA_PHASE_01_02_CHANGELOG.md).
 
 ---
 
@@ -32,7 +36,7 @@ Teknologi yang digunakan pada basis kode proyek saat ini adalah:
 Pastikan perangkat pengembangan telah memiliki:
 
 - Go versi **1.24.6** atau kompatibel dengan versi pada `go.mod`.
-- MySQL 5.7+ atau MariaDB 10.4+.
+- MariaDB 10.4+ untuk lingkungan pengembangan yang dipakai dalam verifikasi Phase 1–2.
 - Git untuk mengambil source code (jika proyek di-clone dari repository).
 - Browser modern seperti Chrome, Firefox, atau Edge.
 
@@ -49,7 +53,7 @@ Ikuti langkah berikut dari direktori utama repository SAMPIRA.
 Jika belum memiliki source code, clone repository:
 
 ```bash
-git clone <URL_REPOSITORY_SAMPIRA>
+git clone https://github.com/azitriyadi/SAMPIRA.git
 cd SAMPIRA
 ```
 
@@ -86,7 +90,9 @@ DB_PASS=
 DB_NAME=ecorecycle
 
 # Ganti dengan secret acak yang panjang dan jangan gunakan contoh ini untuk produksi.
-JWT_SECRET=ganti_dengan_secret_acak_yang_kuat
+JWT_SECRET=
+SAMPIRA_LISTEN_HOST=127.0.0.1
+SAMPIRA_SECURE_COOKIE=false
 ```
 
 Keterangan:
@@ -95,7 +101,9 @@ Keterangan:
 - `DB_USER`: username database.
 - `DB_PASS`: password database.
 - `DB_NAME`: nama database aplikasi. Nilai bawaan adalah `ecorecycle`.
-- `JWT_SECRET`: secret untuk penandatanganan token autentikasi.
+- `JWT_SECRET`: secret acak minimal 32 byte untuk penandatanganan token autentikasi. Isi sebelum menjalankan server.
+- `SAMPIRA_LISTEN_HOST` membatasi alamat dengar server. Gunakan `127.0.0.1` untuk pengembangan lokal.
+- `SAMPIRA_SECURE_COOKIE` disetel ke `true` saat HTTPS ditangani oleh reverse proxy tepercaya.
 
 ### 3.4. Unduh Dependensi Go
 
@@ -107,15 +115,13 @@ go mod download
 
 ### 3.5. Inisialisasi Database (Khusus Instalasi Baru)
 
-Untuk membuat database, tabel, kategori awal, serta akun dan data demo, jalankan:
+Untuk membuat database, tabel, dan kategori awal, jalankan:
 
 ```bash
 go run ./db_init
 ```
 
-**PERINGATAN PENTING:** `db_init/db_init.go` saat ini menjalankan perintah `DROP DATABASE IF EXISTS ecorecycle` sebelum membuat database kembali. Artinya, proses ini akan menghapus database `ecorecycle` beserta seluruh datanya. Jalankan hanya untuk instalasi baru atau database pengembangan yang memang boleh di-reset. Jangan jalankan pada database yang berisi data penting.
-
-> Catatan konfigurasi: initializer membuat database dengan nama tetap `ecorecycle`. Pastikan nilai `DB_NAME` pada `.env` juga `ecorecycle` agar server terhubung ke database yang benar.
+Initializer memakai nama skema dari `DB_NAME` dan berhenti jika skema itu sudah ada. Untuk database lama, buat cadangan, ikuti [migrasi empat role](docs/phase-01-operations.md#migrasi-database-yang-sudah-ada), lalu [prosedur upgrade Phase 2](docs/progress/PHASE_02_PICKUP_WORKFLOW.md). Startup server menyiapkan skema sesi dan ledger pickup.
 
 ### 3.6. Jalankan Aplikasi
 
@@ -132,22 +138,15 @@ Jika server berhasil berjalan, buka browser pada:
 - Registrasi: `http://localhost:8080/register`
 - Dashboard pengguna: `http://localhost:8080/dashboard`
 - Dashboard admin: `http://localhost:8080/admin`
-- Dashboard petugas: `http://localhost:8080/collector`
+- Dashboard petugas: `http://localhost:8080/petugas`
+- Portal Administrator: `http://localhost:8080/administrator`
 - Dokumentasi API Swagger: `http://localhost:8080/swagger`
 
 Port bawaan adalah `8080`. Port dapat diubah dengan menambahkan variabel `PORT` pada `.env`, misalnya `PORT=8081`.
 
-### 3.7. Akun Demo
+### 3.7. Akun Aplikasi
 
-Setelah database diinisialisasi menggunakan `db_init`, akun demo berikut tersedia:
-
-| Peran | Email | Password |
-|---|---|---|
-| Admin | `admin@ecorecycle.com` | `password123` |
-| Petugas (Collector) | `collector@ecorecycle.com` | `password123` |
-| Pengguna (User) | `user@ecorecycle.com` | `password123` |
-
-Akun tersebut hanya untuk pengujian lokal. Ganti atau nonaktifkan kredensial demo sebelum aplikasi digunakan pada lingkungan produksi.
+Registrasi publik membuat akun Masyarakat. Ikuti [prosedur bootstrap Administrator](docs/phase-01-operations.md#bootstrap-administrator) untuk membuat akun Administrator. Operator melakukan provisioning akun Admin dan Petugas.
 
 ---
 
@@ -159,22 +158,29 @@ Bagian ini menjelaskan kondisi implementasi berdasarkan source code repository s
 
 - [x] Struktur aplikasi web dengan backend Go dan frontend HTML, CSS, serta JavaScript.
 - [x] Registrasi dan login pengguna.
-- [x] Autentikasi API menggunakan token bertanda tangan HMAC-SHA256.
+- [x] Autentikasi API dengan token HMAC-SHA256, sesi yang dapat dicabut, cookie HttpOnly untuk portal, dan perlindungan CSRF.
 - [x] Pengelolaan profil pengguna.
-- [x] Pembagian peran pengguna: `admin`, `collector`, dan `user`.
+- [x] Empat peran dengan portal terpisah: Masyarakat (`user`), `petugas`, `admin`, dan `administrator`.
 - [x] Pengajuan permintaan penjemputan sampah.
 - [x] Pemilihan kategori sampah dan estimasi reward.
 - [x] Unggah foto untuk permintaan penjemputan.
-- [x] Pengelolaan permintaan penjemputan oleh admin/petugas sesuai hak akses.
-- [x] Penugasan collector pada permintaan penjemputan.
-- [x] Pembaruan status dan pencatatan riwayat penjemputan.
-- [x] Verifikasi berat akhir dan perhitungan reward.
-- [x] Pencatatan proses payout/reward.
+- [x] Antrean dan klaim pickup oleh Petugas untuk dirinya sendiri. Detail dan foto hanya tersedia untuk pemilik dan Petugas yang ditugaskan.
+- [x] Pelacakan dan riwayat penjemputan dengan alur `pending → pickup → transit → arrived → completed`.
+- [x] Pencatatan berat aktual oleh Petugas setelah tiba di hub. Penutupan pickup dan pembuatan kewajiban reward berjalan dalam satu transaksi.
+- [x] Pencatatan pembayaran eksternal oleh Administrator dengan nominal yang sesuai, referensi unik, dan bukti gambar. Status reward dilacak terpisah dari status pickup.
 - [x] Dashboard dengan komponen grafik dan peta.
-- [x] Pengelolaan pengumuman portal.
+- [x] Pengelolaan pengumuman portal oleh Administrator.
 - [x] Dokumentasi endpoint API melalui Swagger/OpenAPI.
 
-### 4.2. Pengembangan Lanjutan SAMPIRA
+### 4.2. Cakupan Kategori
+
+Kategori pada alur penjemputan mencakup organik, anorganik, elektronik, dan B3 rumah tangga. Kategori baterai dikelompokkan ke B3. Anorganik dirinci menjadi PET bening, kertas/kardus, besi, dan kaca dengan tarif masing-masing.
+
+Tarif anorganik memakai acuan awal Bank Sampah Indonesia; organik dan B3 rumah tangga umum adalah setoran tanpa reward awal. Biaya pemrosesan kategori baru belum diberlakukan. Tarif elektronik sebelumnya dipertahankan. Lihat [riset, asumsi tarif, dan batas kategori](docs/waste-categories.md).
+
+**Database yang sudah ada:** jalankan `db_init/add_waste_categories.sql` pada database aplikasi. Migrasi ini hanya menambah kategori yang belum ada. Untuk migrasi empat role, ikuti [panduan operasi Phase 1](docs/phase-01-operations.md). Inisialisasi database baru mencakup seluruh kategori.
+
+### 4.3. Pengembangan Lanjutan SAMPIRA
 
 Fokus pengembangan berikutnya adalah mengarahkan fondasi aplikasi yang sudah tersedia menjadi platform pelaporan dan pemantauan permasalahan sampah. Pekerjaan lanjutan yang direncanakan meliputi:
 
@@ -187,7 +193,7 @@ Fokus pengembangan berikutnya adalah mengarahkan fondasi aplikasi yang sudah ter
 - [ ] Visualisasi tren dan informasi dataset pada dashboard analitik.
 - [ ] Penyempurnaan peta agar lokasi yang ditampilkan bersumber dari data yang valid.
 
-### 4.3. Catatan Status dan Batasan
+### 4.4. Catatan Status dan Batasan
 
 - Permintaan penjemputan sampah (`pickups`) merupakan alur layanan pengumpulan sampah, bukan modul pelaporan permasalahan sampah.
 - Riwayat penjemputan (`pickup_history`) mencatat perubahan status penjemputan dan bukan riwayat status laporan permasalahan.
@@ -211,11 +217,13 @@ SAMPIRA/
 │   └── server/
 │       └── main.go            # Entry point server Go dan routing
 ├── db_init/
-│   ├── db_init.go             # Inisialisasi database dan data demo
-│   └── add_waste_categories.sql
+│   ├── db_init.go             # Inisialisasi skema baru dan kategori awal
+│   ├── add_waste_categories.sql
+│   └── migrations/            # Migrasi database yang sudah ada
 ├── docs/
 │   ├── openapi.json           # Spesifikasi API
-│   └── swagger.html           # UI dokumentasi API
+│   ├── swagger.html           # UI dokumentasi API
+│   └── progress/              # Laporan Phase 1–2
 ├── internal/
 │   ├── handlers/              # Handler HTTP/API
 │   ├── middleware/            # Middleware HTTP dan autentikasi
@@ -235,8 +243,8 @@ SAMPIRA/
 
 - Jangan mengunggah file `.env` atau kredensial database ke repository publik.
 - Gunakan `JWT_SECRET` yang kuat dan berbeda dari nilai contoh.
-- Gunakan akun demo hanya untuk pengujian lokal.
-- Jangan menjalankan initializer database pada database yang menyimpan data penting karena initializer melakukan reset database.
+- Audit akun lama dan buat cadangan sebelum migrasi.
+- Gunakan HTTPS pada deployment publik.
 - Validasi kembali data lokasi dan data statistik sebelum dipublikasikan.
 
 ---

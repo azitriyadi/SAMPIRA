@@ -5,14 +5,14 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"ecorecycle/internal/handlers"
-	httpx "ecorecycle/internal/middleware"
+	"ecorecycle/internal/models"
+	"ecorecycle/internal/repositories"
 	"ecorecycle/internal/services"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -85,18 +85,38 @@ func initDB() *sql.DB {
 
 func main() {
 	loadEnv()
+	if len(os.Args) > 1 {
+		if os.Args[1] != "-bootstrap-administrator" || len(os.Args) != 4 {
+			log.Fatal("penggunaan: server [-bootstrap-administrator NAMA EMAIL]")
+		}
+		db := initDB()
+		defer db.Close()
+		if err := bootstrapAdministrator(repositories.NewUserRepository(db), os.Args[2:], os.Stdin); err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Akun Administrator dibuat.")
+		return
+	}
+	authService, err := services.NewAuthService(os.Getenv("JWT_SECRET"))
+	if err != nil {
+		log.Fatal(err)
+	}
 	db := initDB()
 	defer db.Close()
 
-	rand.Seed(time.Now().UnixNano())
-
-	authService := services.NewAuthService(os.Getenv("JWT_SECRET"))
 	app := handlers.NewApp(db, authService)
+	app.SecureCookies = os.Getenv("SAMPIRA_SECURE_COOKIE") == "true"
 	if err := app.Users.EnsureProfileSchema(); err != nil {
 		log.Fatalf("Gagal menyiapkan kolom profil payout: %v", err)
 	}
+	if err := app.Users.EnsureSessionSchema(); err != nil {
+		log.Fatalf("Gagal menyiapkan sesi: %v", err)
+	}
 	if err := app.Pickups.EnsureVerificationSchema(); err != nil {
 		log.Fatalf("Gagal menyiapkan kolom verifikasi penjemputan: %v", err)
+	}
+	if err := app.Pickups.EnsureWorkflowSchema(); err != nil {
+		log.Fatalf("Gagal menyiapkan skema pickup Phase 2: %v", err)
 	}
 	if err := app.Announcements.EnsureSchema(); err != nil {
 		log.Fatalf("Gagal menyiapkan tabel CMS portal: %v", err)
@@ -114,21 +134,24 @@ func main() {
 	mux.HandleFunc("GET /home", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "app/Views/index.html")
 	})
+	mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/assets/img/waste-organic.svg", http.StatusTemporaryRedirect)
+	})
 	mux.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "app/Views/login.html")
 	})
 	mux.HandleFunc("GET /register", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "app/Views/register.html")
 	})
-	mux.HandleFunc("GET /dashboard", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "app/Views/dashboard.html")
-	})
-	mux.HandleFunc("GET /admin", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "app/Views/admin.html")
-	})
+	mux.HandleFunc("GET /dashboard", app.Portal(models.RoleUser, "app/Views/dashboard.html"))
+	mux.HandleFunc("GET /profile", app.Portal(models.RoleUser, "app/Views/profile.html"))
+	mux.HandleFunc("GET /admin", app.Portal(models.RoleAdmin, "app/Views/admin.html"))
+	mux.HandleFunc("GET /administrator", app.Portal(models.RoleAdministrator, "app/Views/administrator.html"))
+	mux.HandleFunc("GET /petugas", app.Portal(models.RolePetugas, "app/Views/collector.html"))
 	mux.HandleFunc("GET /collector", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "app/Views/collector.html")
+		http.Redirect(w, r, "/petugas", http.StatusTemporaryRedirect)
 	})
+	mux.HandleFunc("POST /logout", app.LogoutHandler)
 	mux.HandleFunc("GET /swagger", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "docs/swagger.html")
 	})
@@ -141,13 +164,15 @@ func main() {
 	})
 
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
-	mux.Handle("GET /uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
+	mux.HandleFunc("GET /uploads/{name}", app.PickupPhotoHandler)
 
 	mux.HandleFunc("POST /api/auth/login", app.LoginHandler)
 	mux.HandleFunc("POST /api/auth/register", app.RegisterHandler)
 	mux.HandleFunc("GET /api/user/profile", app.ProfileGetHandler)
 	mux.HandleFunc("POST /api/user/profile", app.ProfileUpdateHandler)
 	mux.HandleFunc("GET /api/users/collectors", app.ListCollectorsHandler)
+	mux.HandleFunc("GET /api/users/petugas", app.ListCollectorsHandler)
+	mux.HandleFunc("GET /api/administrator/session", app.AdministratorSessionHandler)
 	mux.HandleFunc("POST /api/ecorecycle/request_pickup", app.RequestPickupHandler)
 	mux.HandleFunc("POST /api/ecorecycle/update_pickup", app.UpdatePickupHandler)
 	mux.HandleFunc("POST /api/ecorecycle/cancel_pickup", app.CancelPickupHandler)
@@ -157,12 +182,19 @@ func main() {
 	mux.HandleFunc("POST /api/ecorecycle/estimate_reward", app.EstimateRewardHandler)
 	mux.HandleFunc("POST /api/ecorecycle/verify_pickup", app.VerifyPickupHandler)
 	mux.HandleFunc("POST /api/ecorecycle/process_payout", app.ProcessPayoutHandler)
+	mux.HandleFunc("GET /api/administrator/pickup-rewards", app.PendingRewardsHandler)
+	mux.HandleFunc("GET /api/administrator/pickup-rewards/{id}/proof", app.RewardProofHandler)
 	mux.HandleFunc("GET /api/ecorecycle/list_pickups", app.ListPickupsHandler)
 	mux.HandleFunc("GET /api/ecorecycle/announcements", app.ListAnnouncementsHandler)
 	mux.HandleFunc("POST /api/ecorecycle/announcements", app.ManageAnnouncementsHandler)
 	mux.HandleFunc("DELETE /api/ecorecycle/announcements", app.DeleteAnnouncementHandler)
 
-	handler := httpx.CORS(mux)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+		if app.AllowBrowserWrite(w, r) {
+			mux.ServeHTTP(w, r)
+		}
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -170,7 +202,7 @@ func main() {
 	}
 
 	fmt.Printf("EcoRecycle Server berjalan di http://localhost:%s\n", port)
-	if err := http.ListenAndServe(":"+port, handler); err != nil {
+	if err := http.ListenAndServe(os.Getenv("SAMPIRA_LISTEN_HOST")+":"+port, handler); err != nil {
 		log.Fatalf("Gagal menjalankan server: %v", err)
 	}
 }

@@ -17,6 +17,7 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 
 func (r *UserRepository) EnsureProfileSchema() error {
 	columns := map[string]string{
+		"is_active":             "BOOLEAN NOT NULL DEFAULT TRUE",
 		"phone":                 "VARCHAR(30) DEFAULT NULL",
 		"address":               "TEXT DEFAULT NULL",
 		"payout_method":         "VARCHAR(30) DEFAULT NULL",
@@ -47,7 +48,7 @@ func (r *UserRepository) EnsureProfileSchema() error {
 func (r *UserRepository) FindByEmail(email string) (*models.User, error) {
 	var user models.User
 	err := r.DB.QueryRow(`SELECT id, name, email, password, role, phone, address, payout_method, payout_account_name, payout_account_number
-		FROM users WHERE email = ?`, email).
+		FROM users WHERE email = ? AND is_active = TRUE`, email).
 		Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.Role, &user.Phone, &user.Address, &user.PayoutMethod, &user.PayoutAccountName, &user.PayoutAccountNumber)
 	if err != nil {
 		return nil, err
@@ -69,8 +70,8 @@ func (r *UserRepository) FindByID(id int) (*models.User, error) {
 func (r *UserRepository) ListCollectors() ([]models.User, error) {
 	rows, err := r.DB.Query(`SELECT id, name, email, role, phone
 		FROM users
-		WHERE role = 'collector'
-		ORDER BY name ASC`)
+		WHERE role = ? AND is_active = TRUE
+		ORDER BY name ASC`, models.RolePetugas)
 	if err != nil {
 		return nil, err
 	}

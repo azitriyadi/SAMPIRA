@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="assets/css/user-layout.css?v=20261029-quality5">
     <link rel="stylesheet" href="assets/css/user-inline.css?v=20261029-quality5">
     <link rel="stylesheet" href="assets/css/user-flat.css?v=20261029-quality5">
+    <script src="/assets/js/portal-session.js?v=phase1-final"></script>
 </head>
 
 <body class="portal-page role-warrior">
@@ -130,7 +131,7 @@
 
                     <div class="kpi-card u-a841696d1a" data-inline-style="background: white; border-radius: 20px; padding: 24px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
                         <div data-inline-style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;" class="u-ab4de765f5">
-                            <span data-inline-style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;" class="u-fa344aacab">Reward diterima</span>
+                            <span data-inline-style="font-size: 0.8rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;" class="u-fa344aacab">Reward terkonfirmasi</span>
                             <div data-inline-style="color: #b45309; background: #fffbeb; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;" class="u-4fdd725789"><i class="fas fa-wallet" aria-hidden="true"></i></div>
                         </div>
                         <h2 data-inline-style="font-size: 2rem; font-weight: 900; margin: 0; color: var(--brand-dark);" id="metric-total-reward" class="u-70fef3e866">Rp 0</h2>
@@ -153,7 +154,7 @@
                     <!-- 5. Grafik Kontribusi Sampah Bulanan -->
                     <div class="panel-card u-4ffd9f475f" data-inline-style="background: white; border-radius: 24px; padding: 32px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
                         <h3 data-inline-style="font-weight: 800; font-size: 1.2rem; margin-bottom: 8px;" class="u-b689a4e359">Kontribusi bulanan</h3>
-                        <p data-inline-style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;" class="u-24f1ff00d4">Volume penyerahan sampah Anda (KG).</p>
+                        <p data-inline-style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;" class="u-24f1ff00d4">Berat aktual pickup yang telah selesai (kg).</p>
 
                         <div data-inline-style="height: 220px; position: relative;" class="u-d3dff8e3df">
                             <canvas id="monthlyWasteChart"></canvas>
@@ -279,7 +280,7 @@
                                 <label for="form-waste-weight">Estimasi Berat (KG)</label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-weight-hanging" aria-hidden="true"></i>
-                                    <input type="number" id="form-waste-weight" value="1.0" min="0.1" step="0.1" required>
+                                    <input type="number" id="form-waste-weight" value="1.0" min="0.01" max="99999.99" step="0.01" required>
                                 </div>
                             </div>
                         </div>
@@ -320,7 +321,7 @@
                             <hr data-inline-style="border:none; border-top:1px dashed var(--gray-300); margin: 4px 0;" class="u-29816485e2">
                             <div data-inline-style="display:flex; justify-content:space-between; align-items:flex-end;" class="u-67d7b6c618">
                                 <div>
-                                    <span data-inline-style="font-size:0.75rem; font-weight:800; color:#087443; text-transform:uppercase; letter-spacing:1px;" class="u-231d3b98f3">Net Reward Diterima</span>
+                                    <span data-inline-style="font-size:0.75rem; font-weight:800; color:#087443; text-transform:uppercase; letter-spacing:1px;" class="u-231d3b98f3">Estimasi Reward Bersih</span>
                                     <div data-inline-style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;" class="u-806ba95be9">
                                         <i class="fas fa-cloud-arrow-down u-0cd832f86c" aria-hidden="true" data-inline-style="color: #0d9488;"></i> Simulasi CO₂ (faktor tetap): <span id="preview-carbon" data-inline-style="font-weight:800; color:#0d9488;" class="u-9e8a058b34">0</span> KG
                                     </div>
@@ -371,6 +372,7 @@
                             <div>
                                 <span data-inline-style="font-size:0.8rem; font-weight:800; color:var(--text-secondary); text-transform:uppercase;" class="u-ce0598a230">Kategori & Berat</span>
                                 <h4 data-inline-style="font-size:1.1rem; font-weight:700; color:var(--brand-dark); margin:4px 0;" id="track-disp-detail" class="u-c4b4cf7b4f">-</h4>
+                                <p id="track-disp-reward"></p>
                             </div>
                         </div>
 
@@ -395,7 +397,7 @@
                                     <th data-inline-style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);" class="u-26271e0ee1">NO. TRACKING</th>
                                     <th data-inline-style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);" class="u-26271e0ee1">KATEGORI</th>
                                     <th data-inline-style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);" class="u-26271e0ee1">BERAT (KG)</th>
-                                    <th data-inline-style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);" class="u-26271e0ee1">NET REWARD</th>
+                                    <th data-inline-style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);" class="u-26271e0ee1">REWARD DAN PEMBAYARAN</th>
                                     <th data-inline-style="padding: 16px; font-size:0.8rem; font-weight:800; color:var(--text-secondary);" class="u-26271e0ee1">STATUS</th>
                                 </tr>
                             </thead>
@@ -435,7 +437,7 @@
                             <i class="fas fa-wallet" aria-hidden="true"></i>
                             <div>
                                 <strong>Tujuan pembayaran reward</strong>
-                                <span>Dipakai admin saat mencairkan eco-reward setelah sampah tiba di hub.</span>
+                                <span>Disimpan untuk digunakan setelah mekanisme pembayaran tersedia.</span>
                             </div>
                         </div>
 
@@ -504,11 +506,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
-    <script src="assets/js/portal-announcements.js?v=20260702"></script>
+    <script src="assets/js/portal-announcements.js?v=phase1-final"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
     <script src="assets/js/user-map.js?v=20261029-map"></script>
     <script src="assets/js/waste-categories.js?v=20261029-categories2"></script>
-    <script src="assets/js/dashboard.js?v=20261029-quality5"></script>
+    <script src="assets/js/dashboard.js?v=phase12-audit"></script>
 </body>
 
 </html>
