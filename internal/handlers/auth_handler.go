@@ -23,6 +23,7 @@ type App struct {
 	Announcements    *repositories.AnnouncementRepository
 	FacilityReports  repositories.FacilityReports
 	FacilityHandling repositories.FacilityHandling
+	Education        repositories.Education
 }
 
 func NewApp(db *sql.DB, auth *services.AuthService) *App {
@@ -34,6 +35,7 @@ func NewApp(db *sql.DB, auth *services.AuthService) *App {
 		Announcements:    repositories.NewAnnouncementRepository(db),
 		FacilityReports:  repositories.FacilityReports{DB: db},
 		FacilityHandling: repositories.FacilityHandling{DB: db},
+		Education:        repositories.Education{DB: db},
 	}
 }
 

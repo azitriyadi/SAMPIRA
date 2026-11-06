@@ -132,6 +132,9 @@ func main() {
 	if err := migrations.ApplyPreciseLocations(context.Background(), db); err != nil {
 		log.Fatalf("Gagal menyiapkan skema lokasi penjemputan: %v", err)
 	}
+	if err := migrations.ApplyEducationContent(context.Background(), db); err != nil {
+		log.Fatalf("Gagal menyiapkan skema Pusat Edukasi: %v", err)
+	}
 
 	mux := http.NewServeMux()
 
@@ -201,6 +204,7 @@ func main() {
 	mux.HandleFunc("DELETE /api/ecorecycle/announcements", app.DeleteAnnouncementHandler)
 	app.RegisterFacilityReports(mux)
 	app.RegisterFacilityHandling(mux)
+	app.RegisterEducation(mux)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
@@ -214,7 +218,7 @@ func main() {
 		port = "8080"
 	}
 
-	fmt.Printf("EcoRecycle Server berjalan di http://localhost:%s\n", port)
+	fmt.Printf("Server SAMPIRA berjalan di http://localhost:%s\n", port)
 	if err := http.ListenAndServe(os.Getenv("SAMPIRA_LISTEN_HOST")+":"+port, handler); err != nil {
 		log.Fatalf("Gagal menjalankan server: %v", err)
 	}
