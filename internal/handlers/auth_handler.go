@@ -15,21 +15,23 @@ import (
 )
 
 type App struct {
-	DB            *sql.DB
-	Auth          *services.AuthService
-	SecureCookies bool
-	Users         *repositories.UserRepository
-	Pickups       *repositories.PickupRepository
-	Announcements *repositories.AnnouncementRepository
+	DB              *sql.DB
+	Auth            *services.AuthService
+	SecureCookies   bool
+	Users           *repositories.UserRepository
+	Pickups         *repositories.PickupRepository
+	Announcements   *repositories.AnnouncementRepository
+	FacilityReports repositories.FacilityReports
 }
 
 func NewApp(db *sql.DB, auth *services.AuthService) *App {
 	return &App{
-		DB:            db,
-		Auth:          auth,
-		Users:         repositories.NewUserRepository(db),
-		Pickups:       repositories.NewPickupRepository(db),
-		Announcements: repositories.NewAnnouncementRepository(db),
+		DB:              db,
+		Auth:            auth,
+		Users:           repositories.NewUserRepository(db),
+		Pickups:         repositories.NewPickupRepository(db),
+		Announcements:   repositories.NewAnnouncementRepository(db),
+		FacilityReports: repositories.FacilityReports{DB: db},
 	}
 }
 

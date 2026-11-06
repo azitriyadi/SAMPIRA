@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "SAMPIRA API",
-    "description": "API same-origin untuk autentikasi, portal berbasis role, dan operasional penjemputan sampah SAMPIRA. Kredensial dan field mutasi dibaca dari body. Penulisan lintas origin ditolak. Permintaan penulisan dengan cookie memerlukan origin yang cocok atau metadata Fetch same-origin.",
-    "version": "2.3.0"
+    "description": "API same-origin untuk autentikasi, portal berbasis role, penjemputan sampah, dan verifikasi laporan fasilitas SAMPIRA. Kredensial dan field mutasi dibaca dari body. Penulisan lintas origin ditolak. Permintaan penulisan dengan cookie memerlukan origin yang cocok atau metadata Fetch same-origin.",
+    "version": "3.0.0"
   },
   "servers": [
     {
@@ -12,6 +12,10 @@
     }
   ],
   "tags": [
+    {
+      "name": "Facility reports",
+      "description": "Pengajuan laporan fasilitas oleh User dan verifikasi oleh Admin."
+    },
     {
       "name": "Auth",
       "description": "Autentikasi dan registrasi pengguna"
@@ -34,6 +38,576 @@
     }
   ],
   "paths": {
+    "/api/ecorecycle/facility-reports": {
+      "get": {
+        "tags": [
+          "Facility reports"
+        ],
+        "summary": "Daftar laporan fasilitas",
+        "description": "User hanya melihat miliknya. Admin dapat melihat semua laporan. Urut dari ID terbaru.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Status laporan.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "revision_required",
+                "approved",
+                "rejected"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Kategori fasilitas.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "tps",
+                "collection_site",
+                "waste_bank",
+                "other"
+              ]
+            }
+          },
+          {
+            "name": "before_id",
+            "in": "query",
+            "description": "Cursor dari next_before_id.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Ukuran halaman.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Halaman laporan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityReportListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Facility reports"
+        ],
+        "summary": "Buat laporan fasilitas",
+        "description": "Khusus User. Batas body 6 MiB. Retry dengan key dan body valid mengembalikan laporan awal dalam keadaan terkini.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            "description": "UUID v4 huruf kecil. Pertahankan key yang sama pada retry satu pengajuan."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/FacilityReportForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Laporan fasilitas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityReportResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Laporan baru berstatus pending.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "URL detail laporan."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "description": "Ukuran body melebihi batas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type tidak sesuai.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/ecorecycle/facility-reports/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Facility reports"
+        ],
+        "summary": "Detail laporan fasilitas",
+        "description": "Admin atau User pemilik.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Laporan fasilitas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Facility reports"
+        ],
+        "summary": "Kirim ulang laporan setelah revisi",
+        "description": "Khusus User pemilik. Laporan harus revision_required. Kirim ulang semua field. Foto lama dipakai bila tidak ada file baru. Batas body 6 MiB.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/FacilityReportRevisionForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Laporan fasilitas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Status atau versi sudah berubah. Ambil detail terbaru.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Ukuran body melebihi batas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type tidak sesuai.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/ecorecycle/facility-reports/{id}/history": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Facility reports"
+        ],
+        "summary": "Histori laporan fasilitas",
+        "description": "Admin atau User pemilik. Urut dari versi terbaru.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "before_version",
+            "in": "query",
+            "description": "Cursor dari next_before_version.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Ukuran halaman.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Halaman histori.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityReportHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/ecorecycle/facility-reports/{id}/photo": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Facility reports"
+        ],
+        "summary": "Baca foto privat laporan",
+        "description": "Admin atau User pemilik. Respons gambar tidak boleh di-cache.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Foto laporan.",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/api/ecorecycle/facility-reports/{id}/verification": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Facility reports"
+        ],
+        "summary": "Verifikasi laporan fasilitas",
+        "description": "Khusus Admin. Laporan harus pending. Batas body 16 KiB. Alasan wajib untuk penolakan dan permintaan revisi.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacilityReportVerification"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Laporan fasilitas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacilityReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Status atau versi sudah berubah. Ambil detail terbaru.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Ukuran body melebihi batas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type tidak sesuai.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/api/auth/login": {
       "post": {
         "tags": ["Auth"],
@@ -1251,6 +1825,416 @@
       }
     },
     "schemas": {
+      "FacilityReportForm": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "tps",
+              "collection_site",
+              "waste_bank",
+              "other"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 3000
+          },
+          "address": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 300
+          },
+          "latitude": {
+            "type": "string",
+            "description": "Desimal −90 hingga 90, maksimal enam digit pecahan. Kirim bersama longitude."
+          },
+          "longitude": {
+            "type": "string",
+            "description": "Desimal −180 hingga 180, maksimal enam digit pecahan. Kirim bersama latitude."
+          },
+          "photo": {
+            "type": "string",
+            "format": "binary",
+            "description": "Satu JPEG atau PNG sesuai isi, hingga 5 MiB dan 16 megapiksel."
+          }
+        },
+        "required": [
+          "category",
+          "title",
+          "description",
+          "address"
+        ],
+        "additionalProperties": false
+      },
+      "FacilityReportRevisionForm": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "tps",
+              "collection_site",
+              "waste_bank",
+              "other"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 3000
+          },
+          "address": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 300
+          },
+          "latitude": {
+            "type": "string",
+            "description": "Desimal −90 hingga 90, maksimal enam digit pecahan. Kirim bersama longitude."
+          },
+          "longitude": {
+            "type": "string",
+            "description": "Desimal −180 hingga 180, maksimal enam digit pecahan. Kirim bersama latitude."
+          },
+          "photo": {
+            "type": "string",
+            "format": "binary",
+            "description": "Satu JPEG atau PNG sesuai isi, hingga 5 MiB dan 16 megapiksel."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "category",
+          "title",
+          "description",
+          "address",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "FacilityReportVerification": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "revision_required",
+              "approved",
+              "rejected"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 1000,
+            "nullable": true
+          }
+        },
+        "required": [
+          "status",
+          "version"
+        ],
+        "additionalProperties": false,
+        "example": {
+          "status": "revision_required",
+          "version": 1,
+          "note": "Tambahkan foto kondisi pintu."
+        }
+      },
+      "FacilityReport": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "tracking_number": {
+            "type": "string",
+            "example": "FAC-20A17EBA1186EF3E77661C57"
+          },
+          "reporter_id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "tps",
+              "collection_site",
+              "waste_bank",
+              "other"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 3000
+          },
+          "address": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 300
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "revision_required",
+              "approved",
+              "rejected"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "photo_url": {
+            "type": "string",
+            "example": "/api/ecorecycle/facility-reports/41/photo",
+            "nullable": true
+          },
+          "reviewed_by": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "nullable": true
+          },
+          "reviewed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "verification_note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "tracking_number",
+          "reporter_id",
+          "category",
+          "title",
+          "description",
+          "address",
+          "latitude",
+          "longitude",
+          "status",
+          "version",
+          "photo_url",
+          "reviewed_by",
+          "reviewed_at",
+          "verification_note",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "FacilityReportEvent": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "actor_id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "from_status": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "pending",
+              "revision_required",
+              "approved",
+              "rejected",
+              null
+            ]
+          },
+          "to_status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "revision_required",
+              "approved",
+              "rejected"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "version",
+          "actor_id",
+          "from_status",
+          "to_status",
+          "note",
+          "created_at"
+        ]
+      },
+      "FacilityReportResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "success"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FacilityReport"
+          }
+        },
+        "required": [
+          "status",
+          "message",
+          "data"
+        ]
+      },
+      "FacilityReportListResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "success"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FacilityReport"
+                }
+              },
+              "next_before_id": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 1,
+                "nullable": true
+              }
+            },
+            "required": [
+              "items",
+              "next_before_id"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "message",
+          "data"
+        ]
+      },
+      "FacilityReportHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "success"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FacilityReportEvent"
+                }
+              },
+              "next_before_version": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 1,
+                "nullable": true
+              }
+            },
+            "required": [
+              "items",
+              "next_before_version"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "message",
+          "data"
+        ]
+      },
       "ApiResponse": {
         "type": "object",
         "properties": {
