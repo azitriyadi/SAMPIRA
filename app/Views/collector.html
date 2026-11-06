@@ -24,6 +24,9 @@
     <link rel="stylesheet" href="assets/css/portal-system.css?v=20261029-quality5">
     <link rel="stylesheet" href="assets/css/portal-controls.css?v=20261029-quality5">
     <script src="/assets/js/portal-session.js?v=phase1-final"></script>
+    <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase4b">
+    <link rel="stylesheet" href="/assets/css/facility-handling.css?v=phase4b">
+    <script type="module" src="/assets/js/facility-handling.js?v=phase4b"></script>
 </head>
 
 <body class="portal-page role-collector">
@@ -37,6 +40,7 @@
         <div class="sidebar-nav">
             <button type="button" class="sidebar-item active" onclick="switchView('dashboard', this)"><i class="fas fa-house-chimney"></i> Dashboard</button>
             <button type="button" class="sidebar-item" onclick="openActiveMission()"><i class="fas fa-route"></i> Pickup Aktif</button>
+            <button type="button" class="sidebar-item" data-open-handling aria-controls="view-facility" onclick="switchView('facility', this)"><i class="fas fa-clipboard-list" aria-hidden="true"></i> Tugas Fasilitas</button>
             <button type="button" class="sidebar-item" onclick="switchView('history', this)"><i class="fas fa-list-check"></i> Riwayat Misi</button>
             <button type="button" class="sidebar-item" onclick="switchView('earnings', this)"><i class="fas fa-wallet"></i> Komisi</button>
             <button type="button" class="sidebar-item" onclick="switchView('profile', this)"><i class="fas fa-user-circle"></i> Profil</button>
@@ -263,12 +267,14 @@
             </div>
         </div>
 
+        <section id="view-facility" class="view-section" data-facility-handling="petugas" aria-label="Tugas fasilitas"></section>
     </main>
 
     <!-- Bottom Navigation (Mobile) -->
     <nav class="bottom-nav">
         <button type="button" class="nav-item active" onclick="switchView('dashboard', this)"><i class="fas fa-house"></i><span>Beranda</span></button>
         <button type="button" class="nav-item" onclick="openActiveMission()"><i class="fas fa-route"></i><span>Misi</span></button>
+        <button type="button" class="nav-item" data-open-handling aria-label="Tugas Fasilitas" aria-controls="view-facility" onclick="switchView('facility', this)"><i class="fas fa-clipboard-list" aria-hidden="true"></i><span>Fasilitas</span></button>
         <button type="button" class="nav-item" onclick="switchView('history', this)"><i class="fas fa-list-check"></i><span>Riwayat</span></button>
         <button type="button" class="nav-item" onclick="switchView('earnings', this)"><i class="fas fa-wallet"></i><span>Dompet</span></button>
         <button type="button" class="nav-item" onclick="switchView('profile', this)"><i class="fas fa-user-circle"></i><span>Profil</span></button>

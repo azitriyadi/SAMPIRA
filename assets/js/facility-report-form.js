@@ -1,4 +1,4 @@
-import {categories, options} from './facility-report-ui.js?v=phase3b';
+import {categories, options} from './facility-report-ui.js?v=phase4b';
 
 const textLengths = {title: [5, 120], description: [10, 3000], address: [5, 300]};
 const coordinatePattern = /^-?[0-9]{1,3}(\.[0-9]{1,6})?$/;
@@ -17,7 +17,7 @@ function validateCoordinates(form, values) {
     }
 }
 
-async function checkImage(file, url) {
+export async function checkImage(file, url) {
     const signature = new Uint8Array(await file.slice(0, 8).arrayBuffer());
     const png = /\.png$/i.test(file.name) && signature.length === 8 &&
         [137, 80, 78, 71, 13, 10, 26, 10].every((byte, index) => signature[index] === byte);

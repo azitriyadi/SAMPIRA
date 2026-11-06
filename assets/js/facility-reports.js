@@ -1,33 +1,9 @@
-import {mountReportForm} from './facility-report-form.js?v=phase3b';
-import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=phase3b';
+import {mountReportForm} from './facility-report-form.js?v=phase4b';
+import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=phase4b';
+import {base, request} from './facility-api.js?v=phase4b';
+import {mountPublicHandling} from './facility-handling.js?v=phase4b';
 
-const base = '/api/ecorecycle/facility-reports';
 const pageLimit = 20;
-
-class ReportError extends Error {
-    constructor(status, message) {
-        super(message);
-        this.status = status;
-    }
-}
-
-async function request(path, options) {
-    const signal = AbortSignal.timeout(15000);
-    try {
-        const response = await fetch(path, {credentials: 'same-origin', ...options, signal});
-        const payload = await response.json().catch(() => null);
-        if (signal.aborted) throw signal.reason;
-        if (!response.ok) throw new ReportError(response.status, payload?.message);
-        if (payload?.status !== 'success' || !payload.data) {
-            throw new ReportError(0, 'Respons layanan laporan tidak dapat dibaca.');
-        }
-        return payload.data;
-    } catch (error) {
-        if (error instanceof ReportError) throw error;
-        const message = signal.aborted ? 'Waktu tunggu habis.' : 'Koneksi ke layanan laporan terputus.';
-        throw new ReportError(0, message);
-    }
-}
 
 function submissionKey() {
     if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
@@ -172,6 +148,7 @@ function init(root) {
             selected = report;
             $('detail-message').hidden = true;
             $('detail').replaceChildren(reportDetails(report, admin, base));
+            if (!admin) mountPublicHandling($('detail'), report);
             action.hidden = admin ? report.status !== 'pending' : report.status !== 'revision_required';
             if (admin) {
                 action.reset();

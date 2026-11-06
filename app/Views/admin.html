@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin | SAMPIRA</title>
     <link rel="stylesheet" href="/assets/css/style.css">
-    <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase3b">
+    <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase4b">
     <script src="/assets/js/portal-session.js?v=phase1-final" defer></script>
-    <script type="module" src="/assets/js/facility-reports.js?v=phase3b"></script>
+    <link rel="stylesheet" href="/assets/css/facility-handling.css?v=phase4b">
+    <script type="module" src="/assets/js/facility-reports.js?v=phase4b"></script>
 </head>
 <body class="facility-admin-page">
     <header class="facility-admin-bar">
@@ -19,9 +20,14 @@
         </div>
     </header>
     <main class="container facility-admin-main" aria-label="Portal Admin">
-        <section data-facility-reports="admin" aria-labelledby="facility-heading">
+        <nav class="handling-nav" aria-label="Pekerjaan laporan fasilitas">
+            <button type="button" class="facility-button" data-open-verification aria-controls="admin-report-verification" aria-pressed="true">Verifikasi Laporan</button>
+            <button type="button" class="facility-button" data-open-handling aria-controls="admin-facility-handling" aria-pressed="false">Penanganan Laporan</button>
+        </nav>
+        <section id="admin-report-verification" data-facility-reports="admin" aria-labelledby="facility-heading">
             <noscript>Aktifkan JavaScript untuk membuka antrean laporan fasilitas.</noscript>
         </section>
+        <section id="admin-facility-handling" data-facility-handling="admin" hidden></section>
     </main>
 </body>
 </html>
