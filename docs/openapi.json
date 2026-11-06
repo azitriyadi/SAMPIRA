@@ -3,7 +3,7 @@
   "info": {
     "title": "SAMPIRA API",
     "description": "API same-origin untuk autentikasi, portal berbasis role, penjemputan sampah, dan verifikasi laporan fasilitas SAMPIRA. Kredensial dan field mutasi dibaca dari body. Penulisan lintas origin ditolak. Permintaan penulisan dengan cookie memerlukan origin yang cocok atau metadata Fetch same-origin.",
-    "version": "4.0.0"
+    "version": "4.1.0"
   },
   "servers": [
     {
@@ -12,6 +12,10 @@
     }
   ],
   "tags": [
+    {
+      "name": "Education",
+      "description": "Artikel Pusat Edukasi publik dan pengelolaan konten oleh Admin."
+    },
     {
       "name": "Facility handling",
       "description": "Penugasan, aktivitas lapangan, validasi, dan pencatatan koordinasi laporan fasilitas."
@@ -42,6 +46,260 @@
     }
   ],
   "paths": {
+    "/api/ecorecycle/education/articles": {
+      "get": {
+        "tags": ["Education"],
+        "summary": "Daftar artikel terbit",
+        "description": "Artikel terbaru berdasarkan waktu publikasi, lalu ID menurun. Tanpa sesi.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Kategori yang dipilih.",
+            "schema": {"$ref":"#/components/schemas/EducationCategoryKey"}
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Pencarian literal pada judul dan ringkasan.",
+            "schema": {"type":"string","minLength":1,"maxLength":100}
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Halaman berbasis satu.",
+            "schema": {"type":"integer","minimum":1,"maximum":1000,"default":1}
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maksimum item per halaman.",
+            "schema": {"type":"integer","minimum":1,"maximum":50,"default":20}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/EducationPublicPageResponse"}}}
+          },
+          "400": {"$ref":"#/components/responses/BadRequest"},
+          "500": {"$ref":"#/components/responses/ServerError"}
+        }
+      }
+    },
+    "/api/ecorecycle/education/articles/{slug}": {
+      "get": {
+        "tags": ["Education"],
+        "summary": "Detail artikel terbit",
+        "security": [],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {"type":"string","minLength":3,"maxLength":120,"pattern":"^[a-z0-9]+(-[a-z0-9]+)*$"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/EducationPublicDetailResponse"}}}
+          },
+          "404": {"$ref":"#/components/responses/NotFound"},
+          "500": {"$ref":"#/components/responses/ServerError"}
+        }
+      }
+    },
+    "/api/ecorecycle/education/manage/articles": {
+      "get": {
+        "tags": ["Education"],
+        "summary": "Daftar pengelolaan artikel untuk Admin",
+        "security": [{"bearerAuth":[]},{"PortalCookie":[]}],
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Kategori yang dipilih.",
+            "schema": {"$ref":"#/components/schemas/EducationCategoryKey"}
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Pencarian literal pada judul dan ringkasan.",
+            "schema": {"type":"string","minLength":1,"maxLength":100}
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Halaman berbasis satu.",
+            "schema": {"type":"integer","minimum":1,"maximum":1000,"default":1}
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maksimum item per halaman.",
+            "schema": {"type":"integer","minimum":1,"maximum":50,"default":20}
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter status pengelolaan.",
+            "schema": {"type":"string","enum":["draft","published","archived"]}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/EducationManagedPageResponse"}}}
+          },
+          "400": {"$ref":"#/components/responses/BadRequest"},
+          "401": {"$ref":"#/components/responses/Unauthorized"},
+          "403": {"$ref":"#/components/responses/Forbidden"},
+          "500": {"$ref":"#/components/responses/ServerError"}
+        }
+      },
+      "post": {
+        "tags": ["Education"],
+        "summary": "Buat draft artikel untuk Admin",
+        "security": [{"bearerAuth":[]},{"PortalCookie":[]}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/EducationCreateInput"}}}
+        },
+        "responses": {
+          "201": {
+            "description": "Draft dibuat",
+            "headers": {"Location":{"description":"URL detail pengelolaan artikel.","schema":{"type":"string"}}},
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/EducationManagedDetailResponse"}}}
+          },
+          "400": {"$ref":"#/components/responses/BadRequest"},
+          "401": {"$ref":"#/components/responses/Unauthorized"},
+          "403": {"$ref":"#/components/responses/Forbidden"},
+          "409": {
+            "description": "Slug duplikat, versi basi, atau transisi tidak valid.",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ApiResponse"}}}
+          },
+          "413": {
+            "description": "Body melebihi 192 KiB.",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ApiResponse"}}}
+          },
+          "415": {
+            "description": "Body harus application/json.",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ApiResponse"}}}
+          },
+          "500": {"$ref":"#/components/responses/ServerError"}
+        }
+      }
+    },
+    "/api/ecorecycle/education/manage/articles/{id}": {
+      "get": {
+        "tags": ["Education"],
+        "summary": "Detail pengelolaan artikel untuk Admin",
+        "security": [{"bearerAuth":[]},{"PortalCookie":[]}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type":"integer","minimum":1,"maximum":2147483647}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/EducationManagedDetailResponse"}}}
+          },
+          "400": {"$ref":"#/components/responses/BadRequest"},
+          "401": {"$ref":"#/components/responses/Unauthorized"},
+          "403": {"$ref":"#/components/responses/Forbidden"},
+          "404": {"$ref":"#/components/responses/NotFound"},
+          "500": {"$ref":"#/components/responses/ServerError"}
+        }
+      },
+      "put": {
+        "tags": ["Education"],
+        "summary": "Edit draft artikel untuk Admin",
+        "security": [{"bearerAuth":[]},{"PortalCookie":[]}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type":"integer","minimum":1,"maximum":2147483647}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/EducationEditInput"}}}
+        },
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/EducationManagedDetailResponse"}}}
+          },
+          "400": {"$ref":"#/components/responses/BadRequest"},
+          "401": {"$ref":"#/components/responses/Unauthorized"},
+          "403": {"$ref":"#/components/responses/Forbidden"},
+          "404": {"$ref":"#/components/responses/NotFound"},
+          "409": {
+            "description": "Slug duplikat, versi basi, atau transisi tidak valid.",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ApiResponse"}}}
+          },
+          "413": {
+            "description": "Body melebihi 192 KiB.",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ApiResponse"}}}
+          },
+          "415": {
+            "description": "Body harus application/json.",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ApiResponse"}}}
+          },
+          "500": {"$ref":"#/components/responses/ServerError"}
+        }
+      }
+    },
+    "/api/ecorecycle/education/manage/articles/{id}/publication": {
+      "post": {
+        "tags": ["Education"],
+        "summary": "Terbitkan atau arsipkan artikel untuk Admin",
+        "security": [{"bearerAuth":[]},{"PortalCookie":[]}],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type":"integer","minimum":1,"maximum":2147483647}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json":{"schema":{"$ref":"#/components/schemas/EducationPublicationInput"}}}
+        },
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/EducationManagedDetailResponse"}}}
+          },
+          "400": {"$ref":"#/components/responses/BadRequest"},
+          "401": {"$ref":"#/components/responses/Unauthorized"},
+          "403": {"$ref":"#/components/responses/Forbidden"},
+          "404": {"$ref":"#/components/responses/NotFound"},
+          "409": {
+            "description": "Slug duplikat, versi basi, atau transisi tidak valid.",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ApiResponse"}}}
+          },
+          "413": {
+            "description": "Body melebihi 192 KiB.",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ApiResponse"}}}
+          },
+          "415": {
+            "description": "Body harus application/json.",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/ApiResponse"}}}
+          },
+          "500": {"$ref":"#/components/responses/ServerError"}
+        }
+      }
+    },
     "/api/ecorecycle/facility-reports/handling": {
       "get": {
         "tags": ["Facility handling"],
@@ -2604,6 +2862,222 @@
       }
     },
     "schemas": {
+      "EducationCategoryKey": {
+        "type": "string",
+        "enum": [
+          "pemilahan-sampah",
+          "pengurangan-sampah",
+          "daur-ulang",
+          "pengomposan",
+          "bank-sampah",
+          "sampah-elektronik",
+          "panduan-sampira"
+        ]
+      },
+      "EducationCategory": {
+        "type": "object",
+        "required": ["key","label"],
+        "properties": {"key":{"$ref":"#/components/schemas/EducationCategoryKey"},"label":{"type":"string"}}
+      },
+      "EducationCreateInput": {
+        "type": "object",
+        "required": ["slug","title","summary","body","category"],
+        "additionalProperties": false,
+        "properties": {
+          "slug": {"type":"string","minLength":3,"maxLength":120,"pattern":"^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "title": {"type":"string","minLength":3,"maxLength":120},
+          "summary": {"type":"string","minLength":10,"maxLength":320},
+          "body": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 12000,
+            "description": "Teks biasa. Render menggunakan textContent."
+          },
+          "category": {"$ref":"#/components/schemas/EducationCategoryKey"},
+          "sources": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {"type":"string","format":"uri","maxLength":2048,"pattern":"^https://"},
+            "nullable": true
+          }
+        }
+      },
+      "EducationEditInput": {
+        "type": "object",
+        "required": ["slug","title","summary","body","category","version"],
+        "additionalProperties": false,
+        "properties": {
+          "slug": {"type":"string","minLength":3,"maxLength":120,"pattern":"^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "title": {"type":"string","minLength":3,"maxLength":120},
+          "summary": {"type":"string","minLength":10,"maxLength":320},
+          "body": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 12000,
+            "description": "Teks biasa. Render menggunakan textContent."
+          },
+          "category": {"$ref":"#/components/schemas/EducationCategoryKey"},
+          "sources": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {"type":"string","format":"uri","maxLength":2048,"pattern":"^https://"},
+            "nullable": true
+          },
+          "version": {"type":"integer","minimum":1,"maximum":2147483647}
+        }
+      },
+      "EducationPublicationInput": {
+        "type": "object",
+        "required": ["version","status"],
+        "additionalProperties": false,
+        "properties": {
+          "version": {"type":"integer","minimum":1,"maximum":2147483647},
+          "status": {"type":"string","enum":["published","archived"]}
+        }
+      },
+      "EducationPublicSummary": {
+        "type": "object",
+        "required": ["id","slug","title","summary","category","published_at"],
+        "properties": {
+          "id": {"type":"integer","minimum":1,"maximum":2147483647},
+          "slug": {"type":"string","minLength":3,"maxLength":120,"pattern":"^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "title": {"type":"string","minLength":3,"maxLength":120},
+          "summary": {"type":"string","minLength":10,"maxLength":320},
+          "category": {"$ref":"#/components/schemas/EducationCategoryKey"},
+          "published_at": {"type":"string","format":"date-time"}
+        }
+      },
+      "EducationManagedSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "summary",
+          "category",
+          "published_at",
+          "status",
+          "version",
+          "created_by",
+          "updated_by",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {"type":"integer","minimum":1,"maximum":2147483647},
+          "slug": {"type":"string","minLength":3,"maxLength":120,"pattern":"^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "title": {"type":"string","minLength":3,"maxLength":120},
+          "summary": {"type":"string","minLength":10,"maxLength":320},
+          "category": {"$ref":"#/components/schemas/EducationCategoryKey"},
+          "published_at": {"type":"string","format":"date-time","nullable":true},
+          "status": {"type":"string","enum":["draft","published","archived"]},
+          "version": {"type":"integer","minimum":1,"maximum":2147483647},
+          "created_by": {"type":"integer","minimum":1,"maximum":2147483647},
+          "updated_by": {"type":"integer","minimum":1,"maximum":2147483647},
+          "created_at": {"type":"string","format":"date-time"},
+          "updated_at": {"type":"string","format":"date-time"}
+        }
+      },
+      "EducationPublicDetail": {
+        "allOf": [
+          {"$ref":"#/components/schemas/EducationPublicSummary"},
+          {
+            "type": "object",
+            "required": ["body","sources"],
+            "properties": {
+              "body": {
+                "type": "string",
+                "minLength": 20,
+                "maxLength": 12000,
+                "description": "Teks biasa. Render menggunakan textContent."
+              },
+              "sources": {
+                "type": "array",
+                "maxItems": 8,
+                "items": {"type":"string","format":"uri","maxLength":2048,"pattern":"^https://"}
+              }
+            }
+          }
+        ]
+      },
+      "EducationManagedDetail": {
+        "allOf": [
+          {"$ref":"#/components/schemas/EducationManagedSummary"},
+          {
+            "type": "object",
+            "required": ["body","sources"],
+            "properties": {
+              "body": {
+                "type": "string",
+                "minLength": 20,
+                "maxLength": 12000,
+                "description": "Teks biasa. Render menggunakan textContent."
+              },
+              "sources": {
+                "type": "array",
+                "maxItems": 8,
+                "items": {"type":"string","format":"uri","maxLength":2048,"pattern":"^https://"}
+              }
+            }
+          }
+        ]
+      },
+      "EducationPublicPageResponse": {
+        "type": "object",
+        "required": ["status","message","data"],
+        "properties": {
+          "status": {"type":"string","enum":["success"]},
+          "message": {"type":"string"},
+          "data": {
+            "type": "object",
+            "required": ["items","page","limit","next_page","categories"],
+            "properties": {
+              "items": {"type":"array","items":{"$ref":"#/components/schemas/EducationPublicSummary"}},
+              "page": {"type":"integer","minimum":1,"maximum":1000},
+              "limit": {"type":"integer","minimum":1,"maximum":50},
+              "next_page": {"type":"integer","minimum":2,"maximum":1000,"nullable":true},
+              "categories": {"type":"array","items":{"$ref":"#/components/schemas/EducationCategory"}}
+            }
+          }
+        }
+      },
+      "EducationManagedPageResponse": {
+        "type": "object",
+        "required": ["status","message","data"],
+        "properties": {
+          "status": {"type":"string","enum":["success"]},
+          "message": {"type":"string"},
+          "data": {
+            "type": "object",
+            "required": ["items","page","limit","next_page","categories"],
+            "properties": {
+              "items": {"type":"array","items":{"$ref":"#/components/schemas/EducationManagedSummary"}},
+              "page": {"type":"integer","minimum":1,"maximum":1000},
+              "limit": {"type":"integer","minimum":1,"maximum":50},
+              "next_page": {"type":"integer","minimum":2,"maximum":1000,"nullable":true},
+              "categories": {"type":"array","items":{"$ref":"#/components/schemas/EducationCategory"}}
+            }
+          }
+        }
+      },
+      "EducationPublicDetailResponse": {
+        "type": "object",
+        "required": ["status","message","data"],
+        "properties": {
+          "status": {"type":"string","enum":["success"]},
+          "message": {"type":"string"},
+          "data": {"$ref":"#/components/schemas/EducationPublicDetail"}
+        }
+      },
+      "EducationManagedDetailResponse": {
+        "type": "object",
+        "required": ["status","message","data"],
+        "properties": {
+          "status": {"type":"string","enum":["success"]},
+          "message": {"type":"string"},
+          "data": {"$ref":"#/components/schemas/EducationManagedDetail"}
+        }
+      },
       "FacilityHandlingAssignmentInput": {
         "type": "object",
         "required": ["version", "petugas_id"],

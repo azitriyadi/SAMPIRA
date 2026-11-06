@@ -17,6 +17,9 @@ var facilityHandlingDDL string
 //go:embed 004_precise_locations.sql
 var preciseLocationsDDL string
 
+//go:embed 005_education_content.sql
+var educationContentDDL string
+
 // ApplyFacilityReports runs additive, individually retryable DDL.
 func ApplyFacilityReports(ctx context.Context, db *sql.DB) error {
 	return applySQL(ctx, db, facilityReportsDDL)
@@ -28,6 +31,10 @@ func ApplyFacilityHandling(ctx context.Context, db *sql.DB) error {
 
 func ApplyPreciseLocations(ctx context.Context, db *sql.DB) error {
 	return applySQL(ctx, db, preciseLocationsDDL)
+}
+
+func ApplyEducationContent(ctx context.Context, db *sql.DB) error {
+	return applySQL(ctx, db, educationContentDDL)
 }
 
 func applySQL(ctx context.Context, db *sql.DB, ddl string) error {
