@@ -91,6 +91,10 @@ try {
     if (process.env.SAMPIRA_TEST_CHROME) {
         execFileSync(process.execPath, [resolve('scripts/check-phase1-browser.mjs')], {cwd, env, stdio: 'inherit'});
     }
+    if (process.env.SAMPIRA_TEST_PHASE5 === '1') {
+        assert.equal(process.env.SAMPIRA_TEST_PHASE4, '1', 'Phase 5 migration needs the populated Phase 4 fixture.');
+        execFileSync(process.execPath, [resolve('scripts/check-phase5-locations.mjs')], {cwd, env, stdio: 'inherit'});
+    }
 } finally {
     server.kill();
 }

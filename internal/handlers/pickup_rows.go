@@ -14,6 +14,7 @@ func scanPickupListRow(rows *sql.Rows, queryType string) (map[string]interface{}
 	var trackingNumber string
 	var itemDesc *string
 	var pickupAddress *string
+	var latitude, longitude *float64
 	var contactPhone *string
 	var weightKg *float64
 	var categoryID *int
@@ -36,9 +37,9 @@ func scanPickupListRow(rows *sql.Rows, queryType string) (map[string]interface{}
 
 	var scanErr error
 	if queryType == models.RoleUser {
-		scanErr = rows.Scan(&id, &userID, &collectorID, &trackingNumber, &itemDesc, &pickupAddress, &contactPhone, &weightKg, &categoryID, &ecoReward, &processingFee, &photoURL, &isProcessed, &status, &createdAt, &finalWeightKg, &finalEcoReward, &finalProcessingFee, &verificationNotes, &verifiedAt, &categoryName, &paymentStatus, &rewardAmount, &hasLegacyTransaction)
+		scanErr = rows.Scan(&id, &userID, &collectorID, &trackingNumber, &itemDesc, &pickupAddress, &contactPhone, &weightKg, &categoryID, &ecoReward, &processingFee, &photoURL, &isProcessed, &status, &createdAt, &finalWeightKg, &finalEcoReward, &finalProcessingFee, &verificationNotes, &verifiedAt, &categoryName, &paymentStatus, &rewardAmount, &hasLegacyTransaction, &latitude, &longitude)
 	} else {
-		scanErr = rows.Scan(&id, &userID, &collectorID, &trackingNumber, &itemDesc, &pickupAddress, &contactPhone, &weightKg, &categoryID, &ecoReward, &processingFee, &photoURL, &isProcessed, &status, &createdAt, &finalWeightKg, &finalEcoReward, &finalProcessingFee, &verificationNotes, &verifiedAt, &categoryName, &paymentStatus, &rewardAmount, &hasLegacyTransaction, &donorName)
+		scanErr = rows.Scan(&id, &userID, &collectorID, &trackingNumber, &itemDesc, &pickupAddress, &contactPhone, &weightKg, &categoryID, &ecoReward, &processingFee, &photoURL, &isProcessed, &status, &createdAt, &finalWeightKg, &finalEcoReward, &finalProcessingFee, &verificationNotes, &verifiedAt, &categoryName, &paymentStatus, &rewardAmount, &hasLegacyTransaction, &latitude, &longitude, &donorName)
 	}
 
 	if scanErr != nil {
@@ -51,6 +52,8 @@ func scanPickupListRow(rows *sql.Rows, queryType string) (map[string]interface{}
 		"tracking_number":      trackingNumber,
 		"item_description":     itemDesc,
 		"pickup_address":       pickupAddress,
+		"latitude":             latitude,
+		"longitude":            longitude,
 		"contact_phone":        contactPhone,
 		"weight_kg":            weightKg,
 		"category_id":          categoryID,

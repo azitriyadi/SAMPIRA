@@ -28,7 +28,11 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := httpx.RequestData(r)
+	data, location, problem := readPickupRequest(r)
+	if problem != nil {
+		problem.write(w)
+		return
+	}
 	for key, value := range data {
 		data[key] = strings.TrimSpace(value)
 	}
@@ -85,8 +89,8 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
-	res, err := tx.Exec("INSERT INTO pickups (user_id, tracking_number, item_description, pickup_address, contact_phone, weight_kg, category_id, eco_reward, processing_fee, photo_url, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')",
-		user.ID, trackingNum, data["item_description"], data["pickup_address"], data["contact_phone"], weight, catID, ecoReward, processingFee, photoURL)
+	res, err := tx.Exec("INSERT INTO pickups (user_id, tracking_number, item_description, pickup_address, contact_phone, weight_kg, category_id, eco_reward, processing_fee, photo_url, latitude, longitude, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')",
+		user.ID, trackingNum, data["item_description"], data["pickup_address"], data["contact_phone"], weight, catID, ecoReward, processingFee, photoURL, location.latitude, location.longitude)
 	if err != nil {
 		httpx.SendResponse(w, "error", "Gagal menyimpan data penjemputan.", nil, http.StatusInternalServerError)
 		return
@@ -152,7 +156,7 @@ func (a *App) ListPickupsHandler(w http.ResponseWriter, r *http.Request) {
 	var qErr error
 
 	if queryType == models.RoleUser {
-		query := `SELECT p.id, p.user_id, p.collector_id, p.tracking_number, p.item_description, p.pickup_address, p.contact_phone, p.weight_kg, p.category_id, p.eco_reward, p.processing_fee, p.photo_url, p.is_processed, p.status, p.created_at, p.final_weight_kg, p.final_eco_reward, p.final_processing_fee, p.verification_notes, p.verified_at, c.category_name, pr.status, pr.amount, EXISTS(SELECT 1 FROM transactions t WHERE t.pickup_id=p.id)
+		query := `SELECT p.id, p.user_id, p.collector_id, p.tracking_number, p.item_description, p.pickup_address, p.contact_phone, p.weight_kg, p.category_id, p.eco_reward, p.processing_fee, p.photo_url, p.is_processed, p.status, p.created_at, p.final_weight_kg, p.final_eco_reward, p.final_processing_fee, p.verification_notes, p.verified_at, c.category_name, pr.status, pr.amount, EXISTS(SELECT 1 FROM transactions t WHERE t.pickup_id=p.id), p.latitude, p.longitude
 				  FROM pickups p
 				  LEFT JOIN waste_categories c ON p.category_id = c.id
                   LEFT JOIN pickup_rewards pr ON pr.pickup_id = p.id
@@ -160,14 +164,14 @@ func (a *App) ListPickupsHandler(w http.ResponseWriter, r *http.Request) {
 				  ORDER BY p.created_at DESC`
 		rows, qErr = a.DB.Query(query, user.ID)
 	} else {
-		query := `SELECT p.id, p.user_id, p.collector_id, p.tracking_number, CASE WHEN p.collector_id IS NOT NULL THEN p.item_description END, CASE WHEN p.collector_id IS NOT NULL THEN p.pickup_address END, CASE WHEN p.collector_id IS NOT NULL THEN p.contact_phone END, p.weight_kg, p.category_id, p.eco_reward, p.processing_fee, CASE WHEN p.collector_id IS NOT NULL THEN p.photo_url END, p.is_processed, p.status, p.created_at, p.final_weight_kg, p.final_eco_reward, p.final_processing_fee, p.verification_notes, p.verified_at, c.category_name, pr.status, pr.amount, EXISTS(SELECT 1 FROM transactions t WHERE t.pickup_id=p.id), CASE WHEN p.collector_id IS NOT NULL THEN u.name END AS donor_name
+		query := `SELECT p.id, p.user_id, p.collector_id, p.tracking_number, CASE WHEN p.collector_id IS NOT NULL THEN p.item_description END, CASE WHEN p.collector_id IS NOT NULL THEN p.pickup_address END, CASE WHEN p.collector_id IS NOT NULL THEN p.contact_phone END, p.weight_kg, p.category_id, p.eco_reward, p.processing_fee, CASE WHEN p.collector_id IS NOT NULL THEN p.photo_url END, p.is_processed, p.status, p.created_at, p.final_weight_kg, p.final_eco_reward, p.final_processing_fee, p.verification_notes, p.verified_at, c.category_name, pr.status, pr.amount, EXISTS(SELECT 1 FROM transactions t WHERE t.pickup_id=p.id), CASE WHEN p.collector_id = ? THEN p.latitude END, CASE WHEN p.collector_id = ? THEN p.longitude END, CASE WHEN p.collector_id IS NOT NULL THEN u.name END AS donor_name
 				  FROM pickups p
 				  LEFT JOIN waste_categories c ON p.category_id = c.id
                   LEFT JOIN pickup_rewards pr ON pr.pickup_id = p.id
 				  LEFT JOIN users u ON p.user_id = u.id
 				  WHERE p.collector_id = ? OR (p.status = 'pending' AND p.collector_id IS NULL)
 				  ORDER BY p.created_at DESC`
-		rows, qErr = a.DB.Query(query, user.ID)
+		rows, qErr = a.DB.Query(query, user.ID, user.ID, user.ID)
 	}
 
 	if qErr != nil {
@@ -208,7 +212,11 @@ func (a *App) UpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := httpx.RequestData(r)
+	data, location, problem := readPickupRequest(r)
+	if problem != nil {
+		problem.write(w)
+		return
+	}
 	trackingNum := strings.TrimSpace(data["tracking_number"])
 	itemDescription := strings.TrimSpace(data["item_description"])
 	pickupAddress := strings.TrimSpace(data["pickup_address"])
@@ -266,8 +274,11 @@ func (a *App) UpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = tx.Exec(`UPDATE pickups
-		SET item_description = ?, pickup_address = ?, contact_phone = ?, weight_kg = ?, category_id = ?, eco_reward = ?, processing_fee = ?
-		WHERE id = ? AND status = 'pending'`, itemDescription, pickupAddress, contactPhone, weight, catID, ecoReward, processingFee, pickupID)
+		SET item_description = ?, pickup_address = ?, contact_phone = ?, weight_kg = ?, category_id = ?, eco_reward = ?, processing_fee = ?,
+		    latitude = CASE WHEN ? THEN ? ELSE latitude END,
+		    longitude = CASE WHEN ? THEN ? ELSE longitude END
+		WHERE id = ? AND status = 'pending'`, itemDescription, pickupAddress, contactPhone, weight, catID, ecoReward, processingFee,
+		location.provided, location.latitude, location.provided, location.longitude, pickupID)
 	if err != nil {
 		httpx.SendResponse(w, "error", "Gagal memperbarui pengajuan.", nil, http.StatusInternalServerError)
 		return
