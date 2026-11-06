@@ -24,7 +24,7 @@ export function mountReportForm(root) {
         <section id="facility-form-view" class="facility-panel facility-stack" aria-labelledby="facility-form-heading" hidden>
             <h3 id="facility-form-heading" tabindex="-1">Buat laporan fasilitas</h3>
             <form id="facility-form" class="facility-stack" enctype="multipart/form-data">
-                <fieldset class="facility-stack">
+                <fieldset class="facility-stack sp-report-fields">
                     <legend class="facility-muted">Isi kategori, masalah, dan lokasi fasilitas.</legend>
                     <label for="facility-form-category" class="facility-field">Kategori fasilitas
                         <select id="facility-form-category" name="category" required></select>
@@ -42,12 +42,12 @@ export function mountReportForm(root) {
                         <small id="facility-address-help">5–300 karakter.</small>
                     </div>
                     <div id="facility-location-picker"></div>
-                    <div class="facility-field"><label for="facility-photo">Foto (opsional)</label>
+                    <div class="facility-field sp-report-photo"><label for="facility-photo">Foto (opsional)</label>
                         <input type="file" id="facility-photo" name="photo" accept=".jpg,.jpeg,.png,image/jpeg,image/png" aria-describedby="facility-photo-help facility-photo-status">
                         <small id="facility-photo-help">JPEG atau PNG, maksimal 5 MiB dan 16 megapiksel.</small>
+                        <output id="facility-photo-status" class="facility-muted" aria-live="polite"></output>
+                        <img id="facility-preview" class="facility-photo" alt="Pratinjau foto fasilitas" hidden>
                     </div>
-                    <output id="facility-photo-status" class="facility-muted" aria-live="polite"></output>
-                    <img id="facility-preview" class="facility-photo" alt="Pratinjau foto fasilitas" hidden>
                     <div><button type="submit" id="facility-submit" class="facility-button primary">Kirim laporan</button></div>
                 </fieldset>
             </form>

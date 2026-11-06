@@ -1,6 +1,3 @@
-// EcoRecycle Collector Portal Logic
-
-let map;
 let globalActiveMission = null;
 let missionSequence = 0;
 let disposeMissionLocation;
@@ -26,7 +23,7 @@ const collectorStatusMeta = {
     pending: {
         label: 'Menunggu Diambil',
         shortLabel: 'ANTREAN',
-        description: 'Tugas baru dari Eco Warrior, belum diambil petugas.',
+        description: 'Tugas baru dari warga, belum diambil petugas.',
         nextAction: 'Ambil tugas untuk melihat detail penjemputan.'
     },
     pickup: {
@@ -59,38 +56,19 @@ function getCollectorStatusMeta(status) {
     return collectorStatusMeta[status] || collectorStatusMeta.pending;
 }
 
-function initMap() {
-    try {
-        const mapElement = document.getElementById('map');
-        if (!mapElement) return;
-        if (map) { map.remove(); }
-        if (typeof L === 'undefined') return;
-
-        // Center on Bandung City
-        map = L.map('map', { zoomControl: false }).setView([-6.9175, 107.6191], 13);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-
-        setTimeout(() => { map.invalidateSize(); }, 400);
-    } catch (e) {
-        console.error("Map initialization failed:", e);
-    }
-}
-
 function switchView(viewId, element) {
     if (viewId !== 'active-mission') clearMissionLocation();
     document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
     const target = document.getElementById('view-' + viewId);
     if (target) {
         target.classList.add('active');
-        if (viewId === 'dashboard') setTimeout(initMap, 100);
     }
     window.dispatchEvent(new Event('sampira:collector-view'));
 
     document.querySelectorAll('.sidebar-item, .nav-item').forEach(item => item.classList.remove('active'));
-    if (element) {
+    if (viewId === 'operations') {
+        document.querySelectorAll('[data-collector-view="operations"]').forEach(item => item.classList.add('active'));
+    } else if (element) {
         element.classList.add('active');
     } else {
         const navItems = document.querySelectorAll('.sidebar-item, .nav-item');
@@ -127,7 +105,7 @@ async function fetchMission(tracking) {
     return body.data;
 }
 
-async function viewActiveMission(tracking) {
+async function viewActiveMission(tracking, navigation) {
     clearMissionLocation();
     switchView('active-mission');
     const sequence = missionSequence;
@@ -147,8 +125,8 @@ async function viewActiveMission(tracking) {
             const {mountLocationDetail} = await missionMaps;
             if (sequence !== missionSequence) return;
             disposeMissionLocation = mountLocationDetail(missionLocation, {
-                title: 'Titik tujuan penjemputan', point: item, address: item.pickup_address,
-                navigation: {authorize}
+                title: 'Titik tujuan penjemputan', point: item, address: item.pickup_address, autoTiles: true,
+                navigation: {...navigation, authorize}
             });
         } catch {
             missionLocation.textContent = 'Peta belum tersedia. Gunakan alamat penjemputan.';
@@ -329,12 +307,13 @@ function renderOpenCollectorTask(item) {
 }
 
 function summarizeCollectorPickups(list, userId) {
-    const result = {weight: 0, historyHtml: '', tasksHtml: '', activeMission: null};
+    const result = {weight: 0, historyHtml: '', tasksHtml: '', activeMission: null, activeCount: 0};
     for (const item of list) {
         if (item.status === 'completed') {
             result.weight += Number(item.final_weight_kg ?? 0);
             result.historyHtml += renderCollectorHistory(item);
         } else if (String(item.collector_id) === String(userId)) {
+            if (['pickup', 'transit', 'arrived'].includes(item.status)) result.activeCount++;
             if (['pickup', 'transit'].includes(item.status)) result.activeMission = item;
             result.tasksHtml += renderAssignedCollectorTask(item);
         } else if (item.status === 'pending') {
@@ -348,11 +327,11 @@ function renderCollectorDashboard(list, userId) {
     const result = summarizeCollectorPickups(list, userId);
     globalActiveMission = result.activeMission;
     document.getElementById('stat-packages').innerText = result.weight.toFixed(1) + ' KG';
+    document.getElementById('stat-active-tasks').textContent = result.activeCount;
     document.getElementById('stat-profit').innerText = '—';
     document.getElementById('earnings-total').innerText = '—';
     if (upcomingList) upcomingList.innerHTML = result.tasksHtml || '<div style="text-align:center; padding:20px; color:#64748b;">Tidak ada antrean pickup tersedia.</div>';
     if (historyBody) historyBody.innerHTML = result.historyHtml || '<tr><td colspan="4" style="text-align:center; padding:16px; color:#64748b;">Belum ada riwayat misi penjemputan selesai.</td></tr>';
-    initMap();
 }
 
 async function loadCollectorData() {
@@ -360,7 +339,7 @@ async function loadCollectorData() {
     if (!user) return;
 
     // Set UI Profile Info
-    document.getElementById('desktop-greeting').innerText = `Selamat bertugas, Petugas ${user.name}. Siap menyelamatkan bumi hari ini?`;
+    document.getElementById('desktop-greeting').innerText = `Halo, ${user.name}. Tinjau penjemputan dan tugas fasilitasmu.`;
     document.getElementById('mobile-name').innerText = user.name;
     document.getElementById('profile-name').innerText = user.name;
     document.getElementById('mobile-avatar').innerText = user.name.substring(0, 2).toUpperCase();
@@ -389,6 +368,7 @@ function logoutCollector() {
 // Global Exports
 window.switchView = switchView;
 window.openActiveMission = openActiveMission;
+window.viewActiveMission = viewActiveMission;
 window.claimPickup = claimPickup;
 window.logoutCollector = logoutCollector;
 

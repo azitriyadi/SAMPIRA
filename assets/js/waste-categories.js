@@ -12,7 +12,7 @@ const wasteCategories = [
     { name: 'B3 Rumah Tangga', group: 'B3 rumah tangga', label: 'Lampu & kemasan bekas B3', rate: 0, feePerKg: 0, icon: 'fa-triangle-exclamation', weight: 1, example: 'Lampu bekas atau kemasan bekas produk B3 rumah tangga. Jelaskan jenis, isi tersisa, dan kondisinya.', note: 'Tanpa reward awal. Penjemputan menyesuaikan jenis dan kesiapan penanganan; jangan dicampur dengan sampah lain. Bukan untuk limbah medis atau industri.' }
 ];
 
-function populateWasteOptions(select, selected) {
+function populateWasteOptions(select, selected, {showTariff = true} = {}) {
     select.replaceChildren();
     for (const group of new Set(wasteCategories.map(category => category.group))) {
         const optgroup = document.createElement('optgroup');
@@ -21,7 +21,7 @@ function populateWasteOptions(select, selected) {
             const option = document.createElement('option');
             option.value = category.name;
             const tariff = category.rate ? 'Rp' + category.rate.toLocaleString('id-ID') + '/kg' : 'tanpa reward';
-            option.textContent = `${category.label} · ${tariff}`;
+            option.textContent = showTariff ? `${category.label} · ${tariff}` : category.label;
             option.defaultSelected = category.name === selected;
             optgroup.append(option);
         }

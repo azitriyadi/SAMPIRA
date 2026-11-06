@@ -1,83 +1,124 @@
-// Shared submit lifecycle keeps loading/error handling consistent on both forms.
-function authFormPayload(kind) {
-    const email = document.getElementById(kind + '-email').value;
-    const password = document.getElementById(kind + '-password').value;
-    if (kind === 'login') return {email, password};
-    return {name: document.getElementById('register-name').value, email, password};
+const kind = document.body.dataset.authPage;
+const form = document.getElementById(kind + '-form');
+const submit = form.querySelector('.submit-button');
+const submitLabel = submit.querySelector('span');
+const errorBanner = form.querySelector('.auth-error');
+const progress = document.getElementById('auth-progress');
+const email = document.getElementById(kind + '-email');
+const password = document.getElementById(kind + '-password');
+const nameInput = document.getElementById('register-name');
+const confirmation = document.getElementById('register-confirm-password');
+const destinations = {user: '/dashboard', petugas: '/petugas', admin: '/admin', administrator: '/administrator'};
+let pending = false;
+
+function fieldError(input, message = '') {
+    document.getElementById(input.id + '-error').textContent = message;
+    if (message) input.setAttribute('aria-invalid', 'true');
+    else input.removeAttribute('aria-invalid');
 }
 
-function authNotice(options) {
-    if (window.Swal) return Swal.fire(options);
-    window.alert(options.text || options.title);
-}
+form.addEventListener('invalid', event => {
+    const input = event.target;
+    const message = input.validity.valueMissing
+        ? 'Isi ' + input.labels[0].textContent.toLowerCase() + '.'
+        : 'Gunakan format email yang valid.';
+    fieldError(input, message);
+}, true);
 
-async function finishAuthentication(kind, data) {
-    if (kind === 'register') {
-        await authNotice({icon: 'success', title: 'Registrasi Berhasil', text: 'Akun Anda telah dibuat. Silakan login.', confirmButtonText: 'Login Sekarang'});
-        window.location.href = 'login';
-        return;
-    }
-    const destinations = {user: 'dashboard', petugas: 'petugas', admin: 'admin', administrator: 'administrator'};
-    window.location.href = destinations[data.role] || 'login';
-}
-
-async function submitAuthForm(event, kind) {
-    event.preventDefault();
-    const button = event.currentTarget.querySelector('button[type="submit"]');
-    const originalText = button.innerText;
-    button.innerText = 'Memproses...';
-    button.disabled = true;
-    button.style.opacity = '0.8';
-    try {
-        const response = await fetch('api/auth/' + kind, {method: 'POST', headers: {'Content-Type': 'application/json', 'X-SAMPIRA-Portal': '1'}, body: JSON.stringify(authFormPayload(kind))});
-        const result = await response.json();
-        if (result.status === 'success') await finishAuthentication(kind, result.data);
-        else await authNotice({icon: 'error', title: kind === 'login' ? 'Login Gagal' : 'Registrasi Gagal', text: result.message});
-    } catch {
-        await authNotice({icon: 'error', title: 'Kesalahan', text: 'Gagal terhubung ke server.'});
-    } finally {
-        button.innerText = originalText;
-        button.disabled = false;
-        button.style.opacity = '1';
-    }
-}
-
-for (const kind of ['login', 'register']) {
-    document.getElementById(kind + '-form')?.addEventListener('submit', event => submitAuthForm(event, kind));
-}
-
-// Keep password visibility separate from form submission.
-document.querySelectorAll('.password-toggle').forEach((button) => {
-    button.addEventListener('click', () => {
-        const input = document.getElementById(button.getAttribute('aria-controls'));
-        const visible = input.type === 'password';
-        input.type = visible ? 'text' : 'password';
-        button.textContent = visible ? 'Tutup' : 'Lihat';
-        button.setAttribute('aria-label', visible ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
-        button.setAttribute('aria-pressed', String(visible));
-    });
+form.addEventListener('input', event => {
+    fieldError(event.target);
+    if (event.target === password && confirmation) fieldError(confirmation);
+    errorBanner.hidden = true;
 });
 
-// Let both panels leave before following normal login/register links.
-const authPage = document.body.dataset.authPage;
-if (authPage) {
+function validateRegistration() {
+    const length = new TextEncoder().encode(password.value).length;
+    const errors = [
+        [nameInput, nameInput.value.trim() ? '' : 'Isi nama lengkap.'],
+        [password, length >= 6 && length <= 72 ? '' : 'Kata sandi harus terdiri dari 6 hingga 72 byte.'],
+        [confirmation, password.value === confirmation.value ? '' : 'Konfirmasi kata sandi belum cocok.']
+    ];
+    for (const [input, message] of errors) fieldError(input, message);
+    const first = errors.find(([, message]) => message);
+    if (first) first[0].focus();
+    return !first;
+}
+
+function serverMessage(status) {
+    if (status === 403) return 'Permintaan ditolak. Muat ulang halaman dan coba lagi.';
+    if (status === 429) return 'Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.';
+    if (status >= 500) return 'Layanan sedang bermasalah. Coba lagi dalam beberapa saat.';
+    return kind === 'login'
+        ? 'Tidak dapat masuk. Periksa email dan kata sandi Anda.'
+        : 'Pendaftaran belum berhasil. Periksa isian atau masuk jika Anda sudah memiliki akun.';
+}
+
+function showError(message) {
+    errorBanner.textContent = message;
+    errorBanner.hidden = false;
+    errorBanner.focus();
+}
+
+function setPending(value) {
+    pending = value;
+    submit.disabled = value;
+    form.setAttribute('aria-busy', String(value));
+    submitLabel.textContent = value ? (kind === 'login' ? 'Sedang masuk…' : 'Sedang mendaftar…') : (kind === 'login' ? 'Masuk' : 'Daftar');
+    progress.textContent = value ? submitLabel.textContent : '';
+}
+
+form.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (pending || form.hidden) return;
+    errorBanner.hidden = true;
+    if (kind === 'register' && !validateRegistration()) return;
+    const payload = {email: email.value, password: password.value};
+    if (nameInput) payload.name = nameInput.value.trim();
+    setPending(true);
     let navigating = false;
-    document.addEventListener('click', (event) => {
-        const link = event.target.closest('a[href]');
-        if (!link || event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || link.target || link.hasAttribute('download')) return;
-        const destination = new URL(link.href, window.location.href);
-        const nextPage = destination.pathname.replace(/\/$/, '').split('/').pop();
-        if (destination.origin !== window.location.origin || !['login', 'register'].includes(nextPage) || nextPage === authPage) return;
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        event.preventDefault();
-        if (navigating) return;
+    try {
+        const response = await fetch('/api/auth/' + kind, {
+            method: 'POST', credentials: 'same-origin',
+            headers: {'Content-Type': 'application/json', 'X-SAMPIRA-Portal': '1'},
+            body: JSON.stringify(payload), signal: AbortSignal.timeout(15000)
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok || result?.status !== 'success') {
+            showError(serverMessage(response.status));
+            return;
+        }
+        if (kind === 'register') {
+            form.reset();
+            form.hidden = true;
+            document.querySelector('.switch-account').hidden = true;
+            const success = document.getElementById('register-success');
+            success.hidden = false;
+            success.focus();
+            return;
+        }
+        const role = result.data?.role;
+        if (!Object.hasOwn(destinations, role)) {
+            showError('Sesi tidak dapat dibuka. Muat ulang halaman dan coba lagi.');
+            return;
+        }
+        form.reset();
         navigating = true;
-        document.body.classList.add('auth-leaving');
-        // A bounded delay also works when animation events are unavailable.
-        window.setTimeout(() => window.location.assign(destination.href), 190);
-    });
-    window.addEventListener('pageshow', () => {
-        navigating = false;
-        document.body.classList.remove('auth-leaving');
+        window.location.assign(destinations[role]);
+    } catch {
+        showError('Tidak dapat terhubung ke layanan. Periksa koneksi dan coba lagi.');
+    } finally {
+        if (!navigating) setPending(false);
+    }
+});
+
+for (const toggle of form.querySelectorAll('.password-toggle')) {
+    toggle.addEventListener('click', () => {
+        const input = document.getElementById(toggle.getAttribute('aria-controls'));
+        const revealed = input.type === 'password';
+        input.type = revealed ? 'text' : 'password';
+        toggle.setAttribute('aria-pressed', String(revealed));
     });
 }
+window.addEventListener('pageshow', event => {
+    if (event.persisted) setPending(false);
+});

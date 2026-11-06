@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profil Saya | EcoRecycle</title>
+    <title>Profil Saya | SAMPIRA</title>
     <link rel="stylesheet" href="assets/css/style.css?v=20261029-quality5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
@@ -504,15 +504,18 @@
     @media (prefers-reduced-motion: reduce) { .pane { animation: none; } .sidebar, .sidebar-item, .main-content, .action-btn, .slider, .slider::before { transition: none; } }
     </style>
     <script src="/assets/js/portal-session.js?v=phase1-final"></script>
+    <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/assets/css/sampira.css?v=phase6b-live">
+
 </head>
 
-<body class="portal-page">
+<body class="portal-page sp-profile">
     <!-- Mobile Header -->
     <div class="mobile-header">
         <a href="home" class="mobile-logo" style="font-weight: 900; text-decoration: none; color: #1e293b; display: flex; align-items: center; gap: 8px; font-size: 1.2rem;">
-            <i class="fas fa-leaf" style="color: #10b981;"></i> EcoRecycle
+            <img src="/assets/img/sampira-mark.svg" width="30" height="30" alt=""> SAMPIRA
         </a>
-        <button class="hamburger-btn" id="mobileMenuToggle" style="background: none; border: none; font-size: 1.5rem; color: #1e293b; cursor: pointer;">
+        <button type="button" class="hamburger-btn" id="mobileMenuToggle" aria-label="Menu profil" style="background: none; border: none; font-size: 1.5rem; color: #1e293b; cursor: pointer;">
             <i class="fas fa-bars"></i>
         </button>
     </div>
@@ -523,7 +526,7 @@
     <!-- Sidebar Navigation -->
     <aside class="sidebar" id="sidebar">
         <a href="home" class="sidebar-logo">
-            <i class="fas fa-leaf"></i> EcoRecycle
+            <img src="/assets/img/sampira-mark.svg" width="34" height="34" alt=""> SAMPIRA
         </a>
 
         <div class="sidebar-nav">
@@ -548,13 +551,13 @@
             <div class="user-profile-side">
                 <div class="avatar" id="nav-user-avatar">EW</div>
                 <div class="user-info">
-                    <span class="user-name-side" id="nav-user-name">Eco Warrior</span>
-                    <span class="user-role-side" id="nav-user-role">WARRIOR</span>
+                    <span class="user-name-side" id="nav-user-name">Warga</span>
+                    <span class="user-role-side" id="nav-user-role">Warga</span>
                 </div>
             </div>
             <div style="padding: 0 16px; margin-top: 8px;">
                 <a href="login" onclick="logoutProfile(event)" style="display: flex; align-items: center; gap: 12px; font-weight: 700; color: #f87171; text-decoration: none; padding: 12px; border-radius: 12px; transition: background 0.3s;">
-                    <i class="fas fa-sign-out-alt"></i> Log Out
+                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Keluar
                 </a>
             </div>
         </div>
@@ -566,16 +569,16 @@
 
             <!-- Center Profile Tabs -->
             <div class="profile-tabs-wrapper">
-                <div class="header-tab active" data-target="pane-data"><i class="fas fa-user"></i> Data Profil</div>
-                <div class="header-tab" data-target="pane-settings"><i class="fas fa-sliders-h"></i> Pengaturan</div>
-                <div class="header-tab" data-target="pane-policy"><i class="fas fa-shield-alt"></i> Kebijakan & Privasi</div>
+                <button type="button" class="header-tab active" aria-pressed="true" aria-controls="pane-data" data-target="pane-data">Data Profil</button>
+                <button type="button" class="header-tab" aria-pressed="false" aria-controls="pane-settings" data-target="pane-settings">Pengaturan</button>
+                <button type="button" class="header-tab" aria-pressed="false" aria-controls="pane-policy" data-target="pane-policy">Kebijakan &amp; Privasi</button>
             </div>
 
             <!-- Centered User Card -->
             <div class="profile-header-centered">
                 <div class="avatar-glow" id="profile-avatar-glow">EW</div>
                 <h1 class="user-name" id="profile-user-name">Memuat...</h1>
-                <div class="premium-badge" id="profile-user-role"><i class="fas fa-crown"></i> ECO WARRIOR</div>
+                <div class="premium-badge" id="profile-user-role">Warga SAMPIRA</div>
             </div>
 
             <section class="content-area">
@@ -655,13 +658,13 @@
                     </div>
                     <div style="background: var(--gray-50); padding: 30px; border-radius: 16px; border: 1px solid var(--gray-200); color: var(--text-secondary); line-height: 1.8; max-height: 400px; overflow-y: auto;">
                         <h4 style="color: var(--brand-dark); margin-bottom: 10px; font-size: 1.1rem;">1. Ketentuan Sampah</h4>
-                        <p style="margin-bottom: 20px;">EcoRecycle menyediakan kategori organik, anorganik terpilah, elektronik, serta B3 rumah tangga. Pilih satu kategori untuk setiap pengajuan. B3 harus dipisahkan dan jenis serta kondisinya dijelaskan; penjemputannya menyesuaikan kesiapan penanganan. Kategori B3 rumah tangga bukan untuk limbah medis, industri, atau bahan peledak.</p>
+                        <p style="margin-bottom: 20px;">SAMPIRA menyediakan kategori organik, anorganik terpilah, elektronik, serta B3 rumah tangga. Pilih satu kategori untuk setiap pengajuan. B3 harus dipisahkan dan jenis serta kondisinya dijelaskan; penjemputannya menyesuaikan kesiapan penanganan. Kategori B3 rumah tangga bukan untuk limbah medis, industri, atau bahan peledak.</p>
 
                         <h4 style="color: var(--brand-dark); margin-bottom: 10px; font-size: 1.1rem;">2. Keamanan Data</h4>
                         <p style="margin-bottom: 20px;">Kami mengenkripsi nama, alamat penjemputan, dan kontak WhatsApp Anda untuk kebutuhan sinkronisasi kurir kolektor di lapangan. Data tidak akan disalahgunakan atau dibagikan ke pihak ketiga di luar logistik sampah.</p>
 
                         <h4 style="color: var(--brand-dark); margin-bottom: 10px; font-size: 1.1rem;">3. Hak Penghapusan Akun</h4>
-                        <p>Eco Warrior berhak penuh meminta penghapusan seluruh data identitas dan riwayat transaksi donasi mereka dari basis data kami kapan saja melalui pusat bantuan.</p>
+                        <p>Warga berhak penuh meminta penghapusan seluruh data identitas dan riwayat transaksi donasi mereka dari basis data kami kapan saja melalui pusat bantuan.</p>
                     </div>
                 </div>
 
@@ -700,11 +703,9 @@
                 const targetPaneId = tab.dataset.target;
 
                 headerTabs.forEach(t => {
-                    if (t.dataset.target === targetPaneId) {
-                        t.classList.add('active');
-                    } else {
-                        t.classList.remove('active');
-                    }
+                    const active = t.dataset.target === targetPaneId;
+                    t.classList.toggle('active', active);
+                    t.setAttribute('aria-pressed', String(active));
                 });
 
                 panes.forEach(p => p.classList.remove('active'));
@@ -725,7 +726,7 @@
             const navUserAvatar = document.getElementById('nav-user-avatar');
 
             if(navUserName) navUserName.innerText = user.name;
-            if(navUserRole) navUserRole.innerText = user.role === 'user' ? 'ECO WARRIOR' : user.role.toUpperCase();
+            if(navUserRole) navUserRole.textContent = user.role === 'user' ? 'Warga' : user.role;
             if(navUserAvatar) navUserAvatar.innerText = user.name.substring(0, 2).toUpperCase();
 
             // Profile Header Data
@@ -735,7 +736,7 @@
 
             if(profileName) profileName.innerText = user.name;
             if(profileRole) {
-                profileRole.innerHTML = user.role === 'user' ? '<i class="fas fa-crown"></i> ECO WARRIOR' : '<i class="fas fa-shield-halved"></i> ' + user.role.toUpperCase();
+                profileRole.textContent = user.role === 'user' ? 'Warga SAMPIRA' : user.role;
             }
             if(profileAvatar) profileAvatar.innerText = user.name.substring(0, 2).toUpperCase();
 
