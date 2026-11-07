@@ -47,21 +47,60 @@ function time(value) {
     return node;
 }
 
-export function reportCard(report, admin, openDetail) {
+export function adminTable(label, columns, body) {
+    const region = element('div', undefined, 'sp-table-wrap sp-admin-queue');
+    region.tabIndex = 0;
+    region.setAttribute('role', 'region');
+    region.setAttribute('aria-label', label);
+    const table = element('table');
+    const head = table.createTHead().insertRow();
+    for (const column of columns) {
+        const cell = element('th', column);
+        cell.scope = 'col';
+        head.append(cell);
+    }
+    table.append(body);
+    region.append(table);
+    return region;
+}
+
+export function reportCard(report, admin, openDetail, base) {
     const item = element('li', undefined, 'facility-card');
-    const top = element('div', undefined, 'facility-card-head');
-    top.append(element('span', report.tracking_number, 'facility-ref'), badge(report.status));
-    const dates = element('p');
-    dates.append('Diajukan ', time(report.created_at), ' · Diperbarui ', time(report.updated_at));
-    const footer = element('div', undefined, 'facility-actions facility-card-foot');
     const action = element('button', admin && report.status === 'pending' ? 'Tinjau laporan' : 'Lihat detail', 'facility-button');
     action.type = 'button';
     action.setAttribute('aria-label', action.textContent + ' ' + report.tracking_number);
     action.addEventListener('click', () => openDetail(report.id));
     const category = Object.hasOwn(categories, report.category) ? categories[report.category] : 'Kategori belum dikenal';
-    footer.append(element('span', admin ? category + ' · Pelapor #' + report.reporter_id : category), action);
-    item.append(top, element('h4', report.title), dates, footer);
-    return item;
+    if (!admin) {
+        item.className = 'sp-history-card';
+        const thumb = element('span', undefined, 'sp-history-thumb');
+        thumb.setAttribute('aria-hidden', 'true');
+        thumb.append(element('i', undefined, 'fas fa-triangle-exclamation'));
+        const photoPath = base + '/' + report.id + '/photo';
+        if (report.photo_url === photoPath) {
+            const photo = element('img');
+            photo.alt = '';
+            photo.loading = 'lazy';
+            photo.addEventListener('error', () => photo.remove());
+            photo.src = photoPath;
+            thumb.append(photo);
+        }
+        const copy = element('div', undefined, 'sp-history-card-copy');
+        const meta = element('p', undefined, 'sp-history-meta');
+        meta.append(time(report.created_at), element('span', category));
+        copy.append(element('h4', report.title), element('p', report.tracking_number, 'sp-history-reference'), meta);
+        const actions = element('div', undefined, 'sp-history-card-actions');
+        actions.append(badge(report.status), action);
+        item.append(thumb, copy, actions);
+        return item;
+    }
+    const row = element('tr');
+    row.insertCell().append(element('h4', report.title), element('small', report.tracking_number));
+    row.insertCell().append(element('span', category), element('small', 'Pelapor #' + report.reporter_id));
+    row.insertCell().append(badge(report.status));
+    row.insertCell().append(time(report.created_at), element('small', 'Diperbarui ' + dateLabel(report.updated_at)));
+    row.insertCell().append(action);
+    return row;
 }
 
 export function reportDetails(report, admin, base) {
@@ -171,6 +210,11 @@ export function mountReports(root, admin) {
     `;
     root.querySelector('#facility-status').append(options(statuses, 'Semua status'));
     root.querySelector('#facility-category').append(options(categories, 'Semua kategori'));
+    if (admin) {
+        const body = element('tbody');
+        body.id = 'facility-list';
+        root.querySelector('#facility-list').replaceWith(adminTable('Tabel verifikasi laporan', ['Laporan', 'Kategori', 'Verifikasi', 'Tanggal', 'Aksi'], body));
+    }
 }
 
 const verificationMarkup = `

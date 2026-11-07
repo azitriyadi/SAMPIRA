@@ -339,6 +339,15 @@ function showPickupEditConflict() {
     void loadDashboardData();
 }
 
+function splitPickupDescription(value = '') {
+    const match = /^Judul: ([^\r\n]+)\r?\n\r?\n([\s\S]*)$/.exec(value);
+    return match ? {title: match[1], description: match[2]} : {title: '', description: value};
+}
+
+function formatPickupDescription(title, description) {
+    return title ? `Judul: ${title}\n\n${description}` : description;
+}
+
 async function editPendingPickup(trackingNumber) {
     if (loadingPickupEdit) return;
     loadingPickupEdit = true;
@@ -362,12 +371,15 @@ async function editPendingPickup(trackingNumber) {
     }
     let editPicker;
     let editOpen = true;
+    const {title: originalTitle, description: originalDescription} = splitPickupDescription(item.item_description || '');
     const result = await Swal.fire({
         title: 'Edit Pengajuan Pending',
         html: `
             <div style="text-align:left;">
-                <label class="swal-form-label">Deskripsi barang</label>
-                <textarea id="edit-item-description" class="swal2-textarea" style="margin:0 0 10px; width:100%;">${escapePortalHTML(item.item_description || '')}</textarea>
+                <label class="swal-form-label" for="edit-request-title">Judul Permintaan</label>
+                <input id="edit-request-title" class="swal2-input" maxlength="120" style="margin:0 0 10px; width:100%;" value="${escapePortalHTML(originalTitle)}">
+                <label class="swal-form-label" for="edit-item-description">Deskripsi barang</label>
+                <textarea id="edit-item-description" class="swal2-textarea" style="margin:0 0 10px; width:100%;">${escapePortalHTML(originalDescription)}</textarea>
                 <label class="swal-form-label">Alamat penjemputan</label>
                 <textarea id="edit-pickup-address" class="swal2-textarea" style="margin:0 0 10px; width:100%;">${escapePortalHTML(item.pickup_address || '')}</textarea>
                 <div id="edit-pickup-location"></div>
@@ -404,17 +416,27 @@ async function editPendingPickup(trackingNumber) {
             editPicker?.dispose();
         },
         preConfirm: () => {
+            const title = document.getElementById('edit-request-title').value.trim();
+            const description = document.getElementById('edit-item-description').value.trim();
             const payload = {
                 tracking_number: item.tracking_number,
-                item_description: document.getElementById('edit-item-description').value.trim(),
+                item_description: formatPickupDescription(title, description),
                 pickup_address: document.getElementById('edit-pickup-address').value.trim(),
                 contact_phone: document.getElementById('edit-contact-phone').value.trim(),
                 category: document.getElementById('edit-category').value,
                 weight_kg: Number.parseFloat(document.getElementById('edit-weight').value)
             };
-            if (payload.item_description.length < 10 || payload.pickup_address.length < 15 || !payload.contact_phone || !payload.weight_kg || payload.weight_kg <= 0) {
+            if (originalTitle && !title) {
+                Swal.showValidationMessage('Isi judul permintaan.');
+                return false;
+            }
+            if (description.length < 10 || payload.pickup_address.length < 15 || !payload.contact_phone || !payload.weight_kg || payload.weight_kg <= 0) {
                 Swal.showValidationMessage('Lengkapi deskripsi, alamat, kontak, dan berat dengan benar.');
                 return undefined;
+            }
+            if (new TextEncoder().encode(payload.item_description).length > 2000) {
+                Swal.showValidationMessage('Judul dan deskripsi terlalu panjang. Persingkat deskripsi.');
+                return false;
             }
             const fields = editPicker ? editPicker.fields() : {};
             return fields ? {...payload, ...fields} : false;
@@ -501,22 +523,42 @@ function populateProfileFields(profile) {
     setInputValue('form-pickup-address', profile.address);
 }
 
-function renderUserHistoryRow(item) {
-    const weight = Number.parseFloat(item.weight_kg);
-    const dateObj = new Date(item.created_at);
-    const dateStr = dateObj.getDate() + ' ' + dateObj.toLocaleString('id-ID', {month: 'short'}) + ' ' + dateObj.getFullYear();
+const historyDate = new Intl.DateTimeFormat('id-ID', {dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta'});
+
+function pickupHistoryTitle(item) {
+    return splitPickupDescription(item.item_description || '').title || 'Penjemputan ' + (item.category_name || 'sampah');
+}
+
+function renderUserHistoryCard(item) {
+    const category = categoryConfig[item.category_name];
+    const weight = Number.parseFloat(item.final_weight_kg ?? item.weight_kg);
+    const timestamp = Date.parse(item.created_at);
     const statusMeta = getPickupStatusMeta(item.status);
     const badgeClass = getStatusBadgeClass(item.status);
+    const photo = /^\/?uploads\/[\w.-]+\.(?:jpe?g|png|webp)$/i.test(item.photo_url || '')
+        ? '/' + item.photo_url.replace(/^\//, '') : '';
     return `
-                    <tr role="row" class="sp-pickup-history-row">
-                        <td role="cell" data-label="Tanggal">${dateStr}</td>
-                        <td role="cell" data-label="No. Tracking"><button type="button" class="btn btn-outline pickup-flow-track-btn" data-tracking="${escapePortalHTML(item.tracking_number)}" onclick="openTrackingDetail(this.dataset.tracking)">${escapePortalHTML(item.tracking_number)}</button></td>
-                        <td role="cell" data-label="Kategori">${escapePortalHTML(item.category_name)}</td>
-                        <td role="cell" data-label="Berat"><strong>${weight} KG${item.final_weight_kg == null ? "" : " / Aktual " + item.final_weight_kg + " KG"}</strong></td>
-                        <td role="cell" data-label="Reward" class="sp-history-reward"><strong>${pickupRewardLabel(item)}</strong><br><small>${pickupPaymentLabel(item)}</small></td>
-                        <td role="cell" data-label="Status"><span class="status-badge ${badgeClass}">${statusMeta.label}</span></td>
-                    </tr>
-                `;
+        <li class="sp-history-card">
+            <span class="sp-history-thumb" aria-hidden="true">
+                <i class="fas ${category?.icon || 'fa-truck'}"></i>
+                ${photo ? `<img src="${escapePortalHTML(photo)}" alt="" loading="lazy" onerror="this.hidden=true">` : ''}
+            </span>
+            <div class="sp-history-card-copy">
+                <h3>${escapePortalHTML(pickupHistoryTitle(item))}</h3>
+                <p class="sp-history-reference">${escapePortalHTML(item.tracking_number)}</p>
+                <p class="sp-history-meta">
+                    <span><i class="far fa-calendar" aria-hidden="true"></i> ${Number.isFinite(timestamp) ? historyDate.format(timestamp) + ' WIB' : 'Tanggal belum tersedia'}</span>
+                    <span><i class="fas fa-weight-hanging" aria-hidden="true"></i> ${Number.isFinite(weight) ? (item.final_weight_kg == null ? '± ' : '') + weight + ' kg' : '—'}</span>
+                    <span><i class="fas ${category?.icon || 'fa-tag'}" aria-hidden="true"></i> ${escapePortalHTML(category?.label || item.category_name || '—')}</span>
+                </p>
+                <p class="sp-history-reward">${pickupRewardLabel(item)} · ${pickupPaymentLabel(item)}</p>
+            </div>
+            <div class="sp-history-card-actions">
+                <span class="status-badge ${badgeClass}"><i class="fas ${statusMeta.icon}" aria-hidden="true"></i> ${statusMeta.label}</span>
+                <button type="button" class="sp-button sp-button--quiet" data-tracking="${escapePortalHTML(item.tracking_number)}" onclick="openTrackingDetail(this.dataset.tracking)">Detail <i class="fas fa-arrow-right" aria-hidden="true"></i></button>
+            </div>
+        </li>
+    `;
 }
 
 function renderUserActivePickup(item) {
@@ -587,26 +629,55 @@ const historyFilters = {
 const historyPrev = document.getElementById('pickup-history-prev');
 const historyNext = document.getElementById('pickup-history-next');
 const historyMessage = document.getElementById('pickup-history-message');
+const historySearch = document.getElementById('pickup-history-search');
+const historySort = document.getElementById('pickup-history-sort');
+const historyPages = document.getElementById('pickup-history-pages');
 let pickupHistory = [];
 let pickupPage = 0;
 
 function renderPickupHistory() {
-    const pageSize = 10;
+    const pageSize = 5;
+    const query = historySearch.value.trim().toLocaleLowerCase('id-ID');
     const matching = pickupHistory.filter(item => Object.entries(historyFilters)
-        .every(([key, filter]) => !filter.value || item[key] === filter.value));
-    pickupPage = Math.max(0, Math.min(pickupPage, Math.ceil(matching.length / pageSize) - 1));
+        .every(([key, filter]) => !filter.value || item[key] === filter.value) &&
+        [pickupHistoryTitle(item), item.tracking_number].some(value => String(value).toLocaleLowerCase('id-ID').includes(query)));
+    const direction = historySort.value === 'oldest' ? 1 : -1;
+    matching.sort((first, second) => direction * ((Date.parse(first.created_at) || 0) - (Date.parse(second.created_at) || 0)));
+    const pageCount = Math.ceil(matching.length / pageSize);
+    pickupPage = Math.max(0, Math.min(pickupPage, pageCount - 1));
     const offset = pickupPage * pageSize;
     const page = matching.slice(offset, offset + pageSize);
-    setDashboardMarkup('payout-history-table-body', page.map(renderUserHistoryRow).join(''),
-        '<tr><td colspan="6">Tidak ada penjemputan untuk pilihan ini.</td></tr>');
-    historyMessage.textContent = matching.length ? `${offset + 1}–${offset + page.length} dari ${matching.length} penjemputan` : '0 penjemputan';
+    setDashboardMarkup('payout-history-table-body', page.map(renderUserHistoryCard).join(''),
+        '<li class="sp-panel">Tidak ada penjemputan untuk pilihan ini.</li>');
+    historyMessage.textContent = matching.length ? `Menampilkan ${offset + 1}–${offset + page.length} dari ${matching.length} penjemputan` : '0 penjemputan';
+    historyPages.replaceChildren();
+    const firstPage = Math.max(0, Math.min(pickupPage - 1, pageCount - 3));
+    for (let index = firstPage; index < Math.min(pageCount, firstPage + 3); index++) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'sp-button sp-button--quiet';
+        button.textContent = index + 1;
+        button.dataset.page = index;
+        button.setAttribute('aria-label', 'Halaman ' + (index + 1));
+        if (index === pickupPage) button.setAttribute('aria-current', 'page');
+        historyPages.append(button);
+    }
     historyPrev.disabled = pickupPage === 0;
     historyNext.disabled = offset + pageSize >= matching.length;
 }
 
-for (const filter of Object.values(historyFilters)) filter.addEventListener('change', () => {
+function resetPickupHistoryPage() {
     pickupPage = 0;
     renderPickupHistory();
+}
+for (const filter of [...Object.values(historyFilters), historySort]) filter.addEventListener('change', resetPickupHistoryPage);
+historySearch.addEventListener('input', resetPickupHistoryPage);
+historyPages.addEventListener('click', event => {
+    const page = event.target.closest('[data-page]');
+    if (!page) return;
+    pickupPage = Number(page.dataset.page);
+    renderPickupHistory();
+    historyPages.querySelector('[aria-current=page]')?.focus();
 });
 historyPrev.addEventListener('click', () => { pickupPage--; renderPickupHistory(); });
 historyNext.addEventListener('click', () => { pickupPage++; renderPickupHistory(); });
@@ -695,87 +766,22 @@ async function loadDashboardData() {
 const pickupForm = document.getElementById('pickup-request-form');
 if (pickupForm) {
     let picker;
-    let step = 0;
-    const stages = Array.from(pickupForm.querySelectorAll('[data-pickup-step]'));
-    const indicators = pickupForm.querySelectorAll('.sp-pickup-steps li');
-    const previous = document.getElementById('pickup-prev');
-    const backHome = document.getElementById('pickup-back-home');
-    const mapPanel = document.getElementById('pickup-map-panel');
-    const next = document.getElementById('pickup-next');
-    const review = document.getElementById('pickup-review');
     const submit = pickupForm.querySelector('button[type="submit"]');
-    const confirmation = stages.length - 1;
-    pickupForm.noValidate = true;
-
-    function openStep(index, focus = true) {
-        step = index;
-        stages.forEach((stage, position) => {
-            stage.hidden = index !== position;
-            if (index === position) indicators[position].setAttribute('aria-current', 'step');
-            else indicators[position].removeAttribute('aria-current');
-        });
-        previous.hidden = index === 0;
-        backHome.hidden = index !== 0;
-        mapPanel.hidden = index > 1;
-        next.hidden = index === confirmation;
-        submit.hidden = index !== confirmation;
-        const heading = index === 1 ? mapPanel.querySelector('h3') : stages[index].querySelector('h3');
-        heading.tabIndex = -1;
-        if (focus) heading.focus();
-    }
-
-    function checkStep(index) {
-        const invalid = Array.from(stages[index].querySelectorAll('input, select, textarea'))
-            .find(input => !input.validity.valid);
-        if (!invalid) return true;
-        if (step !== index) openStep(index, false);
-        invalid.reportValidity();
-        return false;
-    }
-
-    function reviewPickup(fields) {
-        const selected = document.getElementById('form-waste-category');
-        const entries = [
-            ['Kategori', selected.selectedOptions[0]?.textContent],
-            ['Estimasi berat', document.getElementById('form-waste-weight').value + ' kg'],
-            ['Deskripsi', document.getElementById('form-item-description').value.trim()],
-            ['Kontak', document.getElementById('form-donor-phone').value.trim()],
-            ['Alamat', document.getElementById('form-pickup-address').value.trim()],
-            ['Titik lokasi', fields.latitude ? fields.latitude + ', ' + fields.longitude : 'Menggunakan alamat']
-        ];
-        review.replaceChildren(...entries.map(([label, value]) => {
-            const entry = document.createElement('div');
-            const term = document.createElement('dt');
-            const description = document.createElement('dd');
-            term.textContent = label;
-            description.textContent = value || '—';
-            entry.append(term, description);
-            return entry;
-        }));
-    }
-
-    next.addEventListener('click', () => {
-        if (!checkStep(step)) return;
-        if (step === 1 || step === confirmation - 1) {
-            const fields = picker ? picker.fields() : {};
-            if (!fields) {
-                if (step !== 1) openStep(1);
-                return;
-            }
-            if (step === confirmation - 1) reviewPickup(fields);
-        }
-        openStep(step + 1);
-    });
-    previous.addEventListener('click', () => openStep(step - 1));
     const host = document.getElementById('pickup-location-picker');
+    const requestTitle = document.getElementById('form-request-title');
     locationMaps.then(({mountLocationPicker}) => {
         picker = mountLocationPicker(host, {title: 'Titik Lokasi Penjemputan', prefix: 'pickup', digits: 7});
+        import('/assets/js/location-search.js?v=1').then(({mountLocationSearch}) => {
+            mountLocationSearch(document.getElementById('pickup-location-search'), host, picker, 'pickup');
+        }).catch(() => {
+            document.getElementById('pickup-location-search').textContent = 'Pencarian belum tersedia.';
+        });
     }).catch(() => {
         host.textContent = 'Peta belum tersedia. Kamu dapat mengirim alamat lengkap saja.';
     });
     pickupForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        if (step !== confirmation || submit.disabled || !stages.slice(0, confirmation).every((_, index) => checkStep(index))) return;
+        if (submit.disabled) return;
         const btn = submit;
         const originalHtml = btn.innerHTML;
 
@@ -783,6 +789,17 @@ if (pickupForm) {
         const address = document.getElementById('form-pickup-address').value.trim();
         const description = document.getElementById('form-item-description').value.trim();
         const weight = Number.parseFloat(document.getElementById('form-waste-weight').value);
+        const title = requestTitle.value.trim();
+        if (!title) {
+            requestTitle.value = '';
+            requestTitle.reportValidity();
+            return;
+        }
+        const itemDescription = formatPickupDescription(title, description);
+        if (new TextEncoder().encode(itemDescription).length > 2000) {
+            Swal.fire({icon: 'warning', title: 'Deskripsi terlalu panjang', text: 'Persingkat judul atau deskripsi sampah.'});
+            return;
+        }
 
         if (!/^(\+62|62|0)8\d{8,13}$/.test(phone.replace(/[\s-]/g, ''))) {
             Swal.fire({
@@ -805,12 +822,12 @@ if (pickupForm) {
         }
 
         const fields = picker ? picker.fields() : {};
-        if (!fields) { openStep(1); picker.fields(); return; }
+        if (!fields) return;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
         btn.disabled = true;
 
         const formData = new FormData();
-        formData.append('item_description', description);
+        formData.append('item_description', itemDescription);
         formData.append('pickup_address', address);
         formData.append('contact_phone', phone);
         formData.append('weight_kg', weight);
@@ -838,7 +855,6 @@ if (pickupForm) {
                 }).then(() => {
                     pickupForm.reset();
                     picker?.reset();
-                    openStep(0, false);
                     btn.innerHTML = originalHtml;
                     btn.disabled = false;
                     clearPhotoPreview();
@@ -920,6 +936,9 @@ function searchTracking() {
             showPickupOnUserMap(item);
 
             document.getElementById('track-disp-number').innerText = item.tracking_number;
+            const requestTitle = document.getElementById('track-disp-title');
+            requestTitle.textContent = splitPickupDescription(item.item_description || '').title;
+            requestTitle.hidden = !requestTitle.textContent;
             
             const statusMeta = getPickupStatusMeta(item.status);
             const badgeClass = getStatusBadgeClass(item.status);

@@ -30,8 +30,23 @@ export async function checkPhase6Browser({ send, js, nav, login, click, text, wa
     await viewport(1440);
     await clear();
     await login("admin@phase1.invalid", "/admin");
+    assert.equal(await js('document.querySelector(".sp-admin-account").textContent.trim()'), "Keluar");
     await click('[aria-controls="admin-overview"]');
-    await text("#admin-overview [role=status]", "cuplikan");
+    await text("#admin-overview [role=status]", "Cuplikan");
+    await waitFor(() => js('Boolean(document.querySelector("#admin-recent-reports button"))'), 'Recent Admin report missing');
+    for (const width of [320,360,390,430,768,1024,1280,1440]) {
+        if (width === 390 || width === 1440) await capture("admin-overview", width);
+        else {
+            await viewport(width);
+            assert(await js("document.documentElement.scrollWidth <= innerWidth + 2"), "Admin overview overflows at " + width);
+        }
+    }
+    await viewport(390);
+    await click('#admin-menu-toggle');
+    assert.equal(await js('document.querySelector("#admin-menu-toggle").getAttribute("aria-expanded")'), 'true');
+    await click('[aria-controls="admin-overview"]');
+    assert.equal(await js('document.querySelector("#admin-menu-toggle").getAttribute("aria-expanded")'), 'false');
+    await viewport(1440);
     await click('[aria-controls="admin-operation-map"]');
     await text("#admin-operation-map [role=status]", "lokasi dimuat");
     assert(await js('document.querySelector(".sp-console-content").getBoundingClientRect().width > 700'), "Admin workspace collapsed into the navigation column");
@@ -40,6 +55,44 @@ export async function checkPhase6Browser({ send, js, nav, login, click, text, wa
     await text("#admin-operation-map .leaflet-popup-content", "Buka detail");
     await text("#admin-operation-map .leaflet-popup-content", "Penanganan");
     await capture("admin-map", 1440);
+    await viewport(390);
+    await click("#admin-menu-toggle");
+    await click('[aria-controls="admin-operation-map"]');
+    await text("#admin-operation-map [role=status]", "lokasi dimuat");
+    await click("#admin-operation-map .sp-map-marker--facility");
+    await text("#admin-operation-map .leaflet-popup-content", "Buka detail");
+    await capture("admin-map", 390);
+    assert(await js(`(() => {
+        const map = document.querySelector("#admin-operation-map [data-map-canvas]").getBoundingClientRect();
+        const popup = document.querySelector("#admin-operation-map .leaflet-popup-content-wrapper").getBoundingClientRect();
+        return popup.left >= map.left && popup.right <= map.right;
+    })()`), "Admin map popup is clipped on mobile");
+    await viewport(1440);
+    // Isolate the reported missing-route state while keeping the authenticated UI and real recovery path.
+    await js(`window.adminTestFetch = window.fetch;
+        window.fetch = (url, options) => String(url).startsWith('/api/ecorecycle/facility-reports?')
+            ? Promise.resolve(new Response(null, {status: 404}))
+            : window.adminTestFetch(url, options); void 0`);
+    await click('[aria-controls="admin-overview"]');
+    await text("#admin-overview [role=status]", "Layanan laporan tidak tersedia");
+    assert(await js('document.querySelector("#admin-recent-reports").closest("[role=region]").hidden'), "Failed overview shows an empty table");
+    assert.notEqual(await js('document.querySelector("[data-overview-status=approved]").textContent'), "—", "Working handling data should remain visible");
+    await capture("admin-overview-error", 1280);
+    await click('[aria-controls="admin-operation-map"]');
+    await text("#admin-operation-map [role=status]", "Layanan lokasi tidak tersedia");
+    await capture("admin-map-error", 1280);
+    await js(`window.fetch = (url, options) => String(url).startsWith('/api/ecorecycle/facility-reports?')
+        ? Promise.resolve(Response.json({status: 'success', data: {items: []}}))
+        : window.adminTestFetch(url, options); void 0`);
+    await click("#admin-operation-map [data-map-retry]");
+    await text("#admin-operation-map [role=status]", "Tidak ada lokasi untuk filter ini.");
+    assert(await js('document.querySelector("#admin-operation-map [data-map-retry]").hidden'));
+    await click('[aria-controls="admin-overview"]');
+    await text("#admin-recent-state", "Belum ada laporan fasilitas.");
+    assert(await js('document.querySelector("#admin-recent-reports").closest("[role=region]").hidden'));
+    await js("window.fetch = window.adminTestFetch; delete window.adminTestFetch; void 0");
+    await click('[aria-controls="admin-overview"]');
+    await text("#admin-overview [role=status]", "Cuplikan");
     await click('[aria-controls="education-cms"]');
     await waitFor(() => js('!document.querySelector("#education-add").disabled'), "CMS never became editable");
     await click("#education-add");
@@ -52,6 +105,9 @@ export async function checkPhase6Browser({ send, js, nav, login, click, text, wa
     })) await field(editor + '[name="' + name + '"]', value);
     await click(editor + '[type="submit"]');
     await text(editor + "[role=status]", "Tersimpan · Draf");
+    await click('.sp-admin-article-preview summary');
+    await text('[data-preview-body]', 'Pisahkan bahan organik');
+    await capture("admin-editor", 1440);
     await field(editor + '[name="title"]', "Panduan uji pilah rumah tangga");
     await click(editor + '[type="submit"]');
     await text(editor + "[role=status]", "Tersimpan · Draf");

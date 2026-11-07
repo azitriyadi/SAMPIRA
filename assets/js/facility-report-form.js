@@ -1,7 +1,9 @@
-import {categories, options} from './facility-report-ui.js?v=phase4b';
-import {mountLocationPicker} from './location-map.js?v=phase5b';
+import {categories} from './facility-report-ui.js?v=phase4b';
+import {mountLocationPicker} from './location-map.js?v=pickup-cari';
+import {mountLocationSearch} from './location-search.js?v=1';
 
 const textLengths = {title: [5, 120], description: [10, 3000], address: [5, 300]};
+const categoryIcons = {tps: 'fa-trash-can', collection_site: 'fa-truck', waste_bank: 'fa-recycle', other: 'fa-ellipsis'};
 
 export async function checkImage(file, url) {
     const signature = new Uint8Array(await file.slice(0, 8).arrayBuffer());
@@ -21,54 +23,89 @@ export async function checkImage(file, url) {
 
 export function mountReportForm(root) {
     root.insertAdjacentHTML('beforeend', `
-        <section id="facility-form-view" class="facility-panel facility-stack" aria-labelledby="facility-form-heading" hidden>
+        <section id="facility-form-view" class="facility-stack" aria-labelledby="facility-form-heading" hidden>
             <h3 id="facility-form-heading" tabindex="-1">Buat laporan fasilitas</h3>
             <form id="facility-form" class="facility-stack" enctype="multipart/form-data">
                 <fieldset class="facility-stack sp-report-fields">
-                    <legend class="facility-muted">Isi kategori, masalah, dan lokasi fasilitas.</legend>
-                    <label for="facility-form-category" class="facility-field">Kategori fasilitas
-                        <select id="facility-form-category" name="category" required></select>
-                    </label>
-                    <div class="facility-field"><label for="facility-title">Judul laporan</label>
-                        <input id="facility-title" name="title" minlength="5" required aria-describedby="facility-title-help">
-                        <small id="facility-title-help">5–120 karakter.</small>
+                    <section class="sp-pickup-panel">
+                        <h4><i class="fas fa-location-dot" aria-hidden="true"></i> Tentukan Lokasi Fasilitas</h4>
+                        <div id="facility-location-search"></div>
+                        <div id="facility-location-picker"></div>
+                    </section>
+                    <section class="sp-pickup-panel">
+                        <h4><i class="far fa-clipboard" aria-hidden="true"></i> Data Laporan</h4>
+                        <div class="facility-field"><label for="facility-title">Judul laporan <span class="sp-required" aria-hidden="true">*</span></label>
+                            <input id="facility-title" name="title" minlength="5" required aria-describedby="facility-title-help" placeholder="Contoh: TPS penuh dan tidak terawat">
+                            <small id="facility-title-help">5–120 karakter.</small>
+                        </div>
+                        <div class="facility-field"><label for="facility-description">Deskripsi <span class="sp-required" aria-hidden="true">*</span></label>
+                            <textarea id="facility-description" name="description" rows="4" minlength="10" required aria-describedby="facility-description-help" placeholder="Jelaskan kondisi fasilitas dan masalah yang ditemukan."></textarea>
+                            <small id="facility-description-help">10–3.000 karakter.</small>
+                        </div>
+                        <fieldset class="sp-report-categories">
+                            <legend><i class="fas fa-layer-group" aria-hidden="true"></i> Kategori Fasilitas <span class="sp-required" aria-hidden="true">*</span></legend>
+                            <p>Pilih jenis fasilitas yang dilaporkan.</p>
+                            <div id="facility-category-cards" class="sp-report-category-grid"></div>
+                        </fieldset>
+                    </section>
+                    <section class="sp-pickup-panel">
+                        <h4><i class="fas fa-map-pin" aria-hidden="true"></i> Alamat &amp; Lokasi</h4>
+                        <div class="facility-field"><label for="facility-address">Alamat lengkap <span class="sp-required" aria-hidden="true">*</span></label>
+                            <textarea id="facility-address" name="address" rows="2" minlength="5" required aria-describedby="facility-address-help" placeholder="Masukkan alamat lengkap fasilitas."></textarea>
+                            <small id="facility-address-help">5–300 karakter.</small>
+                        </div>
+                        <div class="sp-pickup-photo">
+                            <h4><i class="far fa-image" aria-hidden="true"></i> Foto Bukti (Opsional)</h4>
+                            <label class="sp-pickup-upload" for="facility-photo">
+                                <i class="fas fa-cloud-arrow-up" aria-hidden="true"></i>
+                                <strong>Unggah Foto</strong>
+                                <span id="facility-photo-help">JPEG atau PNG, maksimal 5 MiB dan 16 megapiksel.</span>
+                                <input type="file" id="facility-photo" name="photo" accept=".jpg,.jpeg,.png,image/jpeg,image/png" aria-describedby="facility-photo-help facility-photo-status">
+                            </label>
+                            <output id="facility-photo-status" class="facility-muted" aria-live="polite"></output>
+                            <img id="facility-preview" class="facility-photo" alt="Pratinjau foto fasilitas" hidden>
+                        </div>
+                    </section>
+                    <div class="sp-report-controls">
+                        <button type="button" id="facility-form-back" class="facility-button">Kembali</button>
+                        <button type="submit" id="facility-submit" class="facility-button primary">Kirim laporan</button>
                     </div>
-                    <div class="facility-field"><label for="facility-description">Deskripsi masalah</label>
-                        <textarea id="facility-description" name="description" rows="4" minlength="10" required aria-describedby="facility-description-help"></textarea>
-                        <small id="facility-description-help">10–3.000 karakter.</small>
-                    </div>
-                    <div class="facility-field"><label for="facility-address">Alamat lengkap</label>
-                        <textarea id="facility-address" name="address" rows="2" minlength="5" required aria-describedby="facility-address-help"></textarea>
-                        <small id="facility-address-help">5–300 karakter.</small>
-                    </div>
-                    <div id="facility-location-picker"></div>
-                    <div class="facility-field sp-report-photo"><label for="facility-photo">Foto (opsional)</label>
-                        <input type="file" id="facility-photo" name="photo" accept=".jpg,.jpeg,.png,image/jpeg,image/png" aria-describedby="facility-photo-help facility-photo-status">
-                        <small id="facility-photo-help">JPEG atau PNG, maksimal 5 MiB dan 16 megapiksel.</small>
-                        <output id="facility-photo-status" class="facility-muted" aria-live="polite"></output>
-                        <img id="facility-preview" class="facility-photo" alt="Pratinjau foto fasilitas" hidden>
-                    </div>
-                    <div><button type="submit" id="facility-submit" class="facility-button primary">Kirim laporan</button></div>
                 </fieldset>
             </form>
             <div class="facility-actions">
-                <button type="button" id="facility-form-back" class="facility-button">Kembali</button>
                 <button type="button" id="facility-retry-post" class="facility-button primary" hidden>Coba kirim ulang</button>
                 <button type="button" id="facility-discard-post" class="facility-button" hidden>Abaikan percobaan</button>
             </div>
         </section>
     `);
     const form = root.querySelector('#facility-form');
-    const picker = mountLocationPicker(root.querySelector('#facility-location-picker'), {
+    const pickerHost = root.querySelector('#facility-location-picker');
+    const picker = mountLocationPicker(pickerHost, {
         title: 'Titik Lokasi Fasilitas yang Dilaporkan', prefix: 'facility', digits: 6, includeSaved: true
     });
+    mountLocationSearch(root.querySelector('#facility-location-search'), pickerHost, picker, 'facility');
     const preview = root.querySelector('#facility-preview');
     const photoStatus = root.querySelector('#facility-photo-status');
     const fileInput = form.elements.photo;
     const submit = root.querySelector('#facility-submit');
     let previewURL;
 
-    form.elements.category.append(options(categories, 'Pilih kategori fasilitas'));
+    const cards = root.querySelector('#facility-category-cards');
+    for (const [value, name] of Object.entries(categories)) {
+        const label = document.createElement('label');
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'category';
+        radio.value = value;
+        radio.required = true;
+        const icon = document.createElement('i');
+        icon.className = 'fas ' + categoryIcons[value];
+        icon.setAttribute('aria-hidden', 'true');
+        const title = document.createElement('strong');
+        title.textContent = name;
+        label.append(radio, icon, title);
+        cards.append(label);
+    }
     function clearPreview() {
         if (previewURL) URL.revokeObjectURL(previewURL);
         previewURL = null;
@@ -118,7 +155,8 @@ export function mountReportForm(root) {
         form.reset();
         picker.reset(report);
         clearPreview();
-        for (const name of ['category', 'title', 'description', 'address']) {
+        form.elements.category.value = report?.category ?? '';
+        for (const name of ['title', 'description', 'address']) {
             form.elements[name].value = report?.[name] ?? '';
             form.elements[name].setCustomValidity('');
         }

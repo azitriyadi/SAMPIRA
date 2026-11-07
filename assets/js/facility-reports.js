@@ -1,7 +1,7 @@
-import {mountReportForm} from './facility-report-form.js?v=phase6b3';
-import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=phase4b';
+import {mountReportForm} from './facility-report-form.js?v=facility-layout';
+import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=admin-6b4';
 import {base, request} from './facility-api.js?v=phase5b';
-import {mountPublicHandling} from './facility-handling.js?v=phase5b';
+import {mountPublicHandling} from './facility-handling.js?v=admin-6b4';
 import {mountLocationDetail} from './location-map.js?v=phase5b';
 
 const pageLimit = 20;
@@ -98,7 +98,7 @@ function init(root) {
         try {
             const page = await request(base + '?' + params);
             if (sequence !== listRequest) return;
-            const items = page.items.map(report => reportCard(report, admin, openFromList));
+            const items = page.items.map(report => reportCard(report, admin, openFromList, base));
             list.append(...items);
             listCursor = page.next_before_id;
             $('list-message').textContent = list.children.length
@@ -406,8 +406,8 @@ function init(root) {
         initUser();
         $('list-heading').insertAdjacentHTML('beforebegin', `
             <div class="sp-history-switch" aria-label="Jenis riwayat">
-                <button type="button" class="sp-button sp-button--quiet" data-sp-user-tab="riwayat-payout">Riwayat Penjemputan</button>
-                <button type="button" class="sp-button" aria-current="page">Riwayat Laporan Fasilitas</button>
+                <button type="button" class="sp-button sp-button--quiet" data-sp-user-tab="riwayat-payout"><i class="fas fa-truck" aria-hidden="true"></i> Riwayat Penjemputan</button>
+                <button type="button" class="sp-button" aria-current="page"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Riwayat Lapor Fasilitas</button>
             </div>
         `);
         window.addEventListener('sampira:user-report-view', event => {

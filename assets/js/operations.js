@@ -1,6 +1,6 @@
 import { base, request } from "./facility-api.js";
 import { categories, statuses } from "./facility-report-ui.js";
-import { assignmentStatuses, handlingStatuses } from "./facility-handling-ui.js";
+import { assignmentStatuses, coordinationStatuses, handlingStatuses } from "./facility-handling-ui.js";
 import { locationPoint } from "./location-routing.js";
 
 const consoleNav = document.querySelector(".sp-admin-nav");
@@ -29,6 +29,8 @@ if (root) {
     const status = root.querySelector("[role=status]");
     const more = root.querySelector("[data-more]");
     const canvas = root.querySelector("[data-map-canvas]");
+    const retry = root.querySelector("[data-map-retry]");
+    const mapFeedback = root.querySelector("[data-map-feedback]");
     const create = (tag, label, className) => {
         const element = document.createElement(tag);
         element.textContent = label || "";
@@ -37,9 +39,9 @@ if (root) {
     };
     root.querySelector("[data-map-heading]").textContent = admin ? "Monitoring lokasi fasilitas" : "Peta operasional Petugas";
     root.querySelector("[data-map-intro]").textContent = admin
-        ? "Pantau lokasi laporan dan penanganannya dari data yang tersedia. Pilih titik atau baris untuk membuka detail."
+        ? "Pilih titik pada peta atau lokasi dalam daftar untuk membuka detail laporan."
         : "Lihat penjemputan yang kamu ambil dan fasilitas yang ditugaskan kepadamu. Buka detail tugas untuk memeriksa tujuan dan rute.";
-    form.elements.category.append(new Option("Semua", ""), ...Object.entries(admin ? categories : {
+    form.elements.category.append(new Option(admin ? "Semua kategori" : "Semua", ""), ...Object.entries(admin ? categories : {
         pickup: "Penjemputan", facility: "Tugas fasilitas"
     }).map(([key, label]) => new Option(label, key)));
     const verification = Object.fromEntries(Object.entries(statuses).filter(([key]) => key !== "draft"));
@@ -99,7 +101,8 @@ if (root) {
             return;
         }
         const selector = item.handling ? "[data-open-handling]" : "[data-open-verification]";
-        const button = Array.from(document.querySelectorAll(selector)).find(element => element.getClientRects().length);
+        const button = admin ? document.querySelector(".sp-admin-nav " + selector)
+            : Array.from(document.querySelectorAll(selector)).find(element => element.getClientRects().length);
         button?.click();
         window.dispatchEvent(new CustomEvent(item.handling ? "sampira:handling-detail" : "sampira:report-detail", {
             detail: { id: item.id, navigation }
@@ -110,6 +113,7 @@ if (root) {
         return {
             id: row.report_id || row.id, type: "facility", title: row.title, address: row.address, tracking: row.tracking_number,
             state: handling ? row.status : row.verification_status || row.status, assignment: row.assignment_status,
+            verification: row.verification_status, coordination: row.coordination_status,
             point: locationPoint(row.latitude, row.longitude), handling
         };
     }
@@ -151,6 +155,12 @@ if (root) {
             const popup = create("div", "", "sp-map-popup");
             popup.append(create("strong", item.title), create("p", [kind, label, item.tracking].filter(Boolean).join(" · ")),
                 create("p", item.address || "Alamat belum tersedia"));
+            if (admin && item.handling) {
+                popup.append(create("p", "Verifikasi · " + (statuses[item.verification] || "Belum tersedia")),
+                    create("p", "Penanganan · " + label),
+                    create("p", "Penugasan · " + (assignmentStatuses[item.assignment] || "Belum tersedia")),
+                    create("p", "Koordinasi · " + (coordinationStatuses[item.coordination] || "Belum tersedia")));
+            }
             const actions = [["Buka detail", null]];
             if (!admin) actions.push(["Lihat Rute", "route"], ["Buka Navigasi", "external"]);
             else if (!item.handling && item.state === "approved") {
@@ -163,6 +173,7 @@ if (root) {
                     } catch {
                         handlingStatus.textContent = "Status penanganan belum tersedia.";
                     }
+                    if (marker.isPopupOpen()) marker.getPopup().update();
                 });
                 actions.push(["Buka penanganan", "handling"]);
             }
@@ -172,19 +183,24 @@ if (root) {
                 button.addEventListener("click", () => open(action === "handling" ? { ...item, handling: true } : item, action));
                 popup.append(button);
             }
-            marker.bindPopup(popup, { maxWidth: 235, maxHeight: 142, autoPanPadding: [14, 14] });
+            marker.bindPopup(popup, { maxWidth: 260, maxHeight: admin ? 220 : 142, autoPanPadding: [14, 14], keepInView: admin });
         }
-        if (points.length) map.fitBounds(points, { padding: [35, 35], maxZoom: 15 });
+        if (points.length) map.fitBounds(points, { padding: [35, 35], maxZoom: 15, animate: admin ? false : undefined });
         const count = loaded.filter(item => item.point).length;
         status.textContent = loaded.length ? loaded.length + " lokasi dimuat · " + count + " memiliki titik presisi."
             : "Tidak ada lokasi untuk filter ini.";
-        if (tilesFailed) status.textContent += " Peta jalan gagal dimuat. Daftar tetap tersedia.";
-        else if (!map) status.textContent += " Peta tidak tersedia. Gunakan daftar.";
+        if (!admin && tilesFailed) status.textContent += " Peta jalan gagal dimuat. Daftar tetap tersedia.";
+        else if (!map && !admin) status.textContent += " Peta tidak tersedia. Gunakan daftar.";
     }
 
     async function load(append = false) {
         const run = ++version;
         status.textContent = "Memuat lokasi…";
+        if (admin) {
+            status.dataset.state = "loading";
+            retry.hidden = true;
+            more.hidden = !append;
+        }
         more.disabled = true;
         if (!append) {
             loaded = [];
@@ -197,10 +213,17 @@ if (root) {
             L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19
             }).on("tileerror", () => {
-                if (!tilesFailed) status.textContent += " Peta jalan gagal dimuat.";
+                if (!tilesFailed && mapFeedback) {
+                    mapFeedback.textContent = "Sebagian gambar peta gagal dimuat. Alamat tetap bisa dibuka dari daftar.";
+                    mapFeedback.hidden = false;
+                } else if (!tilesFailed) status.textContent += " Peta jalan gagal dimuat.";
                 tilesFailed = true;
             }).addTo(map);
             pins = L.layerGroup().addTo(map);
+        }
+        if (mapFeedback && !map) {
+            mapFeedback.textContent = "Peta belum tersedia. Gunakan daftar lokasi.";
+            mapFeedback.hidden = false;
         }
         map?.invalidateSize();
         const category = form.elements.category.value;
@@ -220,6 +243,14 @@ if (root) {
             ]);
             if (run !== version) return;
             const [facilityResult, pickupResult] = results;
+            if (admin && facilityResult.status === "rejected") {
+                status.dataset.state = "error";
+                status.textContent = facilityResult.reason.status === 404
+                    ? "Layanan lokasi tidak tersedia di server ini."
+                    : append ? "Lokasi berikutnya gagal dimuat." : "Daftar lokasi gagal dimuat.";
+                retry.hidden = append;
+                return;
+            }
             const page = facilityResult.value;
             const pickups = (pickupResult.value || []).filter(item => !selected || item.state === selected);
             const facilities = (page?.items || []).filter(item => group !== "assignment" || item.assignment_status === value)
@@ -227,6 +258,7 @@ if (root) {
             loaded.push(...pickups, ...facilities);
             cursor = page?.next_before_id ?? null;
             render();
+            if (admin) status.dataset.state = loaded.length ? "ready" : "empty";
             const failures = results.filter(result => result.status === "rejected");
             if (failures.length) status.textContent += " Sebagian sumber lokasi gagal dimuat. Terapkan filter untuk mencoba lagi.";
         } finally {
@@ -278,25 +310,3 @@ if (metrics) {
             message.textContent = "";
         }).catch(error => { message.textContent = error.message; });
 }
-
-const overview = document.querySelector("#admin-overview");
-if (overview) overview.addEventListener("sampira:open", async () => {
-    const notice = overview.querySelector("[role=status]");
-    notice.textContent = "Memuat ringkasan laporan…";
-    const fields = overview.querySelectorAll("[data-overview-status]");
-    for (const field of fields) field.textContent = "—";
-    try {
-        const [verification, handling] = await Promise.all([
-            request(base + "?status=pending&limit=20"), request(base + "/handling?limit=20")
-        ]);
-        for (const field of fields) {
-            const key = field.dataset.overviewStatus;
-            field.textContent = key === "pending" ? verification.items.length : handling.items.filter(item => item.status === key).length;
-        }
-        notice.textContent = verification.items.length + " laporan menunggu verifikasi dan " + handling.items.length +
-            " laporan penanganan dalam cuplikan ini." +
-            (verification.next_before_id || handling.next_before_id ? " Masih ada halaman berikutnya pada antrean." : "");
-    } catch {
-        notice.textContent = "Ringkasan gagal dimuat. Buka kembali menu Ringkasan untuk mencoba lagi.";
-    }
-});

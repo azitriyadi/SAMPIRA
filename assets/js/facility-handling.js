@@ -1,6 +1,6 @@
 import {base, request} from './facility-api.js?v=phase5b';
-import {categories, element, options} from './facility-report-ui.js?v=phase4b';
-import {button, handlingCard, handlingEvent, handlingStatuses, handlingSummary} from './facility-handling-ui.js?v=phase4b';
+import {adminTable, categories, element, options} from './facility-report-ui.js?v=admin-6b4';
+import {button, handlingCard, handlingEvent, handlingStatuses, handlingSummary} from './facility-handling-ui.js?v=admin-6b4';
 import {handlingActions, openHandlingForm} from './facility-handling-form.js?v=phase4b';
 import {mountLocationDetail} from './location-map.js?v=phase5b';
 
@@ -142,12 +142,13 @@ function workspace(root) {
     const categoryFilter = filter('Kategori', categories, 'Semua kategori');
     if (admin) statusFilter.value = 'approved';
     const listStatus = element('output', '', 'facility-muted');
-    const cards = element('ul', undefined, 'facility-cards');
+    const cards = element(admin ? 'tbody' : 'ul', undefined, 'facility-cards');
+    const queue = admin ? adminTable('Tabel penanganan laporan', ['Laporan', 'Penanganan', 'Penugasan', 'Koordinasi', 'Diperbarui', 'Aksi'], cards) : cards;
     const more = button('Muat laporan berikutnya', () => void loadList(cursor));
     const reload = button('Muat ulang daftar', () => void loadList());
     const toolbar = element('div', undefined, 'facility-toolbar');
     toolbar.append(filters, reload);
-    listView.append(element('h3', admin ? 'Antrean dan monitoring' : 'Daftar tugas saya'), toolbar, listStatus, cards, more);
+    listView.append(element('h3', admin ? 'Antrean dan monitoring' : 'Daftar tugas saya'), toolbar, listStatus, queue, more);
     root.append(header, notice, errorBox, listView, detailView);
 
     let listSequence = 0;
@@ -168,6 +169,8 @@ function workspace(root) {
         if (before !== null) query.set('before_id', before);
         else { cards.replaceChildren(); cursor = null; }
         listStatus.textContent = 'Memuat daftar penanganan…';
+        listStatus.setAttribute('aria-live', 'polite');
+        cards.setAttribute('aria-busy', 'true');
         more.disabled = true;
         more.hidden = true;
         try {
@@ -176,7 +179,7 @@ function workspace(root) {
             const newCards = page.items.map(report => handlingCard(report, id => {
                 notice.textContent = errorBox.textContent = '';
                 void openDetail(id);
-            }));
+            }, admin));
             cards.append(...newCards);
             if (before !== null) newCards[0]?.querySelector('button').focus();
             cursor = page.next_before_id;
@@ -184,7 +187,12 @@ function workspace(root) {
             listStatus.textContent = cards.children.length ? cards.children.length + ' laporan ditampilkan.' : 'Belum ada laporan untuk filter ini.';
         } catch (error) {
             if (sequence === listSequence) handleReadError(error, listStatus);
-        } finally { if (sequence === listSequence) more.disabled = false; }
+        } finally {
+            if (sequence === listSequence) {
+                more.disabled = false;
+                cards.removeAttribute('aria-busy');
+            }
+        }
     }
 
     function showList() {

@@ -50,12 +50,23 @@ function badge(value) {
     return node;
 }
 
-export function handlingCard(report, open) {
+export function handlingCard(report, open, admin = false) {
+    const action = button('Lihat detail', () => open(report.report_id));
+    action.setAttribute('aria-label', 'Lihat detail ' + report.tracking_number);
+    if (admin) {
+        const row = element('tr');
+        row.insertCell().append(element('h4', report.title), element('small', report.tracking_number), element('small', report.address));
+        row.insertCell().append(badge(report.status));
+        row.insertCell().append(element('span', label(assignmentStatuses, report.assignment_status)),
+            element('small', report.assignment?.petugas_id ? 'Petugas #' + report.assignment.petugas_id : ''));
+        row.insertCell().textContent = label(coordinationStatuses, report.coordination_status);
+        row.insertCell().textContent = dateLabel(report.updated_at);
+        row.insertCell().append(action);
+        return row;
+    }
     const card = element('li', undefined, 'facility-card handling-card');
     const header = element('div', undefined, 'facility-card-head');
     header.append(element('span', report.tracking_number, 'facility-ref'), badge(report.status));
-    const action = button('Lihat detail', () => open(report.report_id));
-    action.setAttribute('aria-label', 'Lihat detail ' + report.tracking_number);
     const foot = element('div', undefined, 'facility-actions facility-card-foot');
     foot.append(element('p', 'Penugasan: ' + label(assignmentStatuses, report.assignment_status) + ' · Diperbarui ' + dateLabel(report.updated_at)), action);
     card.append(header, element('h4', report.title), element('p', label(categories, report.category) + ' · ' + report.address), foot);

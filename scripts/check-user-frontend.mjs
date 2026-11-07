@@ -45,8 +45,9 @@ export async function checkUserWorkspace({send, js, nav, login, click, text, wai
     await writeFile(join(output, '01-beranda-ringkasan-1440.png'), Buffer.from(overview, 'base64'));
 
     await tab('setor-sampah');
-    await click('#pickup-next');
-    assert.equal(await js('document.querySelectorAll("[data-pickup-step]")[1].hidden'), true);
+    for (const field of ['#pickup-location-picker', '#form-item-description', '#form-pickup-address',
+        '#form-waste-weight', '.sp-pickup-upload', '#pickup-request-form [type=submit]']) await visible(field);
+    assert.equal(await js('document.querySelector("#form-item-description").validity.valueMissing'), true);
     await capture('02-penjemputan');
 
     await tab('laporan-fasilitas');
@@ -65,8 +66,11 @@ export async function checkUserWorkspace({send, js, nav, login, click, text, wai
     await capture('04-detail-laporan');
 
     await tab('riwayat-payout');
-    await text('#payout-history-table-body', 'PHASE1-LEGACY');
+    await text('#pickup-history-message', 'Menampilkan');
     await capture('05-riwayat-penjemputan');
+    await js('const search = document.getElementById("pickup-history-search"); search.value = "PHASE1-LEGACY"; search.dispatchEvent(new Event("input")); void 0');
+    await text('#payout-history-table-body', 'PHASE1-LEGACY');
+    assert.equal(await js('document.querySelectorAll("#payout-history-table-body .sp-history-card").length'), 1);
     await click('#riwayat-payout [data-report-view=list]');
     await text('#facility-list', 'Peta fasilitas fixture');
     await capture('05-riwayat-fasilitas');

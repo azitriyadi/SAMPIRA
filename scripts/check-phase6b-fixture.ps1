@@ -42,7 +42,7 @@ try {
   Start-Sleep -Milliseconds 250
  }
  New-Item -ItemType Directory "$t/scripts" | Out-Null
- $scripts=@('check-phase1-migration.mjs','check-api-regressions.mjs','check-phase1-browser.mjs','check-phase3-frontend.mjs','check-phase4-frontend.mjs','check-phase5-frontend.mjs','check-phase6-frontend.mjs','check-landing-frontend.mjs','check-auth-frontend.mjs','check-phase6-education.mjs','check-user-frontend.mjs')
+ $scripts=@('check-phase1-migration.mjs','check-api-regressions.mjs','check-phase1-browser.mjs','check-phase3-frontend.mjs','check-phase4-frontend.mjs','check-phase5-frontend.mjs','check-phase6-frontend.mjs','check-landing-frontend.mjs','check-auth-frontend.mjs','check-phase6-education.mjs','check-user-frontend.mjs','admin-visual-fixture.mjs')
  foreach($file in $scripts){
   $source = if ($file -eq 'check-phase6-education.mjs') {"$t/be/scripts/$file"} else {"scripts/$file"}
   $content=(Get-Content -Raw -Encoding utf8 $source).Replace('13316','24367').Replace('18081','24934')

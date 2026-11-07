@@ -59,14 +59,56 @@ for (const preview of document.querySelectorAll("[data-education-preview]")) {
 
 const portalEducation = document.querySelector("[data-portal-education]");
 if (portalEducation) {
+    const categoryIcons = {"pemilahan-sampah":"fa-boxes-stacked", "pengurangan-sampah":"fa-leaf",
+        "daur-ulang":"fa-recycle", pengomposan:"fa-seedling", "bank-sampah":"fa-box",
+        "sampah-elektronik":"fa-plug", "panduan-sampira":"fa-book-open"};
+    const categoryArtwork = {pengomposan:"waste-organic.svg", "sampah-elektronik":"waste-electronics.svg"};
     const form = portalEducation.querySelector("form");
     const message = portalEducation.querySelector("[role=status]");
     const list = portalEducation.querySelector(".sp-portal-articles");
+    const feature = portalEducation.querySelector(".sp-education-feature");
+    const categoryGrid = portalEducation.querySelector(".sp-education-category-grid");
+    const pageLabel = portalEducation.querySelector(".sp-education-page");
     const prev = portalEducation.querySelector("[data-prev]");
     const next = portalEducation.querySelector("[data-next]");
     let page = 1;
     let sequence = 0;
     let filters = {};
+
+    function artwork(item) {
+        const image = node("img");
+        image.src = "/assets/img/" + (categoryArtwork[item.category] || "waste-inorganic.svg");
+        image.alt = "";
+        return image;
+    }
+
+    function renderCategories(categories) {
+        if (!categoryGrid.children.length) {
+            for (const {key, label} of [{key:"", label:"Semua"}, ...categories]) {
+                const button = node("button");
+                button.type = "button";
+                button.dataset.category = key;
+                const icon = node("i", "", "fas " + (categoryIcons[key] || "fa-layer-group"));
+                icon.setAttribute("aria-hidden", "true");
+                button.append(icon, node("span", label));
+                categoryGrid.append(button);
+            }
+        }
+        for (const button of categoryGrid.children) {
+            button.setAttribute("aria-pressed", String(button.dataset.category === (filters.category || "")));
+        }
+    }
+
+    function renderFeature(item) {
+        feature.hidden = !item;
+        if (!item) return;
+        const copy = node("div", "", "sp-education-feature-copy");
+        const link = node("a", "Baca Selengkapnya →", "sp-button sp-button--quiet");
+        link.href = articleLink(item);
+        copy.append(node("span", "Artikel Terbaru", "sp-education-feature-label"),
+            node("h3", item.title), node("p", item.summary), link);
+        feature.replaceChildren(copy, artwork(item));
+    }
 
     async function load() {
         const run = ++sequence;
@@ -77,9 +119,19 @@ if (portalEducation) {
         try {
             const data = await request("/articles?" + query);
             if (run !== sequence) return;
-            options(form.elements.category, data.categories, "Semua kategori");
-            list.replaceChildren(...data.items.map(item => card(item, data.categories)));
-            message.textContent = data.items.length ? "Halaman " + page + " · " + data.items.length + " artikel" : "Tidak ada artikel untuk pilihan ini.";
+            renderCategories(data.categories);
+            if (page === 1 && !filters.q && !filters.category) renderFeature(data.items[0]);
+            list.replaceChildren(...data.items.map(item => {
+                const article = card(item, data.categories);
+                const cover = artwork(item);
+                cover.className = "sp-education-cover";
+                cover.loading = "lazy";
+                article.prepend(cover);
+                return article;
+            }));
+            const start = (page - 1) * 6 + 1;
+            message.textContent = data.items.length ? `Menampilkan ${start}–${start + data.items.length - 1} artikel` : "Tidak ada artikel untuk pilihan ini.";
+            pageLabel.textContent = page;
             prev.disabled = page <= 1;
             next.disabled = data.next_page === null;
         } catch (error) {
@@ -89,8 +141,17 @@ if (portalEducation) {
 
     form.addEventListener("submit", event => {
         event.preventDefault();
-        filters = Object.fromEntries(Array.from(new FormData(form), ([key, value]) => [key, value.trim()])
-            .filter(([, value]) => value));
+        const query = form.elements.q.value.trim();
+        if (query) filters.q = query;
+        else delete filters.q;
+        page = 1;
+        load();
+    });
+    categoryGrid.addEventListener("click", event => {
+        const button = event.target.closest("button[data-category]");
+        if (!button) return;
+        if (button.dataset.category) filters.category = button.dataset.category;
+        else delete filters.category;
         page = 1;
         load();
     });
@@ -238,6 +299,7 @@ if (cms) {
         for (const action of actions) action.hidden = !item || item.status === "archived" ||
             (action.dataset.publication === "published" && !editable);
         feedback.textContent = "";
+        renderEditorPreview();
     }
 
     async function open(id) {
@@ -281,6 +343,14 @@ if (cms) {
         button.addEventListener("click", () => { page += Number(button.dataset.educationPage); load(); });
     }
     dialog.querySelector("#education-close").addEventListener("click", () => dialog.close());
+    const preview = editor.querySelector('.sp-admin-article-preview');
+    function renderEditorPreview() {
+        if (!preview) return;
+        for (const name of ['title', 'summary', 'body']) {
+            preview.querySelector('[data-preview-' + name + ']').textContent = editor.elements[name].value.trim();
+        }
+    }
+    editor.addEventListener('input', renderEditorPreview);
     editor.addEventListener("submit", event => {
         event.preventDefault();
         const data = {};

@@ -1,4 +1,4 @@
-const locationMaps = import('/assets/js/location-map.js?v=phase5b');
+const locationMaps = import('/assets/js/location-map.js?v=pickup-cari');
 let userLocationSequence = 0;
 let disposeUserLocation;
 
