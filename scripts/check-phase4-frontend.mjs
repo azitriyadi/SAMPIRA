@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {writeFileSync} from 'node:fs';
 import {join} from 'node:path';
+import {captureAdmin} from './admin-visual-fixture.mjs';
 
 const reports = '/api/ecorecycle/facility-reports';
 const adminEmail = 'admin@phase1.invalid';
@@ -61,9 +62,9 @@ export async function checkHandlingBrowser({send, js, login, click, text, waitFo
     }
     async function openCard(selector, name = title) {
         await text(selector, name);
-        await js('Array.from(document.querySelectorAll('+q(selector+' li')+')).find(e=>e.querySelector("h4")?.textContent==='+q(name)+').querySelector("button").click()');
+        await js('Array.from(document.querySelectorAll('+q(selector+' > *')+')).find(e=>e.querySelector("h4")?.textContent==='+q(name)+').querySelector("button").click()');
     }
-    const queue = () => openCard(root+' ul.facility-cards');
+    const queue = () => openCard(root+' .facility-cards');
     const workflowButton = name => clickText(root+' .handling-actions button',name);
     async function fill(fields) {
         for (const [name, text] of Object.entries(fields)) {
@@ -105,8 +106,13 @@ export async function checkHandlingBrowser({send, js, login, click, text, waitFo
     }
     async function openAdmin(status = 'approved') {
         await login(adminEmail,'/admin');
+        await viewport(1440);
         await click('[data-open-handling]');
         if (status !== 'approved') await value(root+' select',status);
+        if (status === 'approved') {
+            await text(root+' .facility-cards', title);
+            await captureAdmin(send, js, '05-penanganan-monitor');
+        }
         await queue();
         await text(root, 'Detail penanganan');
     }
@@ -124,9 +130,11 @@ export async function checkHandlingBrowser({send, js, login, click, text, waitFo
     await openAdmin();
     assert(await js('document.querySelector("[data-facility-reports=admin]").hidden'));
     await text(root,'Jalan Pengujian Bandung');
+    await captureAdmin(send, js, '06-penanganan-detail');
     await workflowButton('Tugaskan Petugas');
     await text(dialog,'Pilih Petugas aktif');
     await waitFor(() => js('document.querySelector('+q(dialog+' select')+')?.options.length >= 3'), 'Officers were not loaded');
+    await captureAdmin(send, js, '07-penugasan');
     await assertLayout();
     assert(await js('(()=>{const r=document.querySelector('+q(dialog)+').getBoundingClientRect();return r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})()'));
     assert(await js('Array.from(document.querySelectorAll('+q(dialog+' select, '+dialog+' textarea')+')).every(x=>x.labels.length)'));
@@ -162,6 +170,12 @@ export async function checkHandlingBrowser({send, js, login, click, text, waitFo
     await api(path,{token:first.token},404);
     await api(path+'/activity',{token:first.token,method:'POST',body:validForm({version:3,action:'start_assessment'})},404);
 
+    await workflowButton('Catat penerusan');
+    await ready(dialog);
+    await captureAdmin(send, js, '09-koordinasi');
+    await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+    await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+    await waitFor(() => absent(dialog),'Dialog koordinasi tidak tertutup');
     await act('Catat penerusan',{agency:'Instansi Fixture',channel:'Surat',forwarded_at:'2025-01-01T08:00',internal_note:'Surat benar-benar dikirim.',reference:'SURAT-FIXTURE'},true);
     await text(root,'Penerimaan oleh instansi belum dikonfirmasi.');
     await text(root,'Petugas ditugaskan');
@@ -219,6 +233,7 @@ export async function checkHandlingBrowser({send, js, login, click, text, waitFo
     await openAdmin('resolution_submitted');
     await text(root,'Pengunci lulus uji ulang.');
     await workflowButton('Validasi penyelesaian');
+    await captureAdmin(send, js, '08-validasi-hasil');
     const eligible = await js('Array.from(document.querySelector('+q(dialog+' select')+').options).map(x=>x.value)');
     assert(eligible.includes(String(submitted.version)));
     assert(!eligible.includes(String(privateEvent.version)));

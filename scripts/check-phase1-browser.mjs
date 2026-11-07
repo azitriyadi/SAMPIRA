@@ -139,7 +139,7 @@ try {
     await click('[data-target="riwayat-payout"]');
     await text('#payout-history-table-body', 'PHASE1-LEGACY');
     await text('#payout-history-table-body', 'Menunggu pembayaran');
-    await js("Array.from(document.querySelectorAll('#payout-history-table-body button')).find(el => el.closest('tr').innerText.includes('Menunggu pembayaran')).click()");
+    await js("Array.from(document.querySelectorAll('#payout-history-table-body button')).find(el => el.closest('li').innerText.includes('Menunggu pembayaran')).click()");
     await text('#track-disp-reward', 'Menunggu pembayaran');
     await layout();
     await nav('/profile');
@@ -173,7 +173,7 @@ try {
     console.log('PASS Chromium Petugas: login, queue, assigned detail, direct denials, logout, desktop/mobile.');
 
     await login('admin@phase1.invalid', '/admin');
-    await text('main', 'laporan fasilitas');
+    await text('#admin-overview', 'Ringkasan operasional');
     assert.equal(await apiCode('/api/user/profile'), 200);
     assert.equal(await apiCode('/api/administrator/session'), 403);
     await layout();

@@ -337,7 +337,7 @@ export function mountLocationPicker(host, {title, prefix, digits, saved, include
     }
     activePanels.add(dispose);
     reset(saved);
-    return {reset, fields, dispose};
+    return {reset, fields, dispose, selectPoint: (latitude, longitude) => pick(locationPoint(latitude, longitude))};
 }
 
 export function mountLocationDetail(host, {title, point, address, reported = false, navigation, external = false, autoTiles = false}) {

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {writeFileSync} from 'node:fs';
 import {join} from 'node:path';
+import {captureAdmin} from './admin-visual-fixture.mjs';
 
 const base = '/api/ecorecycle/facility-reports';
 const navButton = '[data-target="laporan-fasilitas"]';
@@ -32,7 +33,7 @@ export async function checkFacilityBrowser({send, js, nav, login, click, text, w
         await send('DOM.setFileInputFiles', {nodeId, files: [file]});
     }
     async function openCard(name) {
-        await js('Array.from(document.querySelectorAll("#facility-list li")).find(el => el.querySelector("h4").textContent === ' +
+        await js('Array.from(document.querySelectorAll("#facility-list > *")).find(el => el.querySelector("h4").textContent === ' +
             q(name) + ').querySelector("button").click()');
         await text('#facility-detail', name);
     }
@@ -72,7 +73,7 @@ export async function checkFacilityBrowser({send, js, nav, login, click, text, w
     await click('#facility-new');
     await noOverflow();
     assert(await js('Array.from(document.querySelectorAll("[data-facility-reports] input, [data-facility-reports] select, [data-facility-reports] textarea")).every(field => field.labels.length > 0)'));
-    await value('facility-form-category', 'tps');
+    await js('document.querySelector("#facility-category-cards input[value=tps]").click(); void 0');
     await value('facility-title', '    ');
     await value('facility-description', 'Pintu TPS macet sejak kemarin.');
     await value('facility-address', 'Jalan Contoh 12 Bandung.');
@@ -139,13 +140,17 @@ export async function checkFacilityBrowser({send, js, nav, login, click, text, w
     await noOverflow();
 
     await login('admin@phase1.invalid', '/admin');
+    await click('[data-open-verification]');
     await text('#facility-list-heading', 'Antrean laporan');
     assert.equal(await js('document.querySelector("#facility-status").value'), 'pending');
     await value('facility-category', 'tps');
     await text('#facility-list-message', '1 laporan');
+    await send('Emulation.setDeviceMetricsOverride', {width:1440,height:992,deviceScaleFactor:1,mobile:false});
+    await captureAdmin(send, js, '03-verifikasi-daftar');
     await openCard(title);
     await text('#facility-detail', 'Pelapor');
     await waitFor(() => js('document.querySelector("#facility-detail img")?.naturalWidth === 1'), 'Admin photo missing');
+    await captureAdmin(send, js, '04-verifikasi-detail');
     await value('facility-decision', 'revision_required');
     await submit('facility-verify');
     assert.equal(await visible('#facility-confirm[open]'), false);
@@ -185,6 +190,7 @@ export async function checkFacilityBrowser({send, js, nav, login, click, text, w
     await waitFor(() => js('document.querySelector("#facility-detail img")?.naturalWidth === 1'), 'Original photo was not kept');
 
     await login('admin@phase1.invalid', '/admin');
+    await click('[data-open-verification]');
     await value('facility-category', 'tps');
     await text('#facility-list-message', '1 laporan');
     await openCard(title);
