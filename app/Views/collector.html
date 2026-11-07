@@ -11,7 +11,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
@@ -22,20 +22,19 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/collector-base.css?v=quality4">
-    <link rel="stylesheet" href="/assets/css/location-map.css?v=phase5b">
-    <link rel="stylesheet" href="assets/css/collector-inline.css?v=quality4">
-    <link rel="stylesheet" href="assets/css/portal-system.css?v=phase5b">
+    <link rel="stylesheet" href="/assets/css/location-map.css?v=phase8">
     <link rel="stylesheet" href="assets/css/portal-controls.css?v=20261029-quality5">
     <script src="/assets/js/portal-session.js?v=phase5b"></script>
     <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase4b">
     <link rel="stylesheet" href="/assets/css/facility-handling.css?v=phase4b">
-    <script type="module" src="/assets/js/facility-handling.js?v=phase5b"></script>
+    <script type="module" src="/assets/js/facility-handling.js?v=phase8"></script>
     <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/sampira.css?v=phase6b-live">
-    <script type="module" src="/assets/js/operations.js?v=phase6b"></script>
+    <script type="module" src="/assets/js/operations.js?v=phase8"></script>
+<link rel="stylesheet" href="/assets/css/portal-design.css?v=roles-1">
 </head>
 
-<body class="portal-page role-collector">
+<body class="sp-portal portal-page role-collector">
 
     <!-- Sidebar (Desktop) -->
     <aside class="sidebar">
@@ -51,7 +50,8 @@
             <button type="button" class="sidebar-item" onclick="switchView('history', this)"><i class="fas fa-list-check"></i> Riwayat Misi</button>
             <button type="button" class="sidebar-item" onclick="switchView('earnings', this)"><i class="fas fa-wallet"></i> Komisi</button>
             <button type="button" class="sidebar-item" onclick="switchView('profile', this)"><i class="fas fa-user-circle"></i> Profil</button>
-            <button type="button" class="sidebar-item collector-089139e8c8" data-portal-style="color: #f87171; margin-top: auto;" onclick="logoutCollector()"><i class="fas fa-sign-out-alt"></i> Keluar</button>
+
+<button type="button" class="sidebar-item " onclick="logoutCollector()"><i class="fas fa-sign-out-alt"></i> Keluar</button>
         </div>
     </aside>
 
@@ -65,50 +65,73 @@
                     <h1>Operasional Petugas</h1>
                     <p id="desktop-greeting">Selamat bertugas, Petugas. Siap menjemput kontribusi penyelamat bumi?</p>
                 </div>
-                <div data-portal-style="display:flex; gap:16px; align-items:center;" class="collector-7172ab67fc">
+                <div >
                     <span class="sp-kicker">Portal Petugas</span>
                 </div>
             </header>
 
             <header class="mobile-header">
-                <div data-portal-style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;" class="collector-1b723f5e1c">
-                    <div data-portal-style="display:flex; align-items:center; gap:12px;" class="collector-a527d03795">
-                        <div class="avatar-circle collector-6296ba4103" id="mobile-avatar" data-portal-style="width: 48px; height: 48px; border-radius: 50%; background:#087443; color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.1rem;">EC</div>
+                <div class="sp-field-mobile-bar">
+                    <div class="sp-field-identity">
+                        <div class="avatar-circle " id="mobile-avatar">EC</div>
                         <div>
-                            <div data-portal-style="font-weight:900; font-size: 1.1rem;" id="mobile-name" class="collector-42c61adbe7">Petugas</div>
-                            <div data-portal-style="font-size:0.75rem; opacity:0.8;" class="collector-ed622dca03">Petugas SAMPIRA</div>
+                            <div id="mobile-name" >Petugas</div>
+                            <div >Petugas SAMPIRA</div>
                         </div>
                     </div>
-                    <img src="/assets/img/sampira-mark.svg" width="34" height="34" alt="">
+                    <button type="button" class="sp-button sp-button--quiet" onclick="switchView('profile')">Profil</button>
                 </div>
             </header>
+            <div class="sp-dashboard-state" id="collector-data-state" hidden>
+                <p id="collector-load-status" role="status"></p>
+                <button class="sp-button sp-button--quiet" id="collector-retry" type="button" hidden>Coba lagi</button>
+            </div>
 
             <!-- KPI Row -->
-            <div class="kpi-row collector-8b38491930" data-portal-style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:20px; margin-bottom:32px;">
-                <div class="kpi-card collector-56dc07fe6c" data-portal-style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0; display:flex; align-items:center; gap:16px;">
-                    <div class="kpi-icon collector-3d0ebadea6" data-portal-style="background:#ecfdf5; color:#087443; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem;"><i class="fas fa-weight-hanging"></i></div>
+            <div class="kpi-row ">
+                <div class="kpi-card ">
+                    <div class="kpi-icon "><i class="fas fa-weight-hanging"></i></div>
                     <div>
-                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="collector-1b1c584415">Sampah Terkumpul</span>
-                        <h3 data-portal-style="font-size:1.8rem; font-weight:900; margin:0;" id="stat-packages" class="collector-1d693bc1bd">0 KG</h3>
+                        <span >Sampah Terkumpul</span>
+                        <h3 id="stat-packages" >0 KG</h3>
                     </div>
                 </div>
-                <div class="kpi-card collector-56dc07fe6c" data-portal-style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0; display:flex; align-items:center; gap:16px;">
-                    <div class="kpi-icon collector-daa8f057e2" data-portal-style="background:#fffbeb; color:#8a5315; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem;"><i class="fas fa-sack-dollar"></i></div>
+                <div class="kpi-card ">
+                    <div class="kpi-icon "><i class="fas fa-sack-dollar"></i></div>
                     <div>
-                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="collector-1b1c584415">Estimasi Komisi</span>
-                        <h3 data-portal-style="font-size:1.6rem; font-weight:900; margin:0;" id="stat-profit" class="collector-132795a74f">Rp 0</h3>
+                        <span >Estimasi Komisi</span>
+                        <h3 id="stat-profit" >Rp 0</h3>
                     </div>
                 </div>
-                <div class="kpi-card collector-56dc07fe6c" data-portal-style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0; display:flex; align-items:center; gap:16px;">
-                    <div class="kpi-icon collector-f26c5ee929" data-portal-style="background:#f0fdfa; color:#276e57; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem;"><i class="fas fa-star"></i></div>
+                <div class="kpi-card ">
+                    <div class="kpi-icon "><i class="fas fa-star"></i></div>
                     <div>
-                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="collector-1b1c584415">Penjemputan Aktif</span>
-                        <h3 data-portal-style="font-size:1.8rem; font-weight:900; margin:0;" id="stat-active-tasks" class="collector-1d693bc1bd">—</h3>
+                        <span >Penjemputan Aktif</span>
+                        <h3 id="stat-active-tasks" >—</h3>
                     </div>
                 </div>
             </div>
 
-            <section class="portal-announcement-section collector-announcement-section collector-d0466aa33f" id="collector-announcement-section" data-portal-style="display:none;">
+
+
+            <!-- Main Map and Open Pickups Grid -->
+            <div class="layout-grid ">
+
+                <!-- Available open pickups list -->
+                <div class="queue-panel ">
+                    <h3 >Antrean Penjemputan Bandung</h3>
+                    <p >Ambil tugas penjemputan sampah di daerah Bandung.</p>
+                    <div class="task-list " id="upcoming-task-list">
+                        <div >Memuat daftar pickup...</div>
+                    </div>
+                </div>
+<aside class="sp-field-support"><section class="sp-panel sp-field-shortcut">
+                    <p class="sp-kicker">Peta dan rute</p>
+                    <h2>Tujuan tugas lapangan</h2>
+                    <p>Tinjau titik penjemputan dan fasilitas yang ditugaskan. Detail misi memuat alamat dan opsi navigasi.</p>
+                    <div class="sp-pager"><button class="sp-button" type="button" onclick="switchView('operations')">Buka Peta Operasional</button>
+                    <button class="sp-button sp-button--quiet" type="button" onclick="openActiveMission()">Buka Detail Lokasi Penjemputan</button></div>
+                </section><section class="portal-announcement-section collector-announcement-section " id="collector-announcement-section">
                 <div class="portal-section-heading">
                     <div>
                         <span class="portal-eyebrow">Briefing operasional</span>
@@ -117,25 +140,7 @@
                     <i class="fas fa-bullhorn"></i>
                 </div>
                 <div id="collector-announcement-list" class="portal-announcement-list"></div>
-            </section>
-
-            <!-- Main Map and Open Pickups Grid -->
-            <div class="layout-grid collector-a82c141b12" data-portal-style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:24px;">
-                <section class="sp-panel sp-field-shortcut">
-                    <p class="sp-kicker">Peta dan rute</p>
-                    <h2>Tujuan tugas lapangan</h2>
-                    <p>Tinjau titik penjemputan dan fasilitas yang ditugaskan. Detail misi memuat alamat dan opsi navigasi.</p>
-                    <div class="sp-pager"><button class="sp-button" type="button" onclick="switchView('operations')">Buka Peta Operasional</button>
-                    <button class="sp-button sp-button--quiet" type="button" onclick="openActiveMission()">Buka Detail Lokasi Penjemputan</button></div>
-                </section>
-                <!-- Available open pickups list -->
-                <div class="queue-panel collector-33d3d18670" data-portal-style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0;">
-                    <h3 data-portal-style="font-weight:900; font-size:1.2rem; margin-bottom:8px; color:#064e3b;" class="collector-d1ce672316">Antrean Penjemputan Bandung</h3>
-                    <p data-portal-style="color:#64748b; font-size:0.8rem; margin-bottom:20px;" class="collector-71572c779c">Ambil tugas penjemputan sampah di daerah Bandung.</p>
-                    <div class="task-list collector-141abdf468" id="upcoming-task-list" data-portal-style="display:flex; flex-direction:column; gap:16px;">
-                        <div data-portal-style="text-align:center; padding:20px; color:#64748b;" class="collector-1d78a84533">Memuat daftar pickup...</div>
-                    </div>
-                </div>
+            </section></aside>
             </div>
         </div>
 
@@ -211,20 +216,20 @@
 
         <!-- VIEW: HISTORY -->
         <div id="view-history" class="view-section">
-            <h2 data-portal-style="font-weight:900; margin-bottom:24px; color:#064e3b;" class="collector-9b1d182755">Riwayat Misi Penjemputan</h2>
-            <div class="enterprise-card collector-ea5cca3288" data-portal-style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0; overflow-x: auto;">
-                <table data-portal-style="width: 100%; border-collapse: collapse; min-width: 600px;" class="collector-184e3d5c68">
+            <h2 >Riwayat Misi Penjemputan</h2>
+            <div class="enterprise-card ">
+                <table >
                     <thead>
-                        <tr data-portal-style="border-bottom: 2px solid #f1f5f9; text-align:left;" class="collector-9c4c9b21ba">
-                            <th data-portal-style="padding: 16px; font-size: 0.75rem; color: #64748b; font-weight:800;" class="collector-7b03969abe">NO. TRACKING</th>
-                            <th data-portal-style="padding: 16px; font-size: 0.75rem; color: #64748b; font-weight:800;" class="collector-7b03969abe">TANGGAL</th>
-                            <th data-portal-style="padding: 16px; font-size: 0.75rem; color: #64748b; font-weight:800;" class="collector-7b03969abe">KOMISI ANDA</th>
-                            <th data-portal-style="padding: 16px; font-size: 0.75rem; color: #64748b; font-weight:800;" class="collector-7b03969abe">STATUS</th>
+                        <tr >
+                            <th >NO. TRACKING</th>
+                            <th >TANGGAL</th>
+                            <th >KOMISI ANDA</th>
+                            <th >STATUS</th>
                         </tr>
                     </thead>
                     <tbody id="history-table-body">
                         <tr>
-                            <td colspan="4" data-portal-style="padding: 16px; text-align:center; color:#64748b;" class="collector-c6657ff8e7">Memuat riwayat...</td>
+                            <td colspan="4" >Memuat riwayat...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -233,34 +238,35 @@
 
         <!-- VIEW: EARNINGS -->
         <div id="view-earnings" class="view-section">
-            <h2 data-portal-style="font-weight:900; margin-bottom:24px; color:#064e3b;" class="collector-9b1d182755">Dompet Petugas</h2>
-            <div class="balance-card collector-10394b0a6f" data-portal-style="background: linear-gradient(135deg, #064e3b 0%, #022c22 100%); color:white; padding:40px; border-radius:24px; max-width:600px; box-shadow: 0 10px 30px rgba(6,78,59,0.15);">
-                <div data-portal-style="font-size:0.9rem; opacity:0.8; font-weight:700;" class="collector-31486f07f4">TOTAL KOMISI DIDAPAT</div>
-                <h2 data-portal-style="font-size:3.5rem; font-weight:900; margin:12px 0; letter-spacing: -2px;" id="earnings-total" class="collector-95a68d1cc0">Rp 0</h2>
-                <button class="btn-primary collector-6d82a9c18c" data-portal-style="background:white; color:#064e3b; width: auto; padding: 12px 28px; border-radius:12px; font-weight:800;" disabled>Pencairan belum tersedia</button>
+            <h2 >Dompet Petugas</h2>
+            <div class="balance-card ">
+                <div >TOTAL KOMISI DIDAPAT</div>
+                <h2 id="earnings-total" >Rp 0</h2>
+                <p class="sp-note">Pencairan komisi belum tersedia.</p>
             </div>
         </div>
 
         <!-- VIEW: PROFILE -->
         <div id="view-profile" class="view-section">
-            <h2 data-portal-style="font-weight:900; margin-bottom:24px; color:#064e3b;" class="collector-9b1d182755">Profil Petugas</h2>
-            <div class="enterprise-card collector-643f5faaad" data-portal-style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0; max-width:600px; text-align:center;">
-                <div class="profile-header collector-293242ee3e" data-portal-style="margin-bottom:32px;">
-                    <div class="avatar-circle collector-3dfb5b2e10" id="profile-avatar-large" data-portal-style="width: 100px; height: 100px; border-radius: 50%; background:#064e3b; color:white; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:2.2rem; margin:0 auto 16px;">C</div>
-                    <h2 data-portal-style="margin:0; font-size: 1.5rem; font-weight: 900; color:#064e3b;" id="profile-name" class="collector-0d3dc6aec0">Petugas</h2>
-                    <p data-portal-style="color:#64748b; font-size: 0.9rem; margin-top:4px;" class="collector-6d6eba2899">Petugas lapangan SAMPIRA</p>
+            <h2 >Profil Petugas</h2>
+            <div class="enterprise-card ">
+                <div class="profile-header ">
+                    <div class="avatar-circle " id="profile-avatar-large">C</div>
+                    <h2 id="profile-name" >Petugas</h2>
+                    <p >Petugas lapangan SAMPIRA</p>
                 </div>
-                <div class="info-grid collector-4db4254359" data-portal-style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:32px;">
-                    <div class="info-box collector-24692c0dde" data-portal-style="background:#f8fafc; border:1px solid #e2e8f0; padding:16px; border-radius:16px; text-align:left;">
-                        <span data-portal-style="font-size:0.7rem; font-weight:800; color:#64748b;" class="collector-fc15f7b0ca">ARMADA DONASI</span>
-                        <p data-portal-style="font-weight:700; margin:4px 0 0 0; color:#0f172a;" class="collector-6a6262f18b">Sepeda Motor Listrik</p>
+                <div class="info-grid ">
+                    <div class="info-box ">
+                        <span >EMAIL AKUN</span>
+                        <p ><span id="collector-profile-email">—</span></p>
                     </div>
-                    <div class="info-box collector-24692c0dde" data-portal-style="background:#f8fafc; border:1px solid #e2e8f0; padding:16px; border-radius:16px; text-align:left;">
-                        <span data-portal-style="font-size:0.7rem; font-weight:800; color:#64748b;" class="collector-fc15f7b0ca">WILAYAH TUGAS</span>
-                        <p data-portal-style="font-weight:700; margin:4px 0 0 0; color:#0f172a;" class="collector-6a6262f18b">Kota & Kabupaten Bandung</p>
+                    <div class="info-box ">
+                        <span >PERAN</span>
+                        <p >Petugas lapangan</p>
                     </div>
                 </div>
-                <button class="btn-primary collector-1c0833d367" data-portal-style="background:#fef2f2; color:#b42332; border: 1px solid #fee2e2;" onclick="logoutCollector()">
+                <button type="button" class="sp-button sp-button--quiet" onclick="switchView('earnings')">Lihat komisi</button>
+<button class="btn-primary " onclick="logoutCollector()">
                     <i class="fas fa-sign-out-alt"></i> Keluar Akun
                 </button>
             </div>
@@ -309,7 +315,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="assets/js/portal-announcements.js?v=phase1-final"></script>
-    <script src="assets/js/collector.js?v=phase5b"></script>
+    <script src="assets/js/collector.js?v=phase8"></script>
 </body>
 
 </html>

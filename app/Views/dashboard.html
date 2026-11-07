@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eco Portal | SAMPIRA</title>
+    <title>Portal Warga | SAMPIRA</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
-    <link rel="stylesheet" href="/assets/css/location-map.css?v=phase5b">
+    <link rel="stylesheet" href="/assets/css/location-map.css?v=phase8">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.6.1/dist/chart.umd.min.js" integrity="sha384-Emf5ZVIUiarAdhkgtqK+5/Z5qIvM6QoVrS+qAVtfyZVuD5lIHrac0me485+Antp0" crossorigin="anonymous"></script>
 
@@ -26,16 +26,18 @@
     <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase4b">
     <script src="/assets/js/portal-session.js?v=phase5b"></script>
     <link rel="stylesheet" href="/assets/css/facility-handling.css?v=phase4b">
-    <script type="module" src="/assets/js/facility-reports.js?v=history-cards"></script>
+    <script type="module" src="/assets/js/facility-reports.js?v=portal-redesign-2"></script>
     <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/sampira.css?v=phase6b-live">
-    <link rel="stylesheet" href="/assets/css/user-workspace.css?v=edukasi-pengaturan">
+    <link rel="stylesheet" href="/assets/css/user-workspace.css?v=phase8">
+    <link rel="stylesheet" href="/assets/css/user-theme.css?v=home-header-fresh">
     <script type="module" src="/assets/js/education.js?v=edukasi-pengaturan"></script>
     <script type="module" src="/assets/js/sampira-navigation.js?v=phase6b3"></script>
-    <script type="module" src="/assets/js/user-activity.js?v=beranda-3"></script>
+    <script type="module" src="/assets/js/user-activity.js?v=home-header-fresh"></script>
+<link rel="stylesheet" href="/assets/css/portal-design.css?v=roles-1">
 </head>
 
-<body class="portal-page role-warrior">
+<body class="sp-portal portal-page role-warrior">
 
     <!-- Mobile Header -->
     <div class="mobile-header">
@@ -54,7 +56,7 @@
     <aside class="sidebar" id="sidebar">
         <a href="home" class="sidebar-logo">
             <img src="/assets/img/sampira-mark.svg" width="36" height="36" alt="">
-            <span>SAMPIRA<small>Sistem Manajemen Pengelolaan Sampah Terpadu</small></span>
+            <span>SAMPIRA<small>Portal Warga</small></span>
         </a>
 
         <nav class="sidebar-nav" aria-label="Menu Warga">
@@ -94,7 +96,7 @@
         <!-- 1. Header / Profil Pengguna -->
         <header class="user-topbar">
             <div class="container user-topbar-inner">
-                <h1 id="workspace-label">Selamat datang kembali! 👋</h1>
+                <div class="sp-header-context"><span>Portal Warga <i class="fas fa-angle-right" aria-hidden="true"></i></span><h1 id="workspace-label">Beranda Anda</h1></div>
                 <div class="sp-header-controls">
                     <details class="sp-header-menu" id="sp-notifications">
                         <summary class="sp-header-bell" aria-label="Pemberitahuan"><i class="far fa-bell" aria-hidden="true"></i><span id="sp-notification-dot" hidden></span></summary>
@@ -126,23 +128,40 @@
             <!-- TAB: BERANDA (HOME OVERVIEW) -->
             <div id="beranda" class="tab-pane active">
                 <section class="sp-welcome-banner" aria-labelledby="sp-home-title">
-                    <div>
+                    <div class="sp-hero-copy">
                         <p class="sp-kicker" id="hero-welcome">Selamat datang!</p>
-                        <h2 id="sp-home-title">Selamat Datang di <span>SAMPIRA</span></h2>
-                        <p>Kelola penjemputan sampah, laporkan kondisi fasilitas, dan pelajari cara menjaga lingkungan bersama SAMPIRA.</p>
-                        <div class="sp-workspace-actions">
+                        <h2 id="sp-home-title">Bandung lebih bersih,<span>mulai dari Anda.</span></h2>
+                        <p>Ajukan penjemputan, laporkan fasilitas, dan pantau kontribusi Anda untuk Bandung yang lebih bersih.</p>
+                        <div class="sp-workspace-actions sp-hero-legacy-actions">
                             <button type="button" class="sp-button" data-sp-user-tab="setor-sampah"><i class="fas fa-truck" aria-hidden="true"></i> Ajukan Penjemputan</button>
                             <button type="button" class="sp-button sp-button--quiet" data-sp-user-tab="laporan-fasilitas" data-report-view="new"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Lapor Fasilitas</button>
                         </div>
                     </div>
+                    <figure class="sp-hero-visual">
+                        <img src="/assets/img/landing-bandung-1280.webp" alt="Petugas menerima sampah terpilah dari warga di depan Gedung Sate, Bandung" width="1280" height="853" fetchpriority="high">
+                        <figcaption><span><i class="fas fa-leaf" aria-hidden="true"></i></span><div><strong>Bersama menjaga Bandung</strong><small>Satu aksi baik, lingkungan lebih bersih.</small></div></figcaption>
+                    </figure>
                 </section>
+                <div class="sp-dashboard-state" hidden>
+                    <p id="dashboard-load-status" role="status"></p>
+                    <button id="dashboard-retry" class="sp-button sp-button--quiet" type="button" hidden>Coba lagi</button>
+                </div>
                 <dl class="sp-summary-grid" aria-label="Ringkasan aktivitas">
                     <div class="sp-summary-card"><i class="fas fa-truck" aria-hidden="true"></i><div><dt>Penjemputan aktif</dt><dd><span id="metric-active-pickups">—</span></dd></div></div>
                     <div class="sp-summary-card"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i><div><dt>Laporan fasilitas</dt><dd><span id="metric-total-reports">—</span></dd></div></div>
                     <div class="sp-summary-card"><i class="fas fa-gift" aria-hidden="true"></i><div><dt>Reward dibayar</dt><dd><span id="metric-total-reward">—</span></dd></div></div>
                     <div class="sp-summary-card"><i class="fas fa-calendar-check" aria-hidden="true"></i><div><dt>Status terbaru</dt><dd id="sp-home-latest-status">—</dd></div></div>
                 </dl>
-                    <section class="sp-panel sp-own-map-panel" aria-labelledby="own-map-title">
+                <section class="sp-home-quick" aria-labelledby="sp-quick-title">
+                    <h2 id="sp-quick-title">Aksi Cepat</h2>
+                    <p>Ajukan penjemputan atau laporkan fasilitas dari Beranda.</p>
+                    <div class="sp-home-quick-grid">
+                        <button type="button" data-sp-user-tab="setor-sampah"><i class="fas fa-truck" aria-hidden="true"></i><span><strong>Ajukan Penjemputan</strong><small>Minta penjemputan sampah terpilah di lokasi Anda.</small></span><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
+                        <button type="button" data-sp-user-tab="laporan-fasilitas" data-report-view="new"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i><span><strong>Lapor Fasilitas</strong><small>Laporkan fasilitas sampah yang penuh, rusak, atau tidak bersih.</small></span><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
+                    </div>
+                </section>
+
+                    <div class="sp-overview-layout"><section class="sp-panel sp-own-map-panel" aria-labelledby="own-map-title">
                         <h2 id="own-map-title">Peta Aktivitas Saya</h2>
                         <p>Sebaran lokasi penjemputan dan laporan fasilitas yang Anda buat.</p>
                         <div class="sp-home-map-frame">
@@ -154,36 +173,34 @@
                         </div>
                         <p id="own-map-status" role="status">Memuat lokasi…</p>
                         <button type="button" class="sp-button sp-button--quiet" id="own-map-more" hidden>Muat lokasi laporan berikutnya</button>
-                    </section>
-                <section class="sp-home-quick" aria-labelledby="sp-quick-title">
-                    <h2 id="sp-quick-title">Aksi Cepat</h2>
-                    <p>Ajukan penjemputan atau laporkan fasilitas dari Beranda.</p>
-                    <div class="sp-home-quick-grid">
-                        <button type="button" data-sp-user-tab="setor-sampah"><i class="fas fa-truck" aria-hidden="true"></i><span><strong>Ajukan Penjemputan</strong><small>Minta penjemputan sampah terpilah di lokasi Anda.</small></span><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
-                        <button type="button" data-sp-user-tab="laporan-fasilitas" data-report-view="new"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i><span><strong>Lapor Fasilitas</strong><small>Laporkan fasilitas sampah yang penuh, rusak, atau tidak bersih.</small></span><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
-                    </div>
-                </section>
+                    </section><section class="sp-panel sp-recent-panel" aria-labelledby="sp-recent-title">
+                        <div class="sp-section-heading"><h2 id="sp-recent-title">Aktivitas Terbaru</h2><button type="button" class="sp-button sp-button--quiet" data-sp-user-tab="riwayat-payout">Lihat Riwayat</button></div>
+                        <ul id="sp-recent-activity"><li>Memuat aktivitas…</li></ul>
+                    </section></div>
+
                 <div class="sp-workspace-grid">
-                    <section class="sp-panel" aria-labelledby="sp-home-request-title">
+                    <section class="sp-panel sp-request-status-panel" aria-labelledby="sp-home-request-title">
                         <div class="sp-section-heading"><h2 id="sp-home-request-title">Status Permintaan</h2><button type="button" class="sp-button sp-button--quiet" data-sp-user-tab="riwayat-payout">Lihat Riwayat</button></div>
                         <p>Pantau penjemputan yang sedang berjalan.</p>
                         <div id="active-pickups-container">Memuat data penjemputan…</div>
                     </section>
-                    <section class="sp-panel sp-recent-panel" aria-labelledby="sp-recent-title">
-                        <div class="sp-section-heading"><h2 id="sp-recent-title">Aktivitas Terbaru</h2><button type="button" class="sp-button sp-button--quiet" data-sp-user-tab="riwayat-payout">Lihat Riwayat</button></div>
-                        <ul id="sp-recent-activity"><li>Memuat aktivitas…</li></ul>
-                    </section>
+
                 </div>
                 <div class="sp-home-lower">
-                    <section class="sp-panel" aria-labelledby="sp-home-reward">
+                    <section class="sp-panel sp-reward-panel" aria-labelledby="sp-home-reward">
                         <h2 id="sp-home-reward">Ringkasan Reward</h2>
-                        <p>Penjemputan selesai <strong id="metric-completed-pickups">—</strong></p>
+                        <p>Reward dari penjemputan yang telah dibayarkan.</p>
+                        <div class="sp-reward-total"><span>Total reward dibayar</span><strong id="sp-home-paid-reward">—</strong></div>
+                        <div class="sp-reward-completed"><i class="fas fa-circle-check" aria-hidden="true"></i><strong id="metric-completed-pickups">—</strong><span>penjemputan selesai</span></div>
                         <button type="button" class="sp-button sp-button--quiet" data-sp-user-tab="riwayat-payout">Lihat Reward dan Pembayaran</button>
                     </section>
 
                     <section class="sp-panel" aria-labelledby="sp-home-contribution">
                         <h2 id="sp-home-contribution">Kontribusi bulanan</h2>
-                        <p data-inline-style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;" class="u-24f1ff00d4">Berat terverifikasi <strong id="metric-total-weight">—</strong> kg · Simulasi CO₂ <strong id="metric-total-carbon">—</strong> kg.</p>
+                        <div class="sp-contribution-stats">
+                            <div><span>Berat terverifikasi</span><strong><span id="metric-total-weight">—</span> <small>kg</small></strong></div>
+                            <div><span>Simulasi CO₂ dihemat</span><strong><span id="metric-total-carbon">—</span> <small>kg</small></strong></div>
+                        </div>
 
                         <p id="monthly-waste-empty" role="status">Memuat data kontribusi…</p>
                         <div class="sp-monthly-chart" hidden>
@@ -217,7 +234,7 @@
                         <p>Klik peta untuk memilih titik atau gunakan lokasi perangkat.</p>
                         <div id="pickup-location-search"></div>
                         <div id="pickup-location-picker"></div>
-                    </section>
+                    </section><div class="sp-request-fields">
 
                     <section class="sp-pickup-panel">
                         <h3><i class="far fa-clipboard" aria-hidden="true"></i> Data Permintaan</h3>
@@ -291,7 +308,7 @@
                         </dl>
                     </section>
 
-                    <div class="sp-workspace-actions sp-pickup-controls">
+                    </div><div class="sp-workspace-actions sp-pickup-controls">
                         <button type="button" class="sp-button sp-button--quiet" data-sp-user-tab="beranda"><i class="fas fa-arrow-left" aria-hidden="true"></i> Kembali</button>
                         <button type="submit" class="sp-button">Kirim Penjemputan</button>
                     </div>
@@ -305,13 +322,14 @@
                     <p data-inline-style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 32px;" class="u-3643694671">Pantau perjalanan sampah Anda dari penjemputan hingga verifikasi daur ulang akhir.</p>
 
                     <!-- Search Box Lacak -->
-                    <div class="tracking-search u-ca3ee3cf5a" data-inline-style="display: flex; gap: 16px; margin-bottom: 40px; max-width: 600px;">
+                    <form class="tracking-search" id="tracking-search-form">
                         <div class="input-wrapper u-6253876a64" data-inline-style="flex:1;">
                             <i class="fas fa-barcode" aria-hidden="true"></i>
                             <input type="text" id="track-number-search" aria-label="Nomor pelacakan" placeholder="Masukkan Nomor Tracking (ECR-XXXXXXXXX)">
                         </div>
-                        <button class="btn btn-secondary u-4fef9156b4" onclick="searchTracking()" data-inline-style="border-radius:12px; font-weight:700; padding:0 24px;">Lacak</button>
-                    </div>
+                        <button class="btn btn-secondary" id="tracking-submit" type="submit">Lacak</button>
+                    </form>
+                    <p id="tracking-feedback" role="status"></p>
 
                     <!-- Timeline Hasil Lacak -->
                     <div id="tracking-timeline-container" data-inline-style="display: none; animation: fadeIn 0.4s ease;" class="u-316af56250">
@@ -380,13 +398,13 @@
                     <div><strong>Profil Warga</strong><p>Perbarui informasi yang digunakan untuk penjemputan.</p></div>
                     <a class="sp-button sp-button--quiet" href="/profile">Buka Profil <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
                 </div>
-                <form id="settings-profile-form" class="sp-settings-form">
+                <div class="sp-settings-layout"><nav class="sp-settings-nav" aria-label="Bagian pengaturan"><p>Akun Anda</p><a href="#sp-settings-contact">Identitas &amp; kontak</a><a href="#sp-settings-location">Alamat penjemputan</a><a href="#sp-settings-reward">Pembayaran reward</a></nav><form id="settings-profile-form" class="sp-settings-form">
                     <section class="sp-pickup-panel" aria-labelledby="sp-settings-contact">
                         <h3 id="sp-settings-contact"><i class="far fa-address-card" aria-hidden="true"></i> Identitas &amp; Kontak</h3>
                         <div class="sp-settings-fields">
-                            <div class="sp-pickup-field"><label for="settings-name">Nama lengkap</label><input type="text" id="settings-name" autocomplete="name" required></div>
+                            <div class="sp-pickup-field"><label for="settings-name">Nama lengkap</label><input type="text" id="settings-name" autocomplete="name" maxlength="100" required></div>
                             <div class="sp-pickup-field"><label for="settings-email">Alamat email</label><input type="email" id="settings-email" readonly aria-describedby="sp-settings-email-note"><small id="sp-settings-email-note">Email terdaftar untuk masuk ke akun.</small></div>
-                            <div class="sp-pickup-field"><label for="settings-phone">Nomor HP / WhatsApp</label><input type="tel" id="settings-phone" autocomplete="tel" placeholder="Contoh: 08123456789"></div>
+                            <div class="sp-pickup-field"><label for="settings-phone">Nomor HP / WhatsApp</label><input type="tel" id="settings-phone" autocomplete="tel" maxlength="30" placeholder="Contoh: 08123456789"></div>
                         </div>
                     </section>
                     <section class="sp-pickup-panel" aria-labelledby="sp-settings-location">
@@ -405,7 +423,7 @@
                         </div>
                     </section>
                     <div class="sp-settings-actions"><button type="submit" class="sp-button"><i class="fas fa-save" aria-hidden="true"></i> Simpan Perubahan</button></div>
-                </form>
+                </form></div>
             </section>
 
             <section class="tab-pane" id="edukasi" data-portal-education aria-labelledby="sp-education-title">
@@ -448,9 +466,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="assets/js/portal-announcements.js?v=phase1-final"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
-    <script src="assets/js/user-map.js?v=pickup-cari"></script>
+    <script src="assets/js/user-map.js?v=phase8"></script>
     <script src="assets/js/waste-categories.js?v=20261029-categories2"></script>
-    <script src="assets/js/dashboard.js?v=history-cards"></script>
+    <script src="assets/js/dashboard.js?v=home-header-fresh"></script>
     <nav class="sp-user-mobile" aria-label="Navigasi pengguna">
         <button type="button" data-sp-user-tab="beranda"><i class="fas fa-house" aria-hidden="true"></i>Beranda</button>
         <button type="button" data-sp-user-tab="setor-sampah"><i class="fas fa-recycle" aria-hidden="true"></i>Setor</button>

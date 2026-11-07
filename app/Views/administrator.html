@@ -15,18 +15,21 @@
     <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/sampira.css?v=phase6b-live">
     <script type="module" src="/assets/js/operations.js?v=phase6b"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/portal-design.css?v=roles-1">
 </head>
-<body class="sp-console sp-system">
-    <main class="container sp-system-main" id="sp-system-main">
-        <header class="sp-system-header"><a class="sp-brand" href="/home"><img src="/assets/img/sampira-mark.svg" width="28" height="28" alt=""> SAMPIRA</a><h1>Administrator SAMPIRA</h1>
+<body class="sp-portal sp-console sp-system">
+    <aside class="sp-system-sidebar"><a class="sp-brand" href="/home"><img src="/assets/img/sampira-mark.svg" width="36" height="36" alt=""><span>SAMPIRA<small>Administrator</small></span></a><nav class="sp-system-nav" aria-label="Navigasi Administrator">
+            <a href="#sp-system-metrics">Ringkasan</a><a href="#content-view">Pengumuman</a><a href="#reward-payments-title">Pembayaran Reward</a>
+        </nav><p class="sp-system-scope">Administrasi operasional<br>Pengumuman dan pembayaran</p></aside>
+<main class="container sp-system-main" id="sp-system-main">
+        <header class="sp-system-header"><div><p class="sp-kicker">Portal Administrator</p><h1>Kontrol operasional SAMPIRA</h1></div>
 
         <form action="/logout" method="post">
             <button class="btn btn-primary" type="submit">Keluar</button>
         </form>
         </header>
-        <nav class="sp-system-nav" aria-label="Navigasi Administrator">
-            <a href="#sp-system-metrics">Ringkasan</a><a href="#content-view">Pengumuman</a><a href="#reward-payments-title">Pembayaran Reward</a>
-        </nav>
+
         <section class="sp-panel" id="sp-system-metrics" aria-labelledby="sp-metrics-title">
     <p class="sp-kicker">Ringkasan sistem</p><h2 id="sp-metrics-title">Aktivitas penjemputan dan reward</h2>
     <p role="status">Memuat ringkasan…</p>
@@ -43,6 +46,19 @@
             </div>
 
             <div class="cms-layout">
+                <section class="panel-card cms-list-panel">
+                    <div class="panel-heading-compact">
+                        <div>
+                            <span class="portal-eyebrow">Publikasi</span>
+                            <h3>Daftar Pengumuman</h3>
+                        </div>
+                        <span class="cms-count" id="announcement-count">0 konten</span>
+                    </div>
+                    <div id="announcement-admin-list" class="cms-announcement-list">
+                        <div class="portal-empty-state">Memuat pengumuman...</div>
+                    </div>
+                </section>
+
                 <section class="panel-card cms-editor-panel">
                     <div class="panel-heading-compact">
                         <div>
@@ -74,23 +90,10 @@
                         </button>
                     </form>
                 </section>
-
-                <section class="panel-card cms-list-panel">
-                    <div class="panel-heading-compact">
-                        <div>
-                            <span class="portal-eyebrow">Publikasi</span>
-                            <h3>Daftar Pengumuman</h3>
-                        </div>
-                        <span class="cms-count" id="announcement-count">0 konten</span>
-                    </div>
-                    <div id="announcement-admin-list" class="cms-announcement-list">
-                        <div class="portal-empty-state">Memuat pengumuman...</div>
-                    </div>
-                </section>
             </div>
         </div>
 
-        <section class="panel-card" aria-labelledby="reward-payments-title">
+        <section class="panel-card sp-payments" id="system-payments" aria-labelledby="reward-payments-title">
             <h2 id="reward-payments-title">Pencatatan Pembayaran Reward</h2>
             <p>Cocokkan transfer eksternal dengan kewajiban dan bukti sebelum mencatat pembayaran.</p>
             <output id="reward-payment-status"></output>

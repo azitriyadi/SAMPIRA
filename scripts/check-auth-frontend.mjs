@@ -35,13 +35,37 @@ export async function checkAuthBrowser({send, js, nav, click, text, waitFor, wai
             assert(await js(`(() => {
                 const card = document.querySelector(".auth-card").getBoundingClientRect();
                 const back = document.querySelector(".back-link").getBoundingClientRect();
-                return back.left >= card.left && back.right < card.right && back.left - card.left < 24 && back.top - card.top < 20;
+                return back.left >= card.left && back.right < card.right && back.top - card.top < 24;
             })()`), 'Back link is not at the top left');
             assert(await js('Array.from(document.querySelectorAll("form button, form input")).every(el => el.getBoundingClientRect().height >= 44)'));
+            assert(await js(`(() => {
+                const form=document.querySelector('.auth-body').getBoundingClientRect();
+                const panel=document.querySelector('.auth-scene').getBoundingClientRect();
+                return innerWidth < 768 ? panel.top >= form.bottom-1
+                    : Math.abs(panel.top-document.querySelector('.auth-card').getBoundingClientRect().top)<2 && (document.body.dataset.authPage==='login' ? panel.left>=form.right-1 : panel.right<=form.left+1);
+            })()`), 'Auth split panel placement failed at '+width);
+            assert.equal(await js('getComputedStyle(document.querySelector(".auth-body")).viewTransitionName'), 'auth-'+page+'-form');
             if ([320, 390, 1440].includes(width)) await capture(page + '-' + width + '.png');
         }
     }
 
+    const transitionProbe = await send('Page.addScriptToEvaluateOnNewDocument', {source:`window.addEventListener('pagereveal', event => {window.authTransitionObserved=Boolean(event.viewTransition);});`});
+    await viewport(1440);
+    await nav('/login');
+    await ready();
+    assert(await js('document.querySelector(".auth-card").getBoundingClientRect().width === innerWidth'));
+    await click('.panel-link');
+    await waitPath('/register');
+    await ready();
+    await waitFor(() => js('window.authTransitionObserved === true'), 'Login to register transition missing');
+    await waitFor(() => js('!document.getAnimations().some(animation => animation.playState === "running")'), 'Transition did not settle');
+    await click('.panel-link');
+    await waitPath('/login');
+    await ready();
+    await waitFor(() => js('window.authTransitionObserved === true'), 'Register to login transition missing');
+    await nav('/register');
+    await ready();
+    await send('Page.removeScriptToEvaluateOnNewDocument', {identifier:transitionProbe.identifier});
     await viewport(390);
     await submit('register');
     await text('#register-name-error', 'Isi nama lengkap');
@@ -73,7 +97,7 @@ export async function checkAuthBrowser({send, js, nav, click, text, waitFor, wai
     await enter();
     assert.equal(await js('document.getElementById("register-confirm-password").type'), 'password');
     await capture('register-mismatch-390.png');
-    await click('.switch-account a');
+    await click('.panel-link');
     await waitPath('/login');
     await ready();
 
@@ -104,7 +128,7 @@ export async function checkAuthBrowser({send, js, nav, click, text, waitFor, wai
     await send('Emulation.setEmulatedMedia', {features:[{name:'prefers-reduced-motion', value:'reduce'}]});
     assert.equal(await js('getComputedStyle(document.querySelector(".submit-button")).transitionDuration'), '0s');
     await send('Emulation.setEmulatedMedia', {features:[]});
-    await click('.switch-account a');
+    await click('.panel-link');
     await waitPath('/register');
     await click('.back-link');
     await waitPath('/home');

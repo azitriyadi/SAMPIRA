@@ -81,6 +81,7 @@ export async function checkLocationBrowser({send, js, login, click, text, waitFo
 
     async function dragMarker(selector) {
         await ready(selector);
+        await js("new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
         const {x, y} = await waitFor(() => js('(() => { const el = document.querySelector(' + q(selector) +
             '); const r = el.getBoundingClientRect(); const x = Math.round(r.left + r.width / 2); const y = Math.round(r.top + r.height / 2);' +
             'return el.contains(document.elementFromPoint(x, y)) ? {x,y} : null; })()'), 'Marker drag target was covered in ' + selector);
@@ -88,6 +89,7 @@ export async function checkLocationBrowser({send, js, login, click, text, waitFo
         await send('Input.dispatchMouseEvent', {type: 'mousePressed', x, y, button: 'left', clickCount: 1});
         for (const delta of [9, 20, 34]) {
             await send('Input.dispatchMouseEvent', {type: 'mouseMoved', x: x + delta, y: y + delta / 2, buttons: 1, button: 'left'});
+            await js('new Promise(requestAnimationFrame)');
         }
         await send('Input.dispatchMouseEvent', {type: 'mouseReleased', x: x + 34, y: y + 17, button: 'left', clickCount: 1});
     }
@@ -177,8 +179,25 @@ export async function checkLocationBrowser({send, js, login, click, text, waitFo
     await click('.swal2-confirm');
     await js('window.fetch = requestPickupFetch; void 0');
     assert.equal(Number(await readValue('#pickup-latitude')), saved[0]);
+    await js(`window.phase7PickupRequests = [];
+        window.fetch = async (url, options) => {
+            const response = await requestPickupFetch(url, options);
+            if (!String(url).endsWith('/request_pickup')) return response;
+            const result = await response.clone().json();
+            phase7PickupRequests.push({key:options.headers['Idempotency-Key'], code:response.status, id:result.data?.pickup_id});
+            if (phase7PickupRequests.length === 1) throw new TypeError('Simulated lost pickup response');
+            return response;
+        }; void 0`);
+    await submit('#pickup-request-form');
+    await text('.swal2-html-container', 'Gagal menghubungi server.');
+    await click('.swal2-confirm');
     await submit('#pickup-request-form');
     await text('.swal2-title', 'Permohonan Berhasil');
+    const retries = await js('phase7PickupRequests');
+    assert.deepEqual(retries.map(item => item.code), [201,200]);
+    assert(retries[0].key && retries[0].key === retries[1].key);
+    assert.equal(retries[0].id, retries[1].id);
+    await js('window.fetch = requestPickupFetch; delete window.phase7PickupRequests; void 0');
     const tracking = await js('document.querySelector(".swal2-html-container strong").textContent');
     await click('.swal2-confirm');
     await text(userMap, saved.join(', '));

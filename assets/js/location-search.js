@@ -1,4 +1,8 @@
+const mountedSearches = new WeakMap();
+let nextRequestAt = 0;
+
 export function mountLocationSearch(host, pickerHost, picker, prefix) {
+    mountedSearches.get(host)?.();
     host.innerHTML = `
         <div class="sp-pickup-field">
             <label for="${prefix}-address-search">Cari jalan atau tempat di Bandung</label>
@@ -15,21 +19,29 @@ export function mountLocationSearch(host, pickerHost, picker, prefix) {
     const searchButton = host.querySelector(`#${prefix}-search-button`);
     const searchStatus = host.querySelector(`#${prefix}-search-status`);
     const searchResults = host.querySelector(`#${prefix}-search-results`);
+    const form = host.closest('form');
+    let revision = 0;
+    let controller;
 
     function clearSearch() {
+        revision++;
+        controller?.abort();
+        controller = null;
+        searchButton.disabled = false;
         searchResults.replaceChildren();
         searchResults.hidden = true;
         searchStatus.textContent = '';
     }
 
     searchInput.addEventListener('input', clearSearch);
-    host.closest('form').addEventListener('reset', clearSearch);
-    searchInput.addEventListener('keydown', event => {
+    form.addEventListener('reset', clearSearch);
+    function onKey(event) {
         if (event.key !== 'Enter' || event.isComposing) return;
         event.preventDefault();
         searchButton.click();
-    });
-    searchButton.addEventListener('click', async () => {
+    }
+    searchInput.addEventListener('keydown', onKey);
+    async function search() {
         clearSearch();
         const query = searchInput.value.trim();
         if (query.length < 3) {
@@ -39,14 +51,23 @@ export function mountLocationSearch(host, pickerHost, picker, prefix) {
         }
         searchButton.disabled = true;
         searchStatus.textContent = 'Mencari lokasi…';
+        const run = revision;
+        const task = new AbortController();
+        controller = task;
         try {
+            const scheduled = Math.max(Date.now(), nextRequestAt);
+            nextRequestAt = scheduled + 1100;
+            const wait = Math.max(0,scheduled-Date.now());
+            if (wait) await new Promise(resolve => setTimeout(resolve,wait));
+            if (run !== revision || !host.isConnected) return;
             const endpoint = new URL('https://photon.komoot.io/api/');
             endpoint.search = new URLSearchParams({q: query, bbox: '107.50,-7.00,107.75,-6.80', limit: '5'});
-            const response = await fetch(endpoint, {credentials: 'omit', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(8000)});
+            const response = await fetch(endpoint, {credentials: 'omit', referrerPolicy: 'no-referrer',
+                signal:AbortSignal.any([task.signal,AbortSignal.timeout(8000)])});
             if (!response.ok) throw new Error('Pencarian gagal');
             const {features} = await response.json();
-            if (searchInput.value.trim() !== query) return;
-            for (const feature of features) {
+            if (run !== revision || !host.isConnected) return;
+            for (const feature of Array.isArray(features) ? features : []) {
                 const [longitude, latitude] = feature.geometry?.coordinates || [];
                 if (feature.geometry?.type !== 'Point' || !Number.isFinite(latitude) || !Number.isFinite(longitude)) continue;
                 const {name, street, district, city} = feature.properties || {};
@@ -68,9 +89,25 @@ export function mountLocationSearch(host, pickerHost, picker, prefix) {
             searchResults.hidden = !searchResults.childElementCount;
             searchStatus.textContent = searchResults.hidden ? 'Lokasi tidak ditemukan. Coba nama jalan lain.' : 'Pilih salah satu hasil pencarian.';
         } catch {
-            if (searchInput.value.trim() === query) searchStatus.textContent = 'Pencarian tidak tersedia. Pilih titik di peta atau isi alamat secara manual.';
+            if (run === revision && !task.signal.aborted) searchStatus.textContent = 'Pencarian tidak tersedia. Pilih titik di peta atau isi alamat secara manual.';
         } finally {
-            searchButton.disabled = false;
+            if (run === revision) {
+                controller=null;
+                searchButton.disabled = false;
+            }
         }
-    });
+    }
+    searchButton.addEventListener('click',search);
+    function dispose() {
+        clearSearch();
+        searchInput.removeEventListener('input',clearSearch);
+        searchInput.removeEventListener('keydown',onKey);
+        searchButton.removeEventListener('click',search);
+        form.removeEventListener('reset',clearSearch);
+        window.removeEventListener('pagehide',dispose);
+        mountedSearches.delete(host);
+    }
+    mountedSearches.set(host,dispose);
+    window.addEventListener('pagehide',dispose,{once:true});
+    return dispose;
 }

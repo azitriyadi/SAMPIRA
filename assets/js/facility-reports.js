@@ -1,8 +1,9 @@
-import {mountReportForm} from './facility-report-form.js?v=facility-layout';
+import {mountReportForm} from './facility-report-form.js?v=portal-redesign-2';
 import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=admin-6b4';
 import {base, request} from './facility-api.js?v=phase5b';
-import {mountPublicHandling} from './facility-handling.js?v=admin-6b4';
-import {mountLocationDetail} from './location-map.js?v=phase5b';
+import {mountPublicHandling} from './facility-handling.js?v=phase8';
+import {mountLocationDetail} from './location-map.js?v=phase8';
+import {facilityMapStates} from './map-core.js?v=phase8';
 
 const pageLimit = 20;
 
@@ -150,14 +151,15 @@ function init(root) {
         const action = admin ? $('verify') : $('revise');
         action.hidden = true;
         try {
-            const report = await request(base + '/' + id);
+            const detail = await request(base + '/' + id);
+            const [report] = await facilityMapStates([detail],request,base);
             if (sequence !== detailRequest) return;
             selected = report;
             $('detail-message').hidden = true;
             const location = document.createElement('div');
             $('detail').replaceChildren(reportDetails(report, admin, base), location);
             disposeLocation = mountLocationDetail(location, {
-                title: 'Titik lokasi fasilitas', point: report, address: report.address, reported: true, autoTiles: true
+                title: 'Titik lokasi fasilitas', point: report, address: report.address, reported: true, autoTiles: true, kind:'facility'
             });
             if (!admin) mountPublicHandling($('detail'), report);
             action.hidden = admin ? report.status !== 'pending' : report.status !== 'revision_required';

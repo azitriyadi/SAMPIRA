@@ -7,515 +7,23 @@
     <title>Profil Saya | SAMPIRA</title>
     <link rel="stylesheet" href="assets/css/style.css?v=20261029-quality5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
 
-    <style>
-        /* Sidebar & Layout Styles */
-        :root {
-            --sidebar-width: 280px;
-            --sidebar-bg: #064e3b;
-            --sidebar-text: #a7f3d0;
-            --sidebar-hover: rgba(255, 255, 255, 0.05);
-            --sidebar-active: #10b981;
-        }
 
-        body.portal-page {
-            min-height: 100vh;
-            margin: 0;
-            background-color: var(--gray-50);
-            color: var(--text-primary);
-            font-family: 'Outfit', sans-serif;
-            overflow-x: hidden;
-        }
-
-        .sidebar {
-            width: var(--sidebar-width);
-            background: var(--sidebar-bg);
-            color: white;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            display: flex;
-            flex-direction: column;
-            padding: 32px 0;
-            z-index: 1001;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .sidebar-logo {
-            padding: 0 32px;
-            margin-bottom: 48px;
-            font-size: 1.6rem;
-            font-weight: 900;
-            text-decoration: none;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            letter-spacing: -0.5px;
-        }
-
-        .sidebar-logo i {
-            color: var(--sidebar-active);
-            font-size: 2rem;
-        }
-
-        .sidebar-nav {
-            flex: 1;
-            padding: 0 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .nav-group-label {
-            padding: 16px 16px 8px 16px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #34d399;
-        }
-
-        .sidebar-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            border-radius: 12px;
-            color: var(--sidebar-text);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: background-color 0.2s, color 0.2s, transform 0.2s;
-            cursor: pointer;
-        }
-
-        .sidebar-item:hover {
-            background: var(--sidebar-hover);
-            color: white;
-        }
-
-        .sidebar-item.active {
-            background: var(--sidebar-active);
-            color: white;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
-        }
-
-        .sidebar-footer {
-            padding: 24px 16px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .user-profile-side {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 16px;
-        }
-
-        .user-profile-side .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #087443;
-            color: white;
-            font-weight: 900;
-        }
-
-        .user-info {
-            flex: 1;
-        }
-
-        .user-name-side {
-            display: block;
-            font-weight: 700;
-            font-size: 0.9rem;
-            color: white;
-        }
-
-        .user-role-side {
-            display: block;
-            font-size: 0.75rem;
-            color: #a7f3d0;
-        }
-
-        .portal-content {
-            margin-left: var(--sidebar-width);
-            width: calc(100% - var(--sidebar-width));
-            transition: margin-left 0.3s, width 0.3s;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .mobile-header {
-            display: none;
-        }
-
-        /* Profile Tabs */
-        .profile-tabs-wrapper {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 30px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .header-tab {
-            font-weight: 700;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: background-color 0.3s, border-color 0.3s, color 0.3s, transform 0.3s;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            background: var(--white);
-            border: 1px solid var(--gray-200);
-        }
-
-        .header-tab:hover {
-            color: var(--brand-dark);
-            border-color: var(--gray-300);
-        }
-
-        .header-tab.active {
-            color: var(--brand-primary);
-            border-color: var(--brand-primary);
-            background: rgba(16, 185, 129, 0.05);
-        }
-
-        /* Main Content Grid */
-        .profile-dashboard {
-            flex: 1;
-            padding: 40px 20px 80px 20px;
-            max-width: 900px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* Centered User Info */
-        .profile-header-centered {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .avatar-glow {
-            width: 100px;
-            height: 100px;
-            margin: 0 auto 16px auto;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--brand-primary), #047857);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            font-weight: 900;
-            color: white;
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.25);
-            border: 4px solid var(--white);
-        }
-
-        .user-name {
-            font-size: 1.6rem;
-            font-weight: 900;
-            margin-bottom: 6px;
-            color: var(--brand-dark);
-        }
-
-        .premium-badge {
-            display: inline-block;
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--brand-primary);
-            padding: 6px 16px;
-            border-radius: 50px;
-            font-size: 0.75rem;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-
-        /* Right Content Area */
-        .content-area {
-            background: var(--white);
-            border: 1px solid var(--gray-200);
-            border-radius: 24px;
-            padding: 50px;
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
-        }
-
-        .pane {
-            display: none;
-            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .pane.active {
-            display: block;
-        }
-
-        .pane-header {
-            margin-bottom: 30px;
-            border-bottom: 2px solid var(--gray-100);
-            padding-bottom: 20px;
-        }
-
-        .pane-header h2 {
-            font-size: 1.8rem;
-            font-weight: 900;
-            color: var(--brand-dark);
-            margin-bottom: 8px;
-        }
-
-        .pane-header p {
-            color: var(--text-secondary);
-            font-size: 1rem;
-        }
-
-        /* Forms & Data Displays */
-        .data-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .data-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .data-group label {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .data-input {
-            background: var(--gray-50);
-            border: 1px solid var(--gray-200);
-            padding: 16px;
-            border-radius: 12px;
-            color: var(--brand-dark);
-            font-family: inherit;
-            font-size: 1rem;
-            font-weight: 700;
-            transition: border-color 0.3s, background 0.3s;
-            width: 100%;
-        }
-
-        .data-input:focus {
-            outline: none;
-            border-color: var(--brand-primary);
-            background: var(--white);
-            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
-        }
-
-        .data-input[readonly] {
-            opacity: 0.7;
-            cursor: not-allowed;
-            color: var(--text-secondary);
-        }
-
-        .action-btn {
-            background: var(--brand-primary);
-            color: white;
-            border: none;
-            padding: 16px 32px;
-            border-radius: 12px;
-            font-weight: 800;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background-color 0.3s, border-color 0.3s, color 0.3s, transform 0.3s;
-            margin-top: 30px;
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
-            width: 100%;
-            justify-content: center;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.3);
-            background: #059669;
-        }
-
-        /* Toggle Switch */
-        .setting-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 24px 0;
-            border-bottom: 1px solid var(--gray-100);
-        }
-
-        .setting-info h4 {
-            font-size: 1.1rem;
-            color: var(--brand-dark);
-            margin-bottom: 4px;
-        }
-
-        .setting-info p {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .toggle {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 28px;
-        }
-
-        .toggle input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: var(--gray-300);
-            transition: background-color .4s, transform .4s;
-            border-radius: 34px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 20px;
-            width: 20px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: background-color .4s, transform .4s;
-            border-radius: 50%;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-
-        input:checked+.slider {
-            background-color: var(--brand-primary);
-        }
-
-        input:checked+.slider:before {
-            transform: translateX(22px);
-        }
-
-        /* Responsive Improvements */
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            .sidebar.active {
-                transform: translateX(0);
-            }
-            .portal-content {
-                margin-left: 0;
-                width: 100%;
-            }
-            .mobile-header {
-                display: flex;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 64px;
-                background: white;
-                border-bottom: 1px solid #e2e8f0;
-                padding: 0 20px;
-                align-items: center;
-                justify-content: space-between;
-                z-index: 1000;
-            }
-            .profile-dashboard {
-                padding-top: 100px;
-            }
-            .sidebar-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(15, 23, 42, 0.5);
-                backdrop-filter: blur(4px);
-                z-index: 1000;
-                display: none;
-            }
-
-            .data-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .content-area {
-                padding: 30px 20px;
-            }
-
-            .pane-header h2 {
-                font-size: 1.5rem;
-            }
-
-            .avatar-glow {
-                width: 80px;
-                height: 80px;
-                font-size: 2rem;
-            }
-
-            .user-name {
-                font-size: 1.4rem;
-            }
-
-            .setting-row {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 16px;
-            }
-
-            .toggle {
-                align-self: flex-start;
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(15px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    @media (prefers-reduced-motion: reduce) { .pane { animation: none; } .sidebar, .sidebar-item, .main-content, .action-btn, .slider, .slider::before { transition: none; } }
-    </style>
     <script src="/assets/js/portal-session.js?v=phase1-final"></script>
     <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/sampira.css?v=phase6b-live">
 
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/portal-design.css?v=roles-1">
 </head>
 
-<body class="portal-page sp-profile">
+<body class="sp-portal portal-page sp-profile">
     <!-- Mobile Header -->
     <div class="mobile-header">
-        <a href="home" class="mobile-logo" style="font-weight: 900; text-decoration: none; color: #1e293b; display: flex; align-items: center; gap: 8px; font-size: 1.2rem;">
+        <a href="home" class="mobile-logo">
             <img src="/assets/img/sampira-mark.svg" width="30" height="30" alt=""> SAMPIRA
         </a>
-        <button type="button" class="hamburger-btn" id="mobileMenuToggle" aria-label="Menu profil" style="background: none; border: none; font-size: 1.5rem; color: #1e293b; cursor: pointer;">
+        <button type="button" class="hamburger-btn" id="mobileMenuToggle" aria-label="Menu profil">
             <i class="fas fa-bars"></i>
         </button>
     </div>
@@ -532,16 +40,16 @@
         <div class="sidebar-nav">
             <div class="nav-group-label">Menu Pengguna</div>
             <div id="sidebar-menu-content">
-                <a href="dashboard" class="sidebar-item" style="text-decoration:none;">
+                <a href="dashboard" class="sidebar-item">
                     <i class="fas fa-home"></i> Beranda
                 </a>
-                <a href="dashboard" class="sidebar-item" style="text-decoration:none;">
+                <a href="dashboard" class="sidebar-item">
                     <i class="fas fa-recycle"></i> Setor Sampah
                 </a>
-                <a href="dashboard" class="sidebar-item" style="text-decoration:none;">
+                <a href="dashboard" class="sidebar-item">
                     <i class="fas fa-truck-pickup"></i> Lacak Status
                 </a>
-                <a href="dashboard" class="sidebar-item" style="text-decoration:none;">
+                <a href="dashboard" class="sidebar-item">
                     <i class="fas fa-history"></i> Riwayat Payout
                 </a>
             </div>
@@ -555,8 +63,8 @@
                     <span class="user-role-side" id="nav-user-role">Warga</span>
                 </div>
             </div>
-            <div style="padding: 0 16px; margin-top: 8px;">
-                <a href="login" onclick="logoutProfile(event)" style="display: flex; align-items: center; gap: 12px; font-weight: 700; color: #f87171; text-decoration: none; padding: 12px; border-radius: 12px; transition: background 0.3s;">
+            <div>
+                <a href="login" onclick="logoutProfile(event)">
                     <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Keluar
                 </a>
             </div>
@@ -579,6 +87,7 @@
                 <div class="avatar-glow" id="profile-avatar-glow">EW</div>
                 <h1 class="user-name" id="profile-user-name">Memuat...</h1>
                 <div class="premium-badge" id="profile-user-role">Warga SAMPIRA</div>
+                <p id="profile-load-status" role="status"></p><button type="button" class="sp-button sp-button--quiet" id="profile-retry" hidden>Muat ulang profil</button>
             </div>
 
             <section class="content-area">
@@ -589,27 +98,27 @@
                         <h2>Data Diri</h2>
                         <p>Kelola data identitas dan alamat donasi sampah Anda.</p>
                     </div>
-                    <form>
+                    <form id="profile-data-form">
                         <div class="data-grid">
                             <div class="data-group">
                                 <label for="profile-input-name">Nama Lengkap</label>
-                                <input type="text" class="data-input" id="profile-input-name" value="">
+                                <input type="text" class="data-input" id="profile-input-name" maxlength="100" required value="">
                             </div>
                             <div class="data-group">
                                 <label for="profile-input-phone">Nomor WhatsApp Aktif</label>
-                                <input type="tel" class="data-input" id="profile-input-phone" value="" placeholder="Masukkan Nomor WA">
+                                <input type="tel" class="data-input" id="profile-input-phone" maxlength="30" value="" placeholder="Masukkan Nomor WA">
                             </div>
-                            <div class="data-group" style="grid-column: 1 / -1;">
+                            <div class="data-group sp-data-wide">
                                 <label for="profile-input-email">Alamat Email</label>
                                 <input type="email" class="data-input" id="profile-input-email" value="" readonly>
                             </div>
-                            <div class="data-group" style="grid-column: 1 / -1;">
+                            <div class="data-group sp-data-wide">
                                 <label for="profile-input-address">Alamat Utama Penjemputan (Bandung)</label>
-                                <textarea id="profile-input-address" class="data-input" rows="4"></textarea>
+                                <textarea id="profile-input-address" maxlength="500" class="data-input" rows="4"></textarea>
                             </div>
                         </div>
-                        <button type="button" class="action-btn" onclick="alert('Profil berhasil diperbarui!')"><i class="fas fa-save"></i> Simpan Perubahan</button>
-                    </form>
+                        <button type="submit" class="action-btn"><i class="fas fa-save"></i> Simpan Perubahan</button>
+                    <p id="profile-save-status" role="status"></p></form>
                 </div>
 
                 <!-- PANE 2: Pengaturan -->
@@ -619,35 +128,8 @@
                         <p>Sesuaikan keamanan akun dan metode payout reward Anda.</p>
                     </div>
 
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <h4>Notifikasi WhatsApp</h4>
-                            <p>Terima update otomatis status kurir dan payout via WA.</p>
-                        </div>
-                        <label class="toggle" for="profile-notify-whatsapp"><input id="profile-notify-whatsapp" type="checkbox" aria-label="Notifikasi WhatsApp" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <h4>Autentikasi Dua Faktor</h4>
-                            <p>Tingkatkan lapisan keamanan saat login baru.</p>
-                        </div>
-                        <label class="toggle" for="profile-two-factor"><input id="profile-two-factor" type="checkbox" aria-label="Autentikasi dua faktor">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-
-                    <div class="setting-row" style="border-bottom: none;">
-                        <div class="setting-info">
-                            <h4>Kata Sandi</h4>
-                            <p>Perbarui keamanan akun berkala.</p>
-                        </div>
-                        <button type="button" class="action-btn" style="margin-top:0; width: auto; background: #1e293b; box-shadow:none; padding: 12px 24px;" onclick="alert('Membuka formulir penggantian kata sandi...')">
-                            <i class="fas fa-key"></i> Ubah Password
-                        </button>
-                    </div>
+                    <div class="sp-profile-note"><h3>Profil dan tujuan pembayaran</h3><p>Data profil dapat diperbarui pada tab Data Profil. Tujuan pembayaran reward dikelola melalui Pengaturan di Portal Warga.</p><a class="action-btn" href="/dashboard">Buka Portal Warga</a></div>
+                    <p class="sp-note">Perubahan kata sandi, autentikasi dua faktor, dan notifikasi WhatsApp belum tersedia.</p>
                 </div>
 
                 <!-- PANE 3: Kebijakan -->
@@ -656,14 +138,14 @@
                         <h2>Kebijakan & Privasi</h2>
                         <p>Persyaratan setoran sampah dan privasi data.</p>
                     </div>
-                    <div style="background: var(--gray-50); padding: 30px; border-radius: 16px; border: 1px solid var(--gray-200); color: var(--text-secondary); line-height: 1.8; max-height: 400px; overflow-y: auto;">
-                        <h4 style="color: var(--brand-dark); margin-bottom: 10px; font-size: 1.1rem;">1. Ketentuan Sampah</h4>
-                        <p style="margin-bottom: 20px;">SAMPIRA menyediakan kategori organik, anorganik terpilah, elektronik, serta B3 rumah tangga. Pilih satu kategori untuk setiap pengajuan. B3 harus dipisahkan dan jenis serta kondisinya dijelaskan; penjemputannya menyesuaikan kesiapan penanganan. Kategori B3 rumah tangga bukan untuk limbah medis, industri, atau bahan peledak.</p>
+                    <div>
+                        <h4>1. Ketentuan Sampah</h4>
+                        <p>SAMPIRA menyediakan kategori organik, anorganik terpilah, elektronik, serta B3 rumah tangga. Pilih satu kategori untuk setiap pengajuan. B3 harus dipisahkan dan jenis serta kondisinya dijelaskan; penjemputannya menyesuaikan kesiapan penanganan. Kategori B3 rumah tangga bukan untuk limbah medis, industri, atau bahan peledak.</p>
 
-                        <h4 style="color: var(--brand-dark); margin-bottom: 10px; font-size: 1.1rem;">2. Keamanan Data</h4>
-                        <p style="margin-bottom: 20px;">Kami mengenkripsi nama, alamat penjemputan, dan kontak WhatsApp Anda untuk kebutuhan sinkronisasi kurir kolektor di lapangan. Data tidak akan disalahgunakan atau dibagikan ke pihak ketiga di luar logistik sampah.</p>
+                        <h4>2. Keamanan Data</h4>
+                        <p>Kami mengenkripsi nama, alamat penjemputan, dan kontak WhatsApp Anda untuk kebutuhan sinkronisasi kurir kolektor di lapangan. Data tidak akan disalahgunakan atau dibagikan ke pihak ketiga di luar logistik sampah.</p>
 
-                        <h4 style="color: var(--brand-dark); margin-bottom: 10px; font-size: 1.1rem;">3. Hak Penghapusan Akun</h4>
+                        <h4>3. Hak Penghapusan Akun</h4>
                         <p>Warga berhak penuh meminta penghapusan seluruh data identitas dan riwayat transaksi donasi mereka dari basis data kami kapan saja melalui pusat bantuan.</p>
                     </div>
                 </div>
@@ -674,6 +156,7 @@
 
     <script>
         // Interactive Tab Switching Logic for Profile Tabs
+        let profileData;
         const headerTabs = document.querySelectorAll('.header-tab');
         const panes = document.querySelectorAll('.pane');
 
@@ -717,44 +200,56 @@
 
         // Read the profile from the current server session
         async function loadUserData() {
-            const user = await portalUser('user');
-            if (!user) return;
-
-            // Sidebar Data
-            const navUserName = document.getElementById('nav-user-name');
-            const navUserRole = document.getElementById('nav-user-role');
-            const navUserAvatar = document.getElementById('nav-user-avatar');
-
-            if(navUserName) navUserName.innerText = user.name;
-            if(navUserRole) navUserRole.textContent = user.role === 'user' ? 'Warga' : user.role;
-            if(navUserAvatar) navUserAvatar.innerText = user.name.substring(0, 2).toUpperCase();
-
-            // Profile Header Data
-            const profileName = document.getElementById('profile-user-name');
-            const profileRole = document.getElementById('profile-user-role');
-            const profileAvatar = document.getElementById('profile-avatar-glow');
-
-            if(profileName) profileName.innerText = user.name;
-            if(profileRole) {
-                profileRole.textContent = user.role === 'user' ? 'Warga SAMPIRA' : user.role;
-            }
-            if(profileAvatar) profileAvatar.innerText = user.name.substring(0, 2).toUpperCase();
-
-            // Profile Form Data
-            const inputName = document.getElementById('profile-input-name');
-            const inputEmail = document.getElementById('profile-input-email');
-
-            if(inputName) inputName.value = user.name;
-            if(inputEmail) inputEmail.value = user.email;
-            document.getElementById('profile-input-phone').value = user.phone || '';
-            document.getElementById('profile-input-address').value = user.address || '';
+            const status=document.getElementById('profile-load-status');
+            const retry=document.getElementById('profile-retry');
+            const save=document.querySelector('#profile-data-form [type=submit]');
+            save.disabled=true; retry.hidden=true; status.textContent='Memuat profil…';
+            try {
+                const user=await portalUser('user');
+                if (!user) throw Error('Profile unavailable');
+                profileData=user;
+                for (const id of ['nav-user-name','profile-user-name']) document.getElementById(id).textContent=user.name;
+                document.getElementById('nav-user-role').textContent='Warga';
+                document.getElementById('profile-user-role').textContent='Warga SAMPIRA';
+                for (const id of ['nav-user-avatar','profile-avatar-glow']) document.getElementById(id).textContent=user.name.substring(0,2).toUpperCase();
+                for (const field of ['name','email','phone','address']) document.getElementById('profile-input-'+field).value=user[field] || '';
+                status.textContent='';
+            } catch {
+                profileData=null;
+                status.textContent='Profil belum dapat dimuat. Periksa koneksi lalu coba lagi.';
+                retry.hidden=false;
+            } finally { save.disabled=!profileData; }
         }
+        document.getElementById('profile-retry').addEventListener('click',loadUserData);
 
         function logoutProfile(e) {
             if(e) e.preventDefault();
             logoutPortal();
         }
 
+        document.getElementById('profile-data-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            if (!profileData) return;
+            const button=event.target.querySelector('[type=submit]');
+            const status=document.getElementById('profile-save-status');
+            if (button.disabled) return;
+            button.disabled=true; status.textContent='Menyimpan profil…';
+            try {
+                const response=await portalFetch('/api/user/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+                    name:document.getElementById('profile-input-name').value.trim(),
+                    phone:document.getElementById('profile-input-phone').value.trim(),
+                    address:document.getElementById('profile-input-address').value.trim(),
+                    payout_method:profileData.payout_method || '',payout_account_name:profileData.payout_account_name || '',payout_account_number:profileData.payout_account_number || ''
+                })});
+                const result=await response.json();
+                if (!response.ok || result.status!=='success') throw Error('Simpan profil gagal. Periksa isian dan coba lagi.');
+                profileData=result.data;
+                document.getElementById('profile-user-name').textContent=result.data.name;
+                document.getElementById('nav-user-name').textContent=result.data.name;
+                status.textContent='Profil berhasil disimpan.';
+            } catch { status.textContent='Profil belum dapat disimpan. Periksa isian atau koneksi, lalu coba lagi.'; }
+            finally {button.disabled=false;}
+        });
         // Run on load
         loadUserData();
     </script>

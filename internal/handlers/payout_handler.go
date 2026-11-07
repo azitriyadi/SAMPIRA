@@ -148,6 +148,10 @@ func (a *App) VerifyPickupHandler(w http.ResponseWriter, r *http.Request) {
 		httpx.SendResponse(w, "error", "Gagal mencatat riwayat verifikasi.", nil, http.StatusInternalServerError)
 		return
 	}
+	if err := awardPickupContribution(r.Context(), tx, pickupID, user.ID, finalWeight, amount, notes); err != nil {
+		phase9Error(w)
+		return
+	}
 	if err := tx.Commit(); err != nil {
 		httpx.SendResponse(w, "error", transactionCommitMessage, nil, http.StatusInternalServerError)
 		return

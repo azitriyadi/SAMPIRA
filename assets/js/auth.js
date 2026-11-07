@@ -34,7 +34,8 @@ form.addEventListener('input', event => {
 function validateRegistration() {
     const length = new TextEncoder().encode(password.value).length;
     const errors = [
-        [nameInput, nameInput.value.trim() ? '' : 'Isi nama lengkap.'],
+        [nameInput, !nameInput.value.trim() ? 'Isi nama lengkap.' :
+            [...nameInput.value.trim()].length > 100 ? 'Nama lengkap maksimal 100 karakter.' : ''],
         [password, length >= 6 && length <= 72 ? '' : 'Kata sandi harus terdiri dari 6 hingga 72 byte.'],
         [confirmation, password.value === confirmation.value ? '' : 'Konfirmasi kata sandi belum cocok.']
     ];
@@ -45,6 +46,7 @@ function validateRegistration() {
 }
 
 function serverMessage(status) {
+    if (kind === 'register' && status === 409) return 'Email sudah digunakan. Masuk atau gunakan email lain.';
     if (status === 403) return 'Permintaan ditolak. Muat ulang halaman dan coba lagi.';
     if (status === 429) return 'Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.';
     if (status >= 500) return 'Layanan sedang bermasalah. Coba lagi dalam beberapa saat.';
@@ -72,7 +74,7 @@ form.addEventListener('submit', async event => {
     if (pending || form.hidden) return;
     errorBanner.hidden = true;
     if (kind === 'register' && !validateRegistration()) return;
-    const payload = {email: email.value, password: password.value};
+    const payload = {email: email.value.trim().toLowerCase(), password: password.value};
     if (nameInput) payload.name = nameInput.value.trim();
     setPending(true);
     let navigating = false;
@@ -90,7 +92,6 @@ form.addEventListener('submit', async event => {
         if (kind === 'register') {
             form.reset();
             form.hidden = true;
-            document.querySelector('.switch-account').hidden = true;
             const success = document.getElementById('register-success');
             success.hidden = false;
             success.focus();
@@ -103,6 +104,7 @@ form.addEventListener('submit', async event => {
         }
         form.reset();
         navigating = true;
+        disableAuthTransition();
         window.location.assign(destinations[role]);
     } catch {
         showError('Tidak dapat terhubung ke layanan. Periksa koneksi dan coba lagi.');
@@ -121,4 +123,33 @@ for (const toggle of form.querySelectorAll('.password-toggle')) {
 }
 window.addEventListener('pageshow', event => {
     if (event.persisted) setPending(false);
+});
+
+// A transition can be cancelled normally when the destination is not an auth page.
+function settleAuthTransition(event) {
+    const destination=event.activation?.entry?.url;
+    if (destination && !['/login','/register'].includes(new URL(destination).pathname)) {
+        event.viewTransition?.skipTransition();
+    }
+    event.viewTransition?.ready.catch(() => {});
+    event.viewTransition?.finished.catch(() => {});
+}
+window.addEventListener('pageswap', settleAuthTransition);
+window.addEventListener('pagereveal', settleAuthTransition);
+
+function disableAuthTransition() {
+    if (document.getElementById('auth-leave-transition')) return;
+    const style=document.createElement('style');
+    style.id='auth-leave-transition';
+    style.textContent='@view-transition { navigation:none; }';
+    document.head.append(style);
+}
+document.addEventListener('click', event => {
+    const link=event.target.closest('a[href]');
+    if (!link || event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    const target=new URL(link.href,location.href);
+    if (target.origin !== location.origin || !['/login','/register'].includes(target.pathname)) disableAuthTransition();
+});
+window.addEventListener('pageshow',event => {
+    if (event.persisted) document.getElementById('auth-leave-transition')?.remove();
 });

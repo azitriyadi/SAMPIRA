@@ -135,8 +135,18 @@ func main() {
 	if err := migrations.ApplyEducationContent(context.Background(), db); err != nil {
 		log.Fatalf("Gagal menyiapkan skema Pusat Edukasi: %v", err)
 	}
+	if err := migrations.ApplyPickupIdempotency(context.Background(), db); err != nil {
+		log.Fatalf("Gagal menyiapkan idempotency penjemputan: %v", err)
+	}
+	if err := migrations.ApplyRegistrationUnicode(context.Background(), db); err != nil {
+		log.Fatalf("Gagal menyiapkan teks registrasi Unicode: %v", err)
+	}
 
 	mux := http.NewServeMux()
+	if err := migrations.ApplyContributions(context.Background(), db); err != nil {
+		log.Fatalf("Gagal menyiapkan skema kontribusi Phase 9: %v", err)
+	}
+	app.RegisterContributions(mux)
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {

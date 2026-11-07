@@ -20,6 +20,19 @@ var preciseLocationsDDL string
 //go:embed 005_education_content.sql
 var educationContentDDL string
 
+//go:embed 006_pickup_idempotency.sql
+var pickupIdempotencyDDL string
+
+//go:embed 007_registration_unicode.sql
+var registrationUnicodeDDL string
+
+//go:embed 008_rewards_points_vouchers.sql
+var contributionDDL string
+
+func ApplyContributions(ctx context.Context, db *sql.DB) error {
+	return applySQL(ctx, db, contributionDDL)
+}
+
 // ApplyFacilityReports runs additive, individually retryable DDL.
 func ApplyFacilityReports(ctx context.Context, db *sql.DB) error {
 	return applySQL(ctx, db, facilityReportsDDL)
@@ -35,6 +48,21 @@ func ApplyPreciseLocations(ctx context.Context, db *sql.DB) error {
 
 func ApplyEducationContent(ctx context.Context, db *sql.DB) error {
 	return applySQL(ctx, db, educationContentDDL)
+}
+
+func ApplyPickupIdempotency(ctx context.Context, db *sql.DB) error {
+	return applySQL(ctx, db, pickupIdempotencyDDL)
+}
+
+func ApplyRegistrationUnicode(ctx context.Context, db *sql.DB) error {
+	var ready int
+	err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM information_schema.COLUMNS
+		WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME IN ('name','email')
+		AND COLLATION_NAME='utf8mb4_unicode_ci'`).Scan(&ready)
+	if err != nil || ready == 2 {
+		return err
+	}
+	return applySQL(ctx, db, registrationUnicodeDDL)
 }
 
 func applySQL(ctx context.Context, db *sql.DB, ddl string) error {

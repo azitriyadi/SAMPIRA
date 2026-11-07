@@ -124,6 +124,22 @@ try {
         await waitPath('/login');
     }
 
+    if (process.env.SAMPIRA_TEST_PORTAL_DESIGN_ONLY === '1') {
+        const {checkPortalDesign} = await import('./check-portal-design.mjs');
+        await checkPortalDesign({send, js, nav, login, click, text, waitFor, profile});
+        assert.deepEqual(exceptions, [], 'Four-role JavaScript exceptions');
+        assert.deepEqual(consoleErrors, [], 'Four-role console errors');
+    } else if (process.env.SAMPIRA_TEST_AUTH_ONLY === '1') {
+        const {checkAuthBrowser} = await import('./check-auth-frontend.mjs');
+        await checkAuthBrowser({send, js, nav, click, text, waitFor, waitPath, profile});
+        assert.deepEqual(exceptions, [], 'Auth JavaScript exceptions');
+        assert.deepEqual(consoleErrors, [], 'Auth console errors');
+    } else if (process.env.SAMPIRA_TEST_PHASE8_ONLY === '1') {
+        const {checkPhase8Browser} = await import('./check-phase8-frontend.mjs');
+        await checkPhase8Browser({send, js, nav, login, click, text, waitFor, profile});
+        assert.deepEqual(exceptions, [], 'Uncaught JavaScript exceptions in Phase 8');
+        assert.deepEqual(consoleErrors, [], 'Application console errors in Phase 8');
+    } else {
     await nav('/');
     await waitFor(() => js('document.readyState === "complete"'), 'Landing incomplete');
     await click('#estimator summary');
@@ -256,8 +272,13 @@ try {
         await checkPhase6Browser({send, js, nav, login, click, text, waitFor, profile});
         const {checkUserWorkspace} = await import('./check-user-frontend.mjs');
         await checkUserWorkspace({send, js, nav, login, click, text, waitFor, profile});
+        const {checkPhase8Browser} = await import('./check-phase8-frontend.mjs');
+        await checkPhase8Browser({send, js, nav, login, click, text, waitFor, profile});
+        const {checkPortalDesign} = await import('./check-portal-design.mjs');
+        await checkPortalDesign({send, js, nav, login, click, text, waitFor, profile});
         assert.deepEqual(exceptions, [], 'Uncaught JavaScript exceptions in Phase 6B');
         assert.deepEqual(consoleErrors, [], 'Application console errors in Phase 6B');
+    }
     }
 } finally {
     socket?.close();

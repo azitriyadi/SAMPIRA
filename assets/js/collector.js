@@ -2,7 +2,7 @@ let globalActiveMission = null;
 let missionSequence = 0;
 let disposeMissionLocation;
 const missionLocation = document.getElementById('mission-location');
-const missionMaps = import('/assets/js/location-map.js?v=phase5b');
+const missionMaps = import('/assets/js/location-map.js?v=phase8');
 
 function clearMissionLocation() {
     ++missionSequence;
@@ -334,32 +334,51 @@ function renderCollectorDashboard(list, userId) {
     if (historyBody) historyBody.innerHTML = result.historyHtml || '<tr><td colspan="4" style="text-align:center; padding:16px; color:#64748b;">Belum ada riwayat misi penjemputan selesai.</td></tr>';
 }
 
+let collectorLoadSequence=0;
+const collectorStatus=document.getElementById('collector-load-status');
+const collectorRetry=document.getElementById('collector-retry');
 async function loadCollectorData() {
-    const user = await portalUser('petugas');
-    if (!user) return;
-
-    // Set UI Profile Info
-    document.getElementById('desktop-greeting').innerText = `Halo, ${user.name}. Tinjau penjemputan dan tugas fasilitasmu.`;
-    document.getElementById('mobile-name').innerText = user.name;
-    document.getElementById('profile-name').innerText = user.name;
-    document.getElementById('mobile-avatar').innerText = user.name.substring(0, 2).toUpperCase();
-    document.getElementById('profile-avatar-large').innerText = user.name.substring(0, 2).toUpperCase();
-
-    // Fetch Collector Pickups
-    portalFetch('api/ecorecycle/list_pickups?type=petugas', {
-        method: 'GET',
-    })
-    .then(res => {
-        if (res.status === 401 || res.status === 403) { logoutPortal(); return {}; }
-        return res.json();
-    })
-    .then(data => {
-        if (data.status === 'success') renderCollectorDashboard(data.data, user.id);
-    })
-    .catch(err => {
-        console.error('Error loading collector data:', err);
-    });
+    const run=++collectorLoadSequence;
+    collectorStatus.parentElement.hidden=false;
+    collectorStatus.textContent='Memuat daftar penjemputan…';
+    collectorRetry.hidden=true;
+    try {
+        const user=await portalUser('petugas');
+        if (run !== collectorLoadSequence) return;
+        if (!user) throw new Error('Profile unavailable');
+        document.getElementById('desktop-greeting').innerText=`Halo, ${user.name}. Tinjau penjemputan dan tugas fasilitasmu.`;
+        document.getElementById('mobile-name').innerText=user.name;
+        document.getElementById('profile-name').innerText=user.name;
+        document.getElementById('collector-profile-email').textContent=user.email;
+        document.getElementById('mobile-avatar').innerText=user.name.substring(0,2).toUpperCase();
+        document.getElementById('profile-avatar-large').innerText=user.name.substring(0,2).toUpperCase();
+        const response=await portalFetch('/api/ecorecycle/list_pickups?type=petugas',{signal:AbortSignal.timeout(15000)});
+        if (run !== collectorLoadSequence) return;
+        if (response.status === 401 || response.status === 403) {logoutPortal();return;}
+        const data=await response.json();
+        if (run !== collectorLoadSequence) return;
+        if (!response.ok || data.status !== 'success' || !Array.isArray(data.data)) throw new Error('Tasks unavailable');
+        renderCollectorDashboard(data.data,user.id);
+        collectorStatus.parentElement.hidden=true;
+    } catch {
+        if (run !== collectorLoadSequence) return;
+        globalActiveMission=null;
+        collectorStatus.textContent='Daftar penjemputan belum dapat dimuat.';
+        collectorRetry.hidden=false;
+        upcomingList.textContent='Coba muat ulang daftar penjemputan.';
+        historyBody.replaceChildren();
+        document.getElementById('stat-active-tasks').textContent='—';
+        document.getElementById('stat-packages').textContent='—';
+    }
 }
+collectorRetry.addEventListener('click',loadCollectorData);
+window.addEventListener('sampira:session-ended',() => {collectorLoadSequence++;clearMissionLocation();});
+window.addEventListener('focus',() => {
+    if (document.hidden) return;
+    if (document.getElementById('view-dashboard').classList.contains('active')) void loadCollectorData();
+    else if (document.getElementById('view-active-mission').classList.contains('active') && globalActiveMission)
+        void viewActiveMission(globalActiveMission.tracking_number);
+});
 
 function logoutCollector() {
     logoutPortal();

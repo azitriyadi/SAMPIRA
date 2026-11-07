@@ -88,16 +88,24 @@ try {
     if (process.env.SAMPIRA_TEST_PHASE4 === '1') {
         execFileSync(process.execPath, [resolve('scripts/check-phase4-handling.mjs')], {cwd, env, stdio: 'inherit'});
     }
-    if (process.env.SAMPIRA_TEST_CHROME) {
-        execFileSync(process.execPath, [resolve('scripts/check-phase1-browser.mjs')], {cwd, env, stdio: 'inherit'});
-    }
     if (process.env.SAMPIRA_TEST_PHASE5 === '1') {
         assert.equal(process.env.SAMPIRA_TEST_PHASE4, '1', 'Phase 5 migration needs the populated Phase 4 fixture.');
         execFileSync(process.execPath, [resolve('scripts/check-phase5-locations.mjs')], {cwd, env, stdio: 'inherit'});
     }
-    if (process.env.SAMPIRA_TEST_PHASE6 === '1') {
-        assert.equal(process.env.SAMPIRA_TEST_PHASE5, '1', 'Phase 6 migration needs the populated Phase 5 fixture.');
+    if (process.env.SAMPIRA_TEST_PHASE6 === '1' || process.env.SAMPIRA_TEST_PHASE6_BROWSER_PREP === '1') {
+        if (process.env.SAMPIRA_TEST_PHASE6 === '1') {
+            assert.equal(process.env.SAMPIRA_TEST_PHASE5, '1', 'Phase 6 migration needs the populated Phase 5 fixture.');
+        }
         execFileSync(process.execPath, [resolve('scripts/check-phase6-education.mjs')], {cwd, env, stdio: 'inherit'});
+    }
+    if (process.env.SAMPIRA_TEST_PHASE7 === '1') {
+        execFileSync(process.execPath, [resolve('scripts/check-phase7.mjs')], {cwd, env, stdio: 'inherit'});
+    }
+    if (process.env.SAMPIRA_TEST_PHASE9 === '1') {
+        execFileSync(process.execPath, [resolve('scripts/check-phase9.mjs')], {cwd, env, stdio: 'inherit'});
+    }
+    if (process.env.SAMPIRA_TEST_CHROME) {
+        execFileSync(process.execPath, [resolve('scripts/check-phase1-browser.mjs')], {cwd, env, stdio: 'inherit'});
     }
 } finally {
     server.kill();

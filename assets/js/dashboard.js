@@ -567,15 +567,17 @@ function renderUserActivePickup(item) {
     const statusMeta = getPickupStatusMeta(item.status);
     const badgeClass = getStatusBadgeClass(item.status);
     const pendingActions = item.status === 'pending' ? `
+                        <div class="sp-request-actions">
                         <button type="button" class="btn btn-outline pickup-flow-track-btn" data-edit-tracking="${escapePortalHTML(item.tracking_number)}" onclick="editPendingPickup(this.dataset.editTracking)">Edit</button>
                         <button type="button" class="btn btn-outline pickup-flow-track-btn danger" data-tracking="${escapePortalHTML(item.tracking_number)}" onclick="cancelPendingPickup(this.dataset.tracking)">Batalkan</button>
+                        </div>
                     ` : '';
     return `
                         <div class="active-pickup-card pickup-flow-card">
                             <div class="pickup-flow-card-main">
-                                <span style="font-size:0.75rem; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">No. Tracking</span>
-                                <h4 style="font-weight:900; color:var(--brand-dark); margin:2px 0;">${escapePortalHTML(item.tracking_number)}</h4>
-                                <p style="font-size:0.8rem; color:var(--text-secondary); margin:4px 0 0 0;">${escapePortalHTML(item.category_name)} • ${weight} KG</p>
+                                <span class="sp-request-eyebrow">Penjemputan aktif</span>
+                                <h4>${escapePortalHTML(item.category_name)} <span>· ${weight} kg</span></h4>
+                                <p class="sp-request-tracking">${escapePortalHTML(item.tracking_number)}</p>
                             </div>
                             <div class="pickup-flow-card-status">
                                 <div class="pickup-flow-icon"><i class="fas ${statusMeta.icon}"></i></div>
@@ -600,8 +602,15 @@ function summarizeUserPickups(pickups) {
             const weight = Number(item.final_weight_kg);
             summary.totalWeight += weight;
             summary.totalCarbon += weight * 2.5;
-            const month = new Date(item.verified_at || item.created_at).toLocaleString('id-ID', {month: 'short', year: 'numeric'});
-            summary.monthlyWeights[month] = (summary.monthlyWeights[month] || 0) + weight;
+            const verifiedDate = new Date(item.verified_at || item.created_at);
+            if (Number.isFinite(verifiedDate.valueOf())) {
+                const parts = new Intl.DateTimeFormat('en-US', {
+                    year:'numeric',month:'2-digit',timeZone:'Asia/Jakarta'
+                }).formatToParts(verifiedDate);
+                const month = parts.find(part => part.type === 'year').value + '-' +
+                    parts.find(part => part.type === 'month').value;
+                summary.monthlyWeights[month] = (summary.monthlyWeights[month] || 0) + weight;
+            }
         }
         if (item.payment_status === 'paid') summary.totalReward += Number(item.reward_amount);
         summary.activeHtml += renderUserActivePickup(item);
@@ -692,6 +701,7 @@ function renderUserDashboard(pickups) {
     document.getElementById('metric-total-weight').innerText = summary.totalWeight.toFixed(1);
     document.getElementById('metric-total-carbon').innerText = summary.totalCarbon.toFixed(1);
     document.getElementById('metric-total-reward').innerText = new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR', minimumFractionDigits: 0}).format(summary.totalReward);
+    document.getElementById('sp-home-paid-reward').textContent = document.getElementById('metric-total-reward').textContent;
     document.getElementById('metric-active-pickups').textContent = summary.activeCount;
     document.getElementById('metric-completed-pickups').textContent = summary.completedCount;
     const latest = pickups.reduce((current, item) =>
@@ -716,7 +726,7 @@ function renderAccountName(name) {
     document.getElementById('hero-welcome').innerText = `Halo, ${name}!`;
     document.getElementById('user-display-name').innerText = name;
     document.getElementById('profile-avatar').innerText = name.substring(0, 2).toUpperCase();
-    workspaceLabel.dataset.greeting = `Selamat datang kembali, ${name.trim().split(/\s+/)[0]}! 👋`;
+    workspaceLabel.dataset.greeting = 'Beranda Anda';
     if (document.getElementById('beranda').classList.contains('active')) {
         workspaceLabel.textContent = workspaceLabel.dataset.greeting;
     }
@@ -725,53 +735,80 @@ function renderAccountName(name) {
 workspaceLabel.dataset.greeting = workspaceLabel.textContent;
 
 // 4. Load User Data & Pickups
+let dashboardLoadSequence = 0;
+let dashboardProfileLoaded = false;
+const dashboardStatus = document.getElementById('dashboard-load-status');
+const dashboardRetry = document.getElementById('dashboard-retry');
 async function loadDashboardData() {
-    const user = await portalUser('user');
-    if (!user) return;
+    const run = ++dashboardLoadSequence;
+    dashboardStatus.textContent = 'Memuat data penjemputan…';
+    dashboardStatus.parentElement.hidden = false;
+    dashboardRetry.hidden = true;
+    try {
+        const user = await portalUser('user');
+        if (run !== dashboardLoadSequence) return;
+        if (!user) throw new Error('Profile unavailable');
     
-    // Set Profile Info
-    renderAccountName(user.name);
+        // Set Profile Info
+        renderAccountName(user.name);
     
-    const settingsName = document.getElementById('settings-name');
-    const settingsEmail = document.getElementById('settings-email');
-    if (settingsName) settingsName.value = user.name;
-    if (settingsEmail) settingsEmail.value = user.email;
-
-    const donorNameInput = document.getElementById('form-donor-name');
-    if (donorNameInput) donorNameInput.value = user.name;
-    populateProfileFields(user);
-
-    // Fetch Pickups from API
-    portalFetch('api/ecorecycle/list_pickups?type=user', {
-        method: 'GET',
-    })
-    .then(res => {
-        if (res.status === 401 || res.status === 403) {
-            logoutUser();
+        if (!dashboardProfileLoaded) {
+            populateProfileFields(user);
+            dashboardProfileLoaded = true;
         }
-        return res.json();
-    })
-    .then(data => {
-        if (data.status === 'success') renderUserDashboard(data.data);
-        else window.dispatchEvent(new Event('sampira:user-pickups-failed'));
-    })
-    .catch(err => {
+
+        // Fetch Pickups from API
+        const response = await portalFetch('/api/ecorecycle/list_pickups?type=user', {
+            signal:AbortSignal.timeout(15000)
+        });
+        if (run !== dashboardLoadSequence) return;
+        if (response.status === 401 || response.status === 403) { logoutUser(); return; }
+        const data = await response.json();
+        if (run !== dashboardLoadSequence) return;
+        if (!response.ok || data.status !== 'success' || !Array.isArray(data.data)) throw new Error('Pickup data unavailable');
+        renderUserDashboard(data.data);
+        dashboardStatus.parentElement.hidden = true;
+    } catch {
+        if (run !== dashboardLoadSequence) return;
+        dashboardStatus.textContent = 'Data penjemputan belum dapat dimuat. Coba lagi.';
+        dashboardRetry.hidden = false;
+        pickupHistory=[];
+        renderPickupHistory();
         historyMessage.textContent = 'Riwayat penjemputan belum dapat dimuat.';
+        document.getElementById('active-pickups-container').textContent = 'Status permintaan belum dapat dimuat.';
+        for (const id of ['metric-total-weight','metric-total-carbon','metric-total-reward','sp-home-paid-reward',
+            'metric-active-pickups','metric-completed-pickups','sp-home-latest-status']) {
+            document.getElementById(id).textContent = '—';
+        }
+        monthlyChart?.destroy();
+        monthlyChart=null;
+        document.querySelector('.sp-monthly-chart').hidden=true;
+        const chartStatus=document.getElementById('monthly-waste-empty');
+        chartStatus.hidden=false;
+        chartStatus.textContent='Data kontribusi belum dapat dimuat.';
         window.dispatchEvent(new Event('sampira:user-pickups-failed'));
-        console.error('Error fetching dashboard data:', err);
-    });
+    }
 }
+dashboardRetry.addEventListener('click',loadDashboardData);
+window.addEventListener('sampira:session-ended',() => {dashboardLoadSequence++;});
+window.addEventListener('sampira:user-view',event => {
+    if (event.detail === 'beranda') void loadDashboardData();
+});
+window.addEventListener('focus',() => {
+    if (document.getElementById('beranda').classList.contains('active') && !document.hidden) void loadDashboardData();
+});
 
 // 5. Submit New Pickup Form
 const pickupForm = document.getElementById('pickup-request-form');
 if (pickupForm) {
     let picker;
+    let pendingRequest;
     const submit = pickupForm.querySelector('button[type="submit"]');
     const host = document.getElementById('pickup-location-picker');
     const requestTitle = document.getElementById('form-request-title');
     locationMaps.then(({mountLocationPicker}) => {
         picker = mountLocationPicker(host, {title: 'Titik Lokasi Penjemputan', prefix: 'pickup', digits: 7});
-        import('/assets/js/location-search.js?v=1').then(({mountLocationSearch}) => {
+        import('/assets/js/location-search.js?v=phase8').then(({mountLocationSearch}) => {
             mountLocationSearch(document.getElementById('pickup-location-search'), host, picker, 'pickup');
         }).catch(() => {
             document.getElementById('pickup-location-search').textContent = 'Pencarian belum tersedia.';
@@ -838,14 +875,21 @@ if (pickupForm) {
         if (photoInput && photoInput.files.length > 0) {
             formData.append('photo', photoInput.files[0]);
         }
+        const signature = JSON.stringify([...formData].filter(([name]) => name !== 'photo'));
+        const photo = photoInput?.files[0] || null;
+        if (!pendingRequest || pendingRequest.signature !== signature || pendingRequest.photo !== photo) {
+            pendingRequest = {signature, photo, key: crypto.randomUUID()};
+        }
 
         portalFetch('api/ecorecycle/request_pickup', {
             method: 'POST',
+            headers: {'Idempotency-Key': pendingRequest.key},
             body: formData
         })
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
+                pendingRequest = null;
                 Swal.fire({
                     icon: 'success',
                     title: 'Permohonan Berhasil!',
@@ -892,13 +936,22 @@ if (pickupForm) {
 
 // 6. Track Search
 let trackingSequence = 0;
+let trackingController;
+const trackingFeedback=document.getElementById('tracking-feedback');
+const trackingSubmit=document.getElementById('tracking-submit');
 window.addEventListener('sampira:session-ended', resetTracking);
-document.getElementById('track-number-search')?.addEventListener('keydown', event => {
-    if (event.key === 'Enter') searchTracking();
+document.getElementById('tracking-search-form').addEventListener('submit', event => {
+    event.preventDefault();
+    searchTracking();
 });
+document.getElementById('track-number-search').addEventListener('input',resetTracking);
 
 function resetTracking() {
     ++trackingSequence;
+    trackingController?.abort();
+    trackingController=null;
+    trackingFeedback.textContent='';
+    trackingSubmit.disabled=false;
     clearUserPickupMap();
     const container = document.getElementById('tracking-timeline-container');
     container.style.display = 'none';
@@ -913,24 +966,24 @@ function searchTracking() {
     const trackingNum = input.value.trim();
 
     if (trackingNum === '') {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Kolom Kosong',
-            text: 'Silakan masukkan nomor tracking terlebih dahulu.',
-            confirmButtonColor: '#10b981'
-        });
+        resetTracking();
+        trackingFeedback.textContent='Masukkan nomor tracking penjemputan.';
+        input.focus();
         return;
     }
 
     resetTracking();
     const sequence = trackingSequence;
+    trackingController=new AbortController();
+    trackingFeedback.textContent='Memuat detail penjemputan…';
+    trackingSubmit.disabled=true;
     portalFetch(`api/ecorecycle/pickup_status?tracking_number=${encodeURIComponent(trackingNum)}`, {
-        method: 'GET',
+        method: 'GET', signal:AbortSignal.any([trackingController.signal,AbortSignal.timeout(15000)])
     })
-    .then(res => res.json())
-    .then(data => {
+    .then(async response => ({ok:response.ok,data:await response.json()}))
+    .then(({ok,data}) => {
         if (sequence !== trackingSequence) return;
-        if (data.status === 'success') {
+        if (ok && data.status === 'success') {
             const item = data.data;
             const history = item.history || [];
             showPickupOnUserMap(item);
@@ -985,23 +1038,17 @@ function searchTracking() {
             `;
 
             container.style.display = 'block';
+            trackingFeedback.textContent='Detail penjemputan siap.';
         } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Tidak Ditemukan',
-                text: 'Nomor tracking tidak terdaftar.',
-                confirmButtonColor: '#10b981'
-            });
+            trackingFeedback.textContent='Detail belum tersedia. Periksa nomor tracking dan akses akun Anda.';
         }
     })
     .catch(err => {
         if (sequence !== trackingSequence) return;
-        Swal.fire({
-            icon: 'error',
-            title: 'Kesalahan',
-            text: 'Gagal terhubung ke server.',
-            confirmButtonColor: '#10b981'
-        });
+        trackingFeedback.textContent='Detail penjemputan gagal dimuat. Coba lagi.';
+    })
+    .finally(() => {
+        if (sequence === trackingSequence) trackingSubmit.disabled=false;
     });
 }
 
@@ -1092,8 +1139,10 @@ function renderChart(monthlyWeights) {
     const ctx = document.getElementById('monthlyWasteChart');
     if (!ctx) return;
 
-    const labels = Object.keys(monthlyWeights).reverse();
-    const weights = Object.values(monthlyWeights).reverse();
+    const months = Object.keys(monthlyWeights).sort();
+    const labels = months.map(month => new Date(month+'-01T00:00:00+07:00')
+        .toLocaleString('id-ID',{month:'short',year:'numeric',timeZone:'Asia/Jakarta'}));
+    const weights = months.map(month => monthlyWeights[month]);
 
     if (monthlyChart) {
         monthlyChart.destroy();
@@ -1115,9 +1164,9 @@ function renderChart(monthlyWeights) {
             datasets: [{
                 label: 'Berat Sampah (KG)',
                 data: weights,
-                backgroundColor: '#8faa73',
-                borderRadius: 3,
-                barThickness: 24
+                backgroundColor: '#277355',
+                borderRadius: 6,
+                maxBarThickness: 40
             }]
         },
         options: {

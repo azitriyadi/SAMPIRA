@@ -81,3 +81,30 @@
     .location-map { height: 13rem; }
     .location-actions > .location-action { flex: 1 1 100%; }
 }
+
+/* Shared Phase 8 status markers. Icons and labels carry meaning alongside color. */
+.sp-status-tone-waiting { --map-color:#946b13; }
+.sp-status-tone-accepted { --map-color:#286596; }
+.sp-status-tone-progress { --map-color:#77539e; }
+.sp-status-tone-complete { --map-color:#287044; }
+.sp-status-tone-rejected { --map-color:#a43d3d; }
+.sp-status-tone-revision { --map-color:#af591c; }
+.sp-status-tone-neutral { --map-color:#5f6c64; }
+.leaflet-marker-icon.sp-status-pin { display:grid; place-items:center; border:2px solid white; border-radius:50% 50% 50% 5px; background:var(--map-color,#5f6c64); color:white; box-shadow:0 1px 4px #182c2340; }
+.sp-status-pin svg { width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.sp-status-legend { display:flex; flex-wrap:wrap; gap:7px 16px; list-style:none; margin:10px 0 0; padding:0; color:#4b6459; font-size:.77rem; }
+.sp-status-legend li { display:flex; align-items:center; gap:6px; }
+.sp-status-dot { display:inline-block; flex-shrink:0; width:9px; height:9px; border-radius:50%; background:var(--map-color); }
+.sp-pin-count { position:absolute; top:-6px; right:-7px; min-width:17px; padding:1px 3px; border-radius:10px; background:#fff; color:#182c23; font:700 10px/1.4 Inter,system-ui,sans-serif; box-shadow:0 1px 3px #182c2330; }
+.sp-map-popup { max-width:calc(100vw - 115px); font:13px/1.5 Inter,system-ui,sans-serif; color:#182c23; }
+.sp-map-popup :is(p,small,strong) { overflow-wrap:anywhere; }
+.sp-map-popup .sp-map-open { min-height:44px; }
+.location-panel { --location-green:#174c3c; --location-ink:#182c23; background:#fff; border-color:#d4e1d8; border-radius:14px; }
+.location-panel .location-map { height:clamp(240px,36vh,350px); background:#eaf3eb; background-image:none; border-color:#d4e1d8; }
+.location-coordinate-grid input { border-color:#acbdb3; font-size:.9rem; }
+.location-panel :focus-visible { outline-color:#963d10; }
+.location-pin-T { background:#174c3c; }
+.location-panel .location-action { border-radius:8px; transition:background-color 170ms ease; }
+@media (prefers-reduced-motion:reduce) {
+    .location-panel .location-action { transition:none; }
+}

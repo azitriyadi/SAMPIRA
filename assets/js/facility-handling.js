@@ -2,7 +2,7 @@ import {base, request} from './facility-api.js?v=phase5b';
 import {adminTable, categories, element, options} from './facility-report-ui.js?v=admin-6b4';
 import {button, handlingCard, handlingEvent, handlingStatuses, handlingSummary} from './facility-handling-ui.js?v=admin-6b4';
 import {handlingActions, openHandlingForm} from './facility-handling-form.js?v=phase4b';
-import {mountLocationDetail} from './location-map.js?v=phase5b';
+import {mountLocationDetail} from './location-map.js?v=phase8';
 
 const listPath = base + '/handling';
 const pageLimit = 20;
@@ -250,7 +250,7 @@ function workspace(root) {
             const location = element('div');
             detailBody.replaceChildren(handlingSummary(report, role), location, actions, history.root);
             disposeLocation = mountLocationDetail(location, {
-                title: 'Titik lokasi fasilitas', point: report, address: report.address, reported: true, autoTiles: true,
+                title: 'Titik lokasi fasilitas', point: report, address: report.address, reported: true, autoTiles: true, kind:'facility',
                 navigation: admin ? null : {...navigation, authorize, recheck: true}
             });
             void history.load();

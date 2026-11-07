@@ -35,10 +35,6 @@ body.role-warrior .user-workspace { margin-top: 20px; }
 .sp-map-legend li { display: inline-flex; align-items: center; gap: 6px; font-size: .84rem; }
 .sp-map-legend i { color: var(--sp-green); }
 .sp-map-legend li + li i { color: #94440c; }
-.sp-owned-pin { display: grid; place-items: center; border-radius: 50% 50% 50% 9px; background: #174c3c; border: 2px solid white; color: white; box-shadow: 0 2px 5px #163d2c66; }
-.sp-owned-pin--facility { background: #a04b13; }
-.sp-owned-pin--group { background: #2f4a76; grid-auto-flow: column; }
-.sp-owned-pin--group.sp-owned-pin--facility.sp-owned-pin--pickup { background: linear-gradient(90deg, #174c3c 50%, #a04b13 50%); }
 #sp-recent-activity { list-style: none; padding: 0; margin: 4px 0 10px; }
 .sp-location-row { border-bottom: 1px solid var(--sp-border); padding: 8px 0; }
 .sp-location-record { display: grid; gap: 3px; color: var(--sp-ink); overflow-wrap: anywhere; }

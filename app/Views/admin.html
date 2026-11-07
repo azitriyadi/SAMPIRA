@@ -9,17 +9,19 @@
     <script src="/assets/js/portal-session.js?v=phase5b" defer></script>
     <link rel="stylesheet" href="/assets/css/facility-handling.css?v=phase4b">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
-    <link rel="stylesheet" href="/assets/css/location-map.css?v=phase5b">
+    <link rel="stylesheet" href="/assets/css/location-map.css?v=phase8">
     <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
-    <script type="module" src="/assets/js/facility-reports.js?v=admin-6b4"></script>
+    <script type="module" src="/assets/js/facility-reports.js?v=phase8"></script>
     <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/sampira.css?v=phase6b-live">
-    <link rel="stylesheet" href="/assets/css/admin-workspace.css?v=admin-6b4-refined3">
+    <link rel="stylesheet" href="/assets/css/admin-workspace.css?v=roles-1">
     <script type="module" src="/assets/js/education.js?v=admin-6b4"></script>
-    <script type="module" src="/assets/js/operations.js?v=admin-6b4-refined3"></script>
+    <script type="module" src="/assets/js/operations.js?v=phase8"></script>
     <script type="module" src="/assets/js/admin-workspace.js?v=admin-6b4-refined3"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/portal-design.css?v=roles-1">
 </head>
-<body class="facility-admin-page sp-console sp-admin">
+<body class="sp-portal facility-admin-page sp-console sp-admin">
     <a class="sp-admin-skip" href="#admin-content">Lewati ke isi</a>
     <main class="facility-admin-main" aria-label="Portal Admin">
         <aside class="sp-admin-sidebar">
@@ -44,7 +46,11 @@
         <div class="sp-admin-breadcrumb">Portal Admin <span aria-hidden="true">/</span> <strong id="admin-current-view">Ringkasan</strong></div>
         <section id="admin-overview" aria-labelledby="admin-overview-title">
             <header class="sp-admin-heading"><p class="sp-kicker">Operasional fasilitas</p><h1 id="admin-overview-title">Ringkasan operasional</h1><p>Pantau antrean verifikasi dan tindak lanjut laporan warga.</p></header>
-            <dl class="sp-metric-grid sp-admin-metrics" aria-label="Cuplikan antrean">
+            <section class="sp-admin-shortcuts" aria-labelledby="admin-shortcuts-title">
+                    <h2 id="admin-shortcuts-title">Lanjutkan pekerjaan</h2>
+                    <button type="button" class="sp-button sp-button--quiet" data-admin-go="admin-operation-map"><span><strong>Monitoring Peta</strong><small>Lihat sebaran laporan fasilitas.</small></span><span aria-hidden="true">→</span></button>
+                    <button type="button" class="sp-button sp-button--quiet" data-admin-go="admin-facility-handling"><span><strong>Penanganan Laporan</strong><small>Kelola penugasan dan validasi hasil.</small></span><span aria-hidden="true">→</span></button>
+                </section><dl class="sp-metric-grid sp-admin-metrics" aria-label="Cuplikan antrean">
                 <div><span aria-hidden="true" class="sp-admin-metric-mark"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z M9 8h6 M9 12h6 M9 16h3"/></svg></span><dt>Menunggu verifikasi</dt><dd data-overview-status="pending">—</dd></div>
                 <div><span aria-hidden="true" class="sp-admin-metric-mark"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 11-3 M18 11v8 M14 15h8"/></svg></span><dt>Menunggu penugasan</dt><dd data-overview-status="approved">—</dd></div>
                 <div><span aria-hidden="true" class="sp-admin-metric-mark"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z M8 7V4h8v3 M3 12h18"/></svg></span><dt>Dalam penanganan</dt><dd data-overview-status="handling_in_progress">—</dd></div>
@@ -62,11 +68,7 @@
                     </div>
                     <p id="admin-recent-state" class="sp-admin-state">Memuat laporan terbaru…</p>
                 </section>
-                <section class="sp-panel sp-admin-shortcuts" aria-labelledby="admin-shortcuts-title">
-                    <h2 id="admin-shortcuts-title">Lanjutkan pekerjaan</h2>
-                    <button type="button" class="sp-button sp-button--quiet" data-admin-go="admin-operation-map"><span><strong>Monitoring Peta</strong><small>Lihat sebaran laporan fasilitas.</small></span><span aria-hidden="true">→</span></button>
-                    <button type="button" class="sp-button sp-button--quiet" data-admin-go="admin-facility-handling"><span><strong>Penanganan Laporan</strong><small>Kelola penugasan dan validasi hasil.</small></span><span aria-hidden="true">→</span></button>
-                </section>
+
             </div>
         </section>
         <section id="admin-report-verification" data-facility-reports="admin" aria-labelledby="facility-heading" hidden>

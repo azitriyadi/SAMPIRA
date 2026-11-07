@@ -1,6 +1,6 @@
 import {categories} from './facility-report-ui.js?v=phase4b';
-import {mountLocationPicker} from './location-map.js?v=pickup-cari';
-import {mountLocationSearch} from './location-search.js?v=1';
+import {mountLocationPicker} from './location-map.js?v=phase8';
+import {mountLocationSearch} from './location-search.js?v=phase8';
 
 const textLengths = {title: [5, 120], description: [10, 3000], address: [5, 300]};
 const categoryIcons = {tps: 'fa-trash-can', collection_site: 'fa-truck', waste_bank: 'fa-recycle', other: 'fa-ellipsis'};
@@ -31,7 +31,7 @@ export function mountReportForm(root) {
                         <h4><i class="fas fa-location-dot" aria-hidden="true"></i> Tentukan Lokasi Fasilitas</h4>
                         <div id="facility-location-search"></div>
                         <div id="facility-location-picker"></div>
-                    </section>
+                    </section><div class="sp-request-fields">
                     <section class="sp-pickup-panel">
                         <h4><i class="far fa-clipboard" aria-hidden="true"></i> Data Laporan</h4>
                         <div class="facility-field"><label for="facility-title">Judul laporan <span class="sp-required" aria-hidden="true">*</span></label>
@@ -66,7 +66,7 @@ export function mountReportForm(root) {
                             <img id="facility-preview" class="facility-photo" alt="Pratinjau foto fasilitas" hidden>
                         </div>
                     </section>
-                    <div class="sp-report-controls">
+                    </div><div class="sp-report-controls">
                         <button type="button" id="facility-form-back" class="facility-button">Kembali</button>
                         <button type="submit" id="facility-submit" class="facility-button primary">Kirim laporan</button>
                     </div>

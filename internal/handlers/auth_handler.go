@@ -2,15 +2,19 @@ package handlers
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
+	"net/mail"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	httpx "ecorecycle/internal/middleware"
 	"ecorecycle/internal/models"
 	"ecorecycle/internal/repositories"
 	"ecorecycle/internal/services"
 
+	"github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -45,7 +49,7 @@ func (a *App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := httpx.RequestData(r)
-	email := data["email"]
+	email := strings.ToLower(strings.TrimSpace(data["email"]))
 	password := data["password"]
 
 	if email == "" || password == "" {
@@ -105,30 +109,27 @@ func (a *App) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := httpx.RequestData(r)
-	name := data["name"]
-	email := data["email"]
+	name := strings.TrimSpace(data["name"])
+	email := strings.ToLower(strings.TrimSpace(data["email"]))
 	password := data["password"]
 
 	if name == "" || email == "" || password == "" {
 		httpx.SendResponse(w, "error", "Nama, email, dan password wajib diisi.", nil, http.StatusBadRequest)
 		return
 	}
-	if !strings.Contains(email, "@") {
+	if !utf8.ValidString(name) || utf8.RuneCountInString(name) > 100 || strings.ContainsRune(name, 0) {
+		httpx.SendResponse(w, "error", "Nama lengkap maksimal 100 karakter.", nil, http.StatusBadRequest)
+		return
+	}
+	parsed, emailErr := mail.ParseAddress(email)
+	domainStart := strings.LastIndex(email, "@")
+	if emailErr != nil || parsed.Address != email || utf8.RuneCountInString(email) > 100 ||
+		domainStart < 0 || !strings.Contains(email[domainStart+1:], ".") {
 		httpx.SendResponse(w, "error", "Format email tidak valid.", nil, http.StatusBadRequest)
 		return
 	}
 	if len(password) < 6 || len(password) > 72 {
 		httpx.SendResponse(w, "error", "Password harus terdiri dari 6 hingga 72 byte.", nil, http.StatusBadRequest)
-		return
-	}
-
-	exists, err := a.Users.EmailExists(email)
-	if err != nil {
-		httpx.SendResponse(w, "error", "Kesalahan server internal.", nil, http.StatusInternalServerError)
-		return
-	}
-	if exists {
-		httpx.SendResponse(w, "error", "Email already exists.", nil, http.StatusBadRequest)
 		return
 	}
 
@@ -139,6 +140,11 @@ func (a *App) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.Users.Create(name, email, string(hashedPassword), models.RoleUser); err != nil {
+		var databaseError *mysql.MySQLError
+		if errors.As(err, &databaseError) && databaseError.Number == 1062 {
+			httpx.SendResponse(w, "error", "Email sudah digunakan.", nil, http.StatusConflict)
+			return
+		}
 		httpx.SendResponse(w, "error", "Gagal menyimpan data pengguna.", nil, http.StatusInternalServerError)
 		return
 	}

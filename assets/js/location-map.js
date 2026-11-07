@@ -1,4 +1,5 @@
 import {locationPoint, navigationURL, roadRoute, routingConfig} from './location-routing.js?v=phase5b';
+import {createMap, streetTiles, statusIcon, mapStatus} from './map-core.js?v=phase8';
 
 const bandung = [-6.9175, 107.6191];
 const activePanels = new Set();
@@ -41,7 +42,7 @@ function output(root) {
     return status;
 }
 
-function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false} = {}) {
+function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false, kind = 'pickup', record} = {}) {
     const frame = node('div', null, 'location-map');
     frame.setAttribute('role', 'region');
     frame.setAttribute('aria-label', 'Peta lokasi');
@@ -74,10 +75,7 @@ function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false} = {}) {
             }
         }
         tileStatus.textContent = autoTiles ? '' : 'Peta jalan diminta dari OpenStreetMap.';
-        const layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        });
+        const layer = streetTiles();
         tiles = layer;
         layer.on('tileerror', () => {
             if (tiles !== layer) return;
@@ -104,10 +102,12 @@ function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false} = {}) {
         markers.delete(label);
         const point = points.get(label);
         if (!map || !point) return;
+        const state = record ? mapStatus(kind, record) : null;
         const marker = L.marker(point, {
-            draggable: label === 'T', alt: label === 'A' ? 'Titik awal' : 'Titik tujuan',
-            icon: L.divIcon({className: 'location-pin location-pin-' + label, html: label === 'T' ? '●' : label,
-                iconSize: [30, 30], iconAnchor: [15, 28]})
+            draggable: label === 'T', alt: label === 'A' ? 'Titik awal' : 'Titik tujuan' + (state ? ' · ' + state.label : ''),
+            icon: label === 'B' && state ? statusIcon(kind, state, 'location-pin location-pin-B')
+                : L.divIcon({className: 'location-pin location-pin-' + label, html: label === 'T' ? '●' : label,
+                    iconSize: [30, 30], iconAnchor: [15, 28]})
         }).addTo(map);
         if (label === 'T') marker.on('dragend', () => {
             const {lat, lng} = marker.getLatLng();
@@ -161,7 +161,7 @@ function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false} = {}) {
             return;
         }
         if (!map) {
-            map = L.map(frame, {scrollWheelZoom: false, zoomAnimation: false, fadeAnimation: false}).setView(bandung, 12);
+            map = createMap(frame, bandung);
             if (onPoint) map.on('click', ({latlng}) => onPoint(latlng.lat, latlng.lng));
             for (const label of points.keys()) renderMarker(label);
             renderRoute();
@@ -340,7 +340,7 @@ export function mountLocationPicker(host, {title, prefix, digits, saved, include
     return {reset, fields, dispose, selectPoint: (latitude, longitude) => pick(locationPoint(latitude, longitude))};
 }
 
-export function mountLocationDetail(host, {title, point, address, reported = false, navigation, external = false, autoTiles = false}) {
+export function mountLocationDetail(host, {title, point, address, reported = false, navigation, external = false, autoTiles = false, kind = 'pickup'}) {
     const root = panel(host, title);
     const destination = locationPoint(point?.latitude, point?.longitude);
     const label = typeof address === 'string' ? address.trim() : '';
@@ -359,7 +359,7 @@ export function mountLocationDetail(host, {title, point, address, reported = fal
         }
     }
     const map = destination ? mapPanel(root, navigation ? (lat, lon) => navigationUI?.select(lat, lon) : undefined, {
-        onHide: () => navigationUI?.clear(), authorize: navigation?.authorize, autoTiles
+        onHide: () => navigationUI?.clear(), authorize: navigation?.authorize, autoTiles, kind, record:point
     }) : null;
     map?.marker('B', destination, true);
     if (destination && autoTiles) root.append(node('p', 'Peta dasar OpenStreetMap memuat area yang terlihat.', 'location-privacy'));

@@ -2,6 +2,7 @@ import { base, request } from "./facility-api.js";
 import { categories, statuses } from "./facility-report-ui.js";
 import { assignmentStatuses, coordinationStatuses, handlingStatuses } from "./facility-handling-ui.js";
 import { locationPoint } from "./location-routing.js";
+import {createMap, streetTiles, statusIcon, mapStatus, mapLegend, bindMapPopup, facilityMapStates} from "./map-core.js?v=phase8";
 
 const consoleNav = document.querySelector(".sp-admin-nav");
 if (consoleNav) {
@@ -110,24 +111,26 @@ if (root) {
     }
 
     function facility(row, handling) {
+        const appearance = mapStatus('facility',handling ? {...row,handling_status:row.status} : row);
         return {
             id: row.report_id || row.id, type: "facility", title: row.title, address: row.address, tracking: row.tracking_number,
             state: handling ? row.status : row.verification_status || row.status, assignment: row.assignment_status,
             verification: row.verification_status, coordination: row.coordination_status,
-            point: locationPoint(row.latitude, row.longitude), handling
+            point: locationPoint(row.latitude, row.longitude), handling, appearance
         };
     }
 
     async function getPickups() {
         const user = await window.portalUser("petugas");
         if (!user) throw new Error("Sesi berakhir. Masuk kembali.");
-        const response = await window.portalFetch("/api/ecorecycle/list_pickups?type=petugas");
+        const response = await window.portalFetch("/api/ecorecycle/list_pickups?type=petugas",{signal:AbortSignal.timeout(15000)});
         const result = await response.json();
         if (!response.ok || !Array.isArray(result.data)) throw new Error("Daftar penjemputan gagal dimuat.");
         return result.data.filter(item => Number(item.collector_id) === Number(user.id) &&
             ["pickup", "transit", "arrived"].includes(item.status)).map(item => ({
             type: "pickup", tracking: item.tracking_number, title: item.tracking_number,
-            address: item.pickup_address, state: item.status, point: locationPoint(item.latitude, item.longitude)
+            address: item.pickup_address, state: item.status, point: locationPoint(item.latitude, item.longitude),
+            appearance:mapStatus('pickup',item)
         }));
     }
 
@@ -149,9 +152,9 @@ if (root) {
             list.append(row);
             if (!item.point || !map) continue;
             points.push(item.point);
-            const pin = L.divIcon({ className: "sp-map-marker sp-map-marker--" + item.type,
-                html: item.type === "pickup" ? "P" : "F", iconSize: [28, 28], iconAnchor: [14, 14] });
-            const marker = L.marker(item.point, { icon: pin, alt: kind + " · " + item.title, title: item.title }).addTo(pins);
+            const pin = statusIcon(item.type,item.appearance,"sp-map-marker sp-map-marker--" + item.type);
+            const marker = L.marker(item.point, { icon: pin, alt: kind + " · " + item.title + ' · ' + item.appearance.label,
+                title:item.appearance.label }).addTo(pins);
             const popup = create("div", "", "sp-map-popup");
             popup.append(create("strong", item.title), create("p", [kind, label, item.tracking].filter(Boolean).join(" · ")),
                 create("p", item.address || "Alamat belum tersedia"));
@@ -170,6 +173,9 @@ if (root) {
                     try {
                         const report = await request(base + "/" + item.id + "/handling");
                         handlingStatus.textContent = "Penanganan · " + (handlingStatuses[report.status] || "Belum tersedia");
+                        item.appearance=mapStatus('facility',report);
+                        marker.setIcon(statusIcon('facility',item.appearance,'sp-map-marker sp-map-marker--facility'));
+                        marker.getElement()?.setAttribute('aria-label',kind+' · '+item.title+' · '+item.appearance.label);
                     } catch {
                         handlingStatus.textContent = "Status penanganan belum tersedia.";
                     }
@@ -183,9 +189,9 @@ if (root) {
                 button.addEventListener("click", () => open(action === "handling" ? { ...item, handling: true } : item, action));
                 popup.append(button);
             }
-            marker.bindPopup(popup, { maxWidth: 260, maxHeight: admin ? 220 : 142, autoPanPadding: [14, 14], keepInView: admin });
+            bindMapPopup(marker,popup);
         }
-        if (points.length) map.fitBounds(points, { padding: [35, 35], maxZoom: 15, animate: admin ? false : undefined });
+        if (points.length) map.fitBounds(points, { padding: [35, 35], maxZoom: 15, animate:false });
         const count = loaded.filter(item => item.point).length;
         status.textContent = loaded.length ? loaded.length + " lokasi dimuat · " + count + " memiliki titik presisi."
             : "Tidak ada lokasi untuk filter ini.";
@@ -209,10 +215,10 @@ if (root) {
             cursor = null;
         }
         if (!map && window.L) {
-            map = L.map(canvas).setView([-6.9175, 107.6191], 12);
-            L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19
-            }).on("tileerror", () => {
+            map = createMap(canvas);
+            const currentMap=map;
+            streetTiles().on("tileerror", () => {
+                if (map !== currentMap) return;
                 if (!tilesFailed && mapFeedback) {
                     mapFeedback.textContent = "Sebagian gambar peta gagal dimuat. Alamat tetap bisa dibuka dari daftar.";
                     mapFeedback.hidden = false;
@@ -253,7 +259,9 @@ if (root) {
             }
             const page = facilityResult.value;
             const pickups = (pickupResult.value || []).filter(item => !selected || item.state === selected);
-            const facilities = (page?.items || []).filter(item => group !== "assignment" || item.assignment_status === value)
+            const source = admin && !handling ? await facilityMapStates(page?.items || [],request,base) : page?.items || [];
+            if (run !== version) return;
+            const facilities = source.filter(item => group !== "assignment" || item.assignment_status === value)
                 .map(item => facility(item, handling));
             loaded.push(...pickups, ...facilities);
             cursor = page?.next_before_id ?? null;
@@ -279,9 +287,13 @@ if (root) {
         pins?.clearLayers();
         list.replaceChildren();
         if (originForm) setOrigin(null);
+        map?.remove();
+        map=pins=null;
+        tilesFailed=false;
     }
     root.addEventListener("sampira:close", clearMap);
     window.addEventListener("sampira:session-ended", clearMap);
+    window.addEventListener("pagehide", clearMap);
     window.addEventListener("sampira:collector-view", () => {
         if (root.classList.contains("active")) load();
         else clearMap();
@@ -292,6 +304,12 @@ if (root) {
     document.addEventListener("visibilitychange", () => {
         if (document.hidden && originForm) setOrigin(null);
     });
+    const observer=new ResizeObserver(() => {
+        if (map && canvas.clientWidth && canvas.clientHeight) map.invalidateSize({pan:false});
+    });
+    observer.observe(canvas);
+    window.addEventListener('pagehide',() => observer.disconnect(),{once:true});
+    mapLegend(root);
 }
 
 const metrics = document.querySelector("#sp-system-metrics");

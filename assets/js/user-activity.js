@@ -1,6 +1,6 @@
 import {base, request} from "./facility-api.js";
-import {statuses} from "./facility-report-ui.js";
 import {locationPoint} from "./location-routing.js";
+import {createMap, streetTiles, statusIcon, mapStatus, mapLegend, bindMapPopup, facilityMapStates} from "./map-core.js?v=phase8";
 
 const canvas = document.getElementById("own-location-map");
 const home = document.getElementById("beranda");
@@ -46,6 +46,28 @@ function recordButton(record) {
 
 function card(record, withAddress) {
     const root = element("div", "", "sp-location-record");
+    if (!withAddress) {
+        root.className = "sp-activity-record";
+        const icon = element("span", "", "sp-activity-icon sp-status-tone-" + record.appearance.tone);
+        icon.append(element("i", "", record.kind === "pickup" ? "fas fa-truck" : "fas fa-triangle-exclamation"));
+        icon.setAttribute("aria-hidden", "true");
+        const copy = element("div", "", "sp-activity-copy");
+        copy.append(element("small", record.kind === "pickup" ? "Penjemputan" : "Laporan fasilitas"));
+        copy.append(element("strong", record.title));
+        const meta = element("div", "", "sp-activity-meta");
+        meta.append(element("span", record.state, "sp-activity-state"));
+        const date = new Date(record.created);
+        if (Number.isFinite(date.valueOf())) {
+            const time = element("time", dateFormat.format(date));
+            time.dateTime = date.toISOString();
+            meta.append(time);
+        }
+        copy.append(meta);
+        const button = recordButton(record);
+        button.textContent = "Detail";
+        root.append(icon, copy, button);
+        return root;
+    }
     root.append(element("small", record.kind === "pickup" ? "Penjemputan" : "Laporan fasilitas"));
     root.append(element("strong", record.title));
     if (withAddress) {
@@ -63,12 +85,12 @@ function records() {
     return [
         ...pickups.map(row => ({
             kind:"pickup", identifier:row.tracking_number, title:row.category_name || "Penjemputan sampah",
-            address:row.pickup_address, created:row.created_at, state:window.getPickupStatusMeta(row.status).label,
+            address:row.pickup_address, created:row.created_at, state:mapStatus('pickup',row).label, appearance:mapStatus('pickup',row),
             point:locationPoint(row.latitude, row.longitude)
         })),
         ...reports.map(row => ({
             kind:"facility", id:row.id, identifier:row.tracking_number, title:row.title,
-            address:row.address, created:row.created_at, state:statuses[row.status] || "Status belum tersedia",
+            address:row.address, created:row.created_at, state:mapStatus('facility',row).label, appearance:mapStatus('facility',row),
             point:locationPoint(row.latitude, row.longitude)
         }))
     ].sort((a,b) => Date.parse(b.created) - Date.parse(a.created));
@@ -76,10 +98,8 @@ function records() {
 
 function setupMap() {
     if (map || !window.L || !home.classList.contains("active")) return;
-    map = L.map(canvas).setView([-6.9175, 107.6191], 12);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).on("tileerror", () => {
+    map = createMap(canvas);
+    streetTiles().on("tileerror", () => {
         tileFailed = true;
         describe(records());
     }).addTo(map);
@@ -102,7 +122,8 @@ function describe(items) {
     const located = items.filter(record => record.point).length;
     const notices = [];
     if (pickupState === "loading" || reportState === "loading") notices.push("Memuat lokasi…");
-    if (pickupState === "error" || reportState === "error") notices.push("Sebagian data gagal dimuat. Buka ulang Beranda untuk mencoba lagi.");
+    if (pickupState === "error" || reportState === "error") notices.push("Sebagian data gagal dimuat. Coba lagi atau buka ulang Beranda.");
+    if (reports.some(report => report.handling_unavailable)) notices.push("Sebagian status penanganan belum dapat dimuat.");
     if (items.length) notices.push(located + " titik presisi dari " + items.length + " aktivitas yang dimuat.");
     else if (!notices.length) notices.push("Belum ada penjemputan atau laporan.");
     if (!map || tileFailed) notices.push("Peta jalan tidak tersedia. Detail aktivitas dapat dibuka melalui riwayat.");
@@ -118,8 +139,11 @@ function render() {
         return item;
     });
     recent.replaceChildren(...(items.length ? rows :
-        [element("li", pickupState === "loading" || reportState === "loading" ? "Memuat aktivitas…" : "Belum ada aktivitas.")]));
+        [element("li", pickupState === "loading" || reportState === "loading" ? "Memuat aktivitas…" :
+            pickupState === "error" || reportState === "error" ? "Aktivitas belum dapat dimuat." : "Belum ada aktivitas.")]));
     reportCount.textContent = reportState === "ready" ? String(reports.length) + (cursor ? "+" : "") : "—";
+    reportCount.closest("div").querySelector("dt").textContent = cursor ? "Laporan dimuat" : "Laporan fasilitas";
+    reportCount.title = cursor ? 'Jumlah laporan yang dimuat; masih ada halaman berikutnya.' : 'Jumlah laporan yang sudah dimuat.';
     setupMap();
     describe(items);
     if (!map || !home.classList.contains("active")) return;
@@ -141,19 +165,17 @@ function renderPins(items) {
     for (const {items:group} of groups) {
         const kinds = ["pickup", "facility"].filter(kind => group.some(record => record.kind === kind));
         const classes = kinds.map(kind => "sp-owned-pin--" + kind);
-        const icons = {pickup:"fa-truck", facility:"fa-triangle-exclamation"};
-        const iconHtml = kinds.map(kind => '<i aria-hidden="true" class="fas ' + icons[kind] + '"></i>').join("");
         if (group.length > 1) classes.push("sp-owned-pin--group");
-        const size = kinds.length > 1 ? [44, 33] : [33, 33];
-        const icon = L.divIcon({
-            className:"sp-owned-pin " + classes.join(" "),
-            html:iconHtml, iconSize:size, iconAnchor:[size[0] / 2, 16]
-        });
+        const appearance = group.every(item => item.appearance.tone === group[0].appearance.tone)
+            ? group[0].appearance : {tone:'neutral',label:'Beberapa status'};
+        const icon = statusIcon(group[0].kind, appearance, "sp-owned-pin " + classes.join(" "));
         const popup = element("div", "", "sp-map-popup");
         popup.append(...group.map(item => card(item, true)));
-        L.marker(group[0].point, {icon, alt:group.length > 1 ? group.length + " aktivitas berdekatan" : group[0].identifier,
-            title:group.length > 1 ? group.length + " aktivitas berdekatan" : group[0].identifier})
-            .bindPopup(popup, {maxWidth:230, maxHeight:180}).addTo(pins);
+        const label = group.length > 1 ? group.length + " aktivitas berdekatan · " + appearance.label
+            : group[0].identifier + " · " + group[0].state;
+        const marker = L.marker(group[0].point, {icon,alt:label,title:label}).addTo(pins);
+        bindMapPopup(marker,popup);
+        if (group.length > 1) marker.getElement().append(element('span',String(group.length),'sp-pin-count'));
     }
 }
 
@@ -166,13 +188,15 @@ async function loadReports(append = false) {
     describe(records());
     try {
         const page = await request(base + "?" + query);
+        const items = await facilityMapStates(page.items,request,base);
         if (closed || sequence !== revision) return;
-        reports = append ? [...reports, ...page.items] : page.items;
+        reports = append ? [...reports, ...items] : items;
         cursor = page.next_before_id;
         reportState = "ready";
     } catch (error) {
         if (sequence !== revision || closed) return;
         if (error.status === 403) { clear(); return; }
+        if (!append) {reports=[];cursor=null;}
         reportState = "error";
     } finally {
         if (sequence === revision && !closed) {
@@ -203,13 +227,18 @@ window.addEventListener("sampira:user-pickups", event => {
     pickups = event.detail;
     render();
 });
-window.addEventListener("sampira:user-pickups-failed", () => { pickupState = "error"; render(); });
+window.addEventListener("sampira:user-pickups-failed", () => { pickupState = "error"; pickups=[]; render(); });
 window.addEventListener("sampira:session-ended", clear);
+window.addEventListener("pagehide", clear);
 window.addEventListener("sampira:user-view", event => {
     if (event.detail !== "beranda" || closed) return;
     render();
     loadReports();
 });
+window.addEventListener('focus',() => {
+    if (!closed && !document.hidden && home.classList.contains('active')) void loadReports();
+});
 more.addEventListener("click", () => loadReports(true));
+mapLegend(canvas.closest('.sp-own-map-panel'));
 render();
 loadReports();

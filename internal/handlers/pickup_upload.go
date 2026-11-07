@@ -37,10 +37,9 @@ func readPickupImage(r *http.Request, field string) ([]byte, string, string, *ap
 	return data, ext, photoTypes[ext], nil
 }
 
-func savePickupPhoto(r *http.Request) (*string, *apiProblem) {
-	data, ext, _, problem := readPickupImage(r, "photo")
-	if problem != nil || data == nil {
-		return nil, problem
+func savePickupPhoto(data []byte, ext string) (*string, *apiProblem) {
+	if data == nil {
+		return nil, nil
 	}
 	nonce := make([]byte, 16)
 	if _, err := rand.Read(nonce); err != nil {

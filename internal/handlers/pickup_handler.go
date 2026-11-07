@@ -3,6 +3,8 @@ package handlers
 import (
 	"crypto/rand"
 	"database/sql"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,6 +13,7 @@ import (
 
 	httpx "ecorecycle/internal/middleware"
 	"ecorecycle/internal/models"
+	"github.com/go-sql-driver/mysql"
 )
 
 func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
@@ -25,6 +28,13 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if user.Role != models.RoleUser {
 		httpx.SendResponse(w, "error", "Akses ditolak. Pengajuan penjemputan hanya dapat dibuat oleh Eco Warrior.", nil, http.StatusForbidden)
+		return
+	}
+	key := r.Header.Get("Idempotency-Key")
+	// Legacy API clients without a key retain their existing behavior.
+	if len(r.Header.Values("Idempotency-Key")) != 0 &&
+		(len(r.Header.Values("Idempotency-Key")) != 1 || !facilityRequestKey.MatchString(key)) {
+		(&apiProblem{"Idempotency-Key harus UUID v4 huruf kecil.", http.StatusBadRequest}).write(w)
 		return
 	}
 
@@ -62,12 +72,32 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = a.DB.QueryRow("SELECT id, category_name, reward_per_kg, processing_fee_per_kg FROM waste_categories WHERE category_name = ?", categoryName).
 		Scan(&catID, &catDisplayName, &rewardPerKg, &processingFeePerKg)
-	if err != nil {
+	if errors.Is(err, sql.ErrNoRows) {
 		httpx.SendResponse(w, "error", "Kategori sampah tidak ditemukan.", nil, http.StatusBadRequest)
 		return
 	}
-
-	photoURL, problem := savePickupPhoto(r)
+	if err != nil {
+		(&apiProblem{"Kategori sampah belum dapat dibaca.", http.StatusInternalServerError}).write(w)
+		return
+	}
+	photo, extension, _, problem := readPickupImage(r, "photo")
+	if problem != nil {
+		problem.write(w)
+		return
+	}
+	fingerprint := pickupFingerprint(data, catID, weight, location, photo)
+	if key != "" {
+		saved, problem := a.pickupReplay(r.Context(), user.ID, key, fingerprint)
+		if problem != nil {
+			problem.write(w)
+			return
+		}
+		if saved != nil {
+			httpx.SendResponse(w, "success", "Pengajuan ini sudah tercatat.", saved, http.StatusOK)
+			return
+		}
+	}
+	photoURL, problem := savePickupPhoto(photo, extension)
 	if problem != nil {
 		problem.write(w)
 		return
@@ -82,7 +112,7 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 	processingFee := rewardValue(processingFeePerKg, weight)
 	trackingNum := fmt.Sprintf("ECR-%s-%s", time.Now().Format("20060102"), rand.Text())
 
-	tx, err := a.DB.Begin()
+	tx, err := a.DB.BeginTx(r.Context(), nil)
 	if err != nil {
 		httpx.SendResponse(w, "error", transactionStartMessage, nil, http.StatusInternalServerError)
 		return
@@ -107,6 +137,31 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 		httpx.SendResponse(w, "error", pickupHistorySaveMessage, nil, http.StatusInternalServerError)
 		return
 	}
+	receipt := pickupReceipt{pickupID, trackingNum, ecoReward, processingFee, models.StatusPending}
+	if key != "" {
+		response, _ := json.Marshal(receipt)
+		_, err = tx.ExecContext(r.Context(), `INSERT INTO pickup_requests
+			(user_id,request_key,fingerprint,pickup_id,response) VALUES (?,?,?,?,?)`,
+			user.ID, key, fingerprint[:], pickupID, response)
+		if err != nil {
+			// A concurrent winner can commit while this insert waits on the unique key.
+			tx.Rollback()
+			var databaseError *mysql.MySQLError
+			if errors.As(err, &databaseError) && databaseError.Number == 1062 {
+				saved, problem := a.pickupReplay(r.Context(), user.ID, key, fingerprint)
+				if problem != nil {
+					problem.write(w)
+					return
+				}
+				if saved != nil {
+					httpx.SendResponse(w, "success", "Pengajuan ini sudah tercatat.", saved, http.StatusOK)
+					return
+				}
+			}
+			(&apiProblem{"Pengajuan belum dapat disimpan. Coba lagi dengan key yang sama.", http.StatusInternalServerError}).write(w)
+			return
+		}
+	}
 	// A commit error can be ambiguous. Preserve the file once a commit is attempted.
 	photoCommitted = true
 	if err := tx.Commit(); err != nil {
@@ -114,13 +169,7 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.SendResponse(w, "success", "Permohonan penjemputan sampah berhasil dibuat.", map[string]interface{}{
-		"pickup_id":       pickupID,
-		"tracking_number": trackingNum,
-		"eco_reward":      ecoReward,
-		"processing_fee":  processingFee,
-		"status":          models.StatusPending,
-	}, http.StatusCreated)
+	httpx.SendResponse(w, "success", "Permohonan penjemputan sampah berhasil dibuat.", receipt, http.StatusCreated)
 }
 
 func (a *App) ListPickupsHandler(w http.ResponseWriter, r *http.Request) {

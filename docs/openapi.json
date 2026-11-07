@@ -46,6 +46,1733 @@
     }
   ],
   "paths": {
+    "/api/user/contributions": {
+      "get": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Saldo, lifetime, level dan aturan poin",
+        "description": "Role: user. Poin prospektif dari berat terverifikasi; terpisah dari uang. Saldo berkurang saat redeem, lifetime tetap. Level 0/100/500.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "balance": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "lifetime_points": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "level": {
+                          "type": "string"
+                        },
+                        "badges": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "points_per_kg": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "rounding": {
+                          "type": "string"
+                        },
+                        "retroactive": {
+                          "type": "boolean"
+                        },
+                        "cash_convertible": {
+                          "type": "boolean"
+                        },
+                        "level_thresholds": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "integer",
+                            "format": "int64"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        }
+      }
+    },
+    "/api/user/points": {
+      "get": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Ledger poin pemilik",
+        "description": "Role: user. Urut ID descending; maksimal 100. Query lain ditolak. History reward memakai pickup_id sebagai cursor. Voucher simulasi tidak berlaku di merchant nyata.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "amount": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "balance_after": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "ID terakhir dari halaman sebelumnya (eksklusif).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/user/rewards": {
+      "get": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Reward uang pemilik",
+        "description": "Role: user. Urut ID descending; maksimal 100. Query lain ditolak. History reward memakai pickup_id sebagai cursor. Voucher simulasi tidak berlaku di merchant nyata.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "pickup_id": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "tracking_number": {
+                            "type": "string"
+                          },
+                          "amount": {
+                            "type": "number"
+                          },
+                          "verified_weight_kg": {
+                            "type": "number"
+                          },
+                          "payment_status": {
+                            "type": "string",
+                            "enum": [
+                              "not_due",
+                              "pending",
+                              "paid",
+                              "voided"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "ID terakhir dari halaman sebelumnya (eksklusif).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/user/vouchers": {
+      "get": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Voucher dan riwayat penukaran pemilik",
+        "description": "Role: user. Urut ID descending; maksimal 100. Query lain ditolak. History reward memakai pickup_id sebagai cursor. Voucher simulasi tidak berlaku di merchant nyata.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "voucher_id": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "point_cost": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "valid_until": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "available_simulation",
+                              "expired"
+                            ]
+                          },
+                          "simulation": {
+                            "type": "boolean",
+                            "enum": [
+                              true
+                            ]
+                          },
+                          "notice": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "ID terakhir dari halaman sebelumnya (eksklusif).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/vouchers": {
+      "get": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Katalog simulasi aktif dalam masa berlaku",
+        "description": "Role: user. Urut ID descending; maksimal 100. Query lain ditolak. History reward memakai pickup_id sebagai cursor. Voucher simulasi tidak berlaku di merchant nyata.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string"
+                          },
+                          "point_cost": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "stock": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "valid_from": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "valid_until": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "simulation": {
+                            "type": "boolean",
+                            "enum": [
+                              true
+                            ]
+                          },
+                          "notice": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "ID terakhir dari halaman sebelumnya (eksklusif).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/administrator/vouchers": {
+      "get": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Seluruh katalog simulasi",
+        "description": "Role: administrator. Urut ID descending; maksimal 100. Query lain ditolak. History reward memakai pickup_id sebagai cursor. Voucher simulasi tidak berlaku di merchant nyata.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string"
+                          },
+                          "point_cost": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "stock": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "valid_from": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "valid_until": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "simulation": {
+                            "type": "boolean",
+                            "enum": [
+                              true
+                            ]
+                          },
+                          "notice": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "ID terakhir dari halaman sebelumnya (eksklusif).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Buat voucher simulasi",
+        "description": "Role: administrator. Tidak mendukung gambar atau mitra riil; active default false dan stock default 0. Masa berlaku aktif belum berakhir; RFC3339 dikonversi UTC.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "simulation": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "category": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "point_cost": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000000
+                  },
+                  "stock": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  },
+                  "valid_from": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "valid_until": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "format": "int64"
+                  }
+                },
+                "required": [
+                  "name",
+                  "category",
+                  "point_cost",
+                  "valid_from",
+                  "valid_until"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/administrator/accounts": {
+      "get": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Daftar akun tanpa password",
+        "description": "Role: administrator. Urut ID descending; maksimal 100. Query lain ditolak. History reward memakai pickup_id sebagai cursor. Voucher simulasi tidak berlaku di merchant nyata.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "email": {
+                            "type": "string"
+                          },
+                          "role": {
+                            "type": "string",
+                            "enum": [
+                              "user",
+                              "petugas",
+                              "admin",
+                              "administrator"
+                            ]
+                          },
+                          "is_active": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "ID terakhir dari halaman sebelumnya (eksklusif).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/administrator/contribution-audit": {
+      "get": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Audit perubahan dan penukaran",
+        "description": "Role: administrator. Urut ID descending; maksimal 100. Query lain ditolak. History reward memakai pickup_id sebagai cursor. Voucher simulasi tidak berlaku di merchant nyata.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "actor_id": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "entity_id": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "details": {
+                            "type": "string",
+                            "description": "JSON terenkode sebagai string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "ID terakhir dari halaman sebelumnya (eksklusif).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/administrator/vouchers/{id}": {
+      "put": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Ubah katalog dengan optimistic version",
+        "description": "Role: administrator. Full replacement. Set active=false untuk menonaktifkan. Version bertambah saat edit atau redeem; tidak mengubah snapshot voucher yang sudah diterbitkan.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "simulation": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "category": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "point_cost": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000000
+                  },
+                  "stock": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  },
+                  "valid_from": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "valid_until": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "format": "int64"
+                  }
+                },
+                "required": [
+                  "name",
+                  "category",
+                  "point_cost",
+                  "valid_from",
+                  "valid_until",
+                  "version"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vouchers/{id}/redeem": {
+      "post": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Tukar poin atomik",
+        "description": "Role: user. Tanpa body. Key unik per pemilik; retry sama mendapatkan 200 dengan receipt asli, key sama untuk ID berbeda 409. Saldo/stok/ledger/audit satu transaksi. Simulasi saja.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "simulation": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          },
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "simulation": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/administrator/pickup-rewards/{id}/void": {
+      "post": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Batalkan kewajiban uang pending",
+        "description": "Role: administrator. ID pickup. Kompensasi signed pada cash_reward_events; berat terverifikasi/poin dipertahankan. paid, not_due dan retry ditolak 409; tidak menghapus historis atau melakukan transfer/refund eksternal.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "pickup_id": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "payment_status": {
+                          "type": "string",
+                          "enum": [
+                            "voided"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "reason"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/administrator/accounts/{id}": {
+      "patch": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Ubah role/status akun secara auditable",
+        "description": "Role: administrator. Tidak boleh mengubah akun sendiri; setidaknya Administrator pelaksana tetap aktif. Kondisi sebelumnya wajib cocok; mutasi mencabut sesi target. Petugas dengan tugas aktif ditolak sebelum dialihkan/diselesaikan.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "sessions_revoked": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "user",
+                      "petugas",
+                      "admin",
+                      "administrator"
+                    ]
+                  },
+                  "is_active": {
+                    "type": "boolean"
+                  },
+                  "expected_role": {
+                    "type": "string",
+                    "enum": [
+                      "user",
+                      "petugas",
+                      "admin",
+                      "administrator"
+                    ]
+                  },
+                  "expected_active": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "role",
+                  "is_active",
+                  "expected_role",
+                  "expected_active",
+                  "reason"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics": {
+      "get": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Statistik sesuai scope sesi",
+        "description": "Role: user, petugas, admin, administrator. Tanpa query. User: pickups, completed_pickups, verified_weight_kg, cash_reward, cash_paid, points_balance, lifetime_points, facility_reports, redemptions. Petugas: assigned_pickups, completed_pickups, in_progress_pickups, active_facility_tasks, completed_facility_tasks. Admin: reports, pending_verification, approved_reports, awaiting_assignment, assigned, awaiting_validation, completed. Administrator: accounts, active_accounts, pickups, completed_pickups, facility_reports, cash_pending, cash_paid, legacy_transactions, active_vouchers, voucher_redemptions, points_balance. role dan snapshot selalu ada. Tidak mengandung koordinat/alamat privat; live counts dapat berubah antar-query.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        }
+      }
+    },
+    "/api/analytics/facility-grid": {
+      "get": {
+        "tags": [
+          "Contributions Phase 9"
+        ],
+        "summary": "Agregasi laporan fasilitas disetujui",
+        "description": "Role: admin, administrator. Bbox opsional tetapi wajib 4 nilai lengkap jika dipakai, min < max, default seluruh dunia. Sel 0.01 derajat, minimal 3 laporan approved per sel, urut jumlah desc lalu koordinat; bukan kepadatan sampah representatif. Tidak memakai koordinat pickup privat.",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "PortalCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "cells": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "south": {
+                                "type": "number"
+                              },
+                              "west": {
+                                "type": "number"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "format": "int64"
+                              }
+                            }
+                          }
+                        },
+                        "cell_degrees": {
+                          "type": "number"
+                        },
+                        "minimum_reports_per_cell": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "truncated": {
+                          "type": "boolean"
+                        },
+                        "interpretation": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body/query tidak valid"
+          },
+          "401": {
+            "description": "Sesi tidak valid"
+          },
+          "403": {
+            "description": "Role atau origin ditolak"
+          },
+          "404": {
+            "description": "Entitas tidak ditemukan"
+          },
+          "409": {
+            "description": "Konflik versi/key/status atau saldo/stok tidak cukup"
+          },
+          "500": {
+            "description": "Operasi gagal; transaksi dibatalkan"
+          }
+        },
+        "parameters": [
+          {
+            "name": "min_lat",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          },
+          {
+            "name": "max_lat",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          },
+          {
+            "name": "min_lng",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          },
+          {
+            "name": "max_lng",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "tps",
+                "collection_site",
+                "waste_bank",
+                "other"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ]
+      }
+    },
     "/api/ecorecycle/education/articles": {
       "get": {
         "tags": ["Education"],
@@ -1689,7 +3416,7 @@
       "post": {
         "tags": ["Auth"],
         "summary": "Registrasi akun",
-        "description": "Membuat akun role user. Nilai role apa pun yang dikirim klien diabaikan.",
+        "description": "Membuat akun role user. Nama ditrim dan email ditrim serta diubah menjadi huruf kecil. Nama dan email maksimal 100 karakter. Password 6 hingga 72 byte. Nilai role yang dikirim klien diabaikan.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1708,6 +3435,9 @@
         "responses": {
           "201": {
             "$ref": "#/components/responses/Created"
+          },
+          "409": {
+            "description": "Email sudah digunakan, termasuk pada pendaftaran serentak."
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
@@ -1850,7 +3580,18 @@
       "post": {
         "tags": ["Pickup"],
         "summary": "Ajukan penjemputan e-waste",
-        "description": "Membuat permohonan penjemputan baru. Hanya dapat digunakan oleh role user atau Eco Warrior. latitude dan longitude opsional dan harus dikirim berpasangan dalam body. Pasangan yang kosong atau tidak dikirim menghasilkan lokasi tanpa titik.",
+        "description": "Membuat permohonan penjemputan baru untuk User. Koordinat opsional harus berpasangan. Kirim Idempotency-Key UUID v4 huruf kecil untuk perlindungan retry per pengguna dan operasi pembuatan pickup. Key dan payload identik mengembalikan snapshot hasil awal dengan HTTP 200. Perubahan payload pada key yang sama menghasilkan 409. Klien legacy tanpa key tetap diterima tetapi tidak mendapat perlindungan idempotency.",
+        "parameters": [{
+          "in": "header",
+          "name": "Idempotency-Key",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          }
+        }],
         "security": [
           {
             "bearerAuth": []
@@ -1889,6 +3630,17 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Retry identik. Data berisi snapshot respons pengajuan awal.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RequestPickupResponse"}
+              }
+            }
+          },
+          "409": {
+            "description": "Key sudah digunakan untuk payload pengajuan berbeda."
+          },
           "201": {
             "description": "Permohonan penjemputan berhasil dibuat",
             "content": {
@@ -3993,11 +5745,14 @@
         "required": ["name", "email", "password"],
         "properties": {
           "name": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
           },
           "email": {
             "type": "string",
-            "format": "email"
+            "format": "email",
+            "maxLength": 100
           },
           "password": {
             "type": "string",
