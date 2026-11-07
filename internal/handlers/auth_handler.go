@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"net/http"
 	"strings"
+	"time"
 
 	httpx "ecorecycle/internal/middleware"
+	"ecorecycle/internal/models"
 	"ecorecycle/internal/repositories"
 	"ecorecycle/internal/services"
 
@@ -13,20 +15,27 @@ import (
 )
 
 type App struct {
-	DB            *sql.DB
-	Auth          *services.AuthService
-	Users         *repositories.UserRepository
-	Pickups       *repositories.PickupRepository
-	Announcements *repositories.AnnouncementRepository
+	DB               *sql.DB
+	Auth             *services.AuthService
+	SecureCookies    bool
+	Users            *repositories.UserRepository
+	Pickups          *repositories.PickupRepository
+	Announcements    *repositories.AnnouncementRepository
+	FacilityReports  repositories.FacilityReports
+	FacilityHandling repositories.FacilityHandling
+	Education        repositories.Education
 }
 
 func NewApp(db *sql.DB, auth *services.AuthService) *App {
 	return &App{
-		DB:            db,
-		Auth:          auth,
-		Users:         repositories.NewUserRepository(db),
-		Pickups:       repositories.NewPickupRepository(db),
-		Announcements: repositories.NewAnnouncementRepository(db),
+		DB:               db,
+		Auth:             auth,
+		Users:            repositories.NewUserRepository(db),
+		Pickups:          repositories.NewPickupRepository(db),
+		Announcements:    repositories.NewAnnouncementRepository(db),
+		FacilityReports:  repositories.FacilityReports{DB: db},
+		FacilityHandling: repositories.FacilityHandling{DB: db},
+		Education:        repositories.Education{DB: db},
 	}
 }
 
@@ -46,7 +55,7 @@ func (a *App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, err := a.Users.FindByEmail(email)
 	if err == sql.ErrNoRows {
-		httpx.SendResponse(w, "error", "Email atau password salah.", nil, http.StatusBadRequest)
+		httpx.SendResponse(w, "error", "Email atau password salah.", nil, http.StatusUnauthorized)
 		return
 	} else if err != nil {
 		httpx.SendResponse(w, "error", "Kesalahan server internal.", nil, http.StatusInternalServerError)
@@ -54,8 +63,8 @@ func (a *App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if err != nil {
-		httpx.SendResponse(w, "error", "Email atau password salah.", nil, http.StatusBadRequest)
+	if err != nil || !models.ValidRole(user.Role) {
+		httpx.SendResponse(w, "error", "Email atau password salah.", nil, http.StatusUnauthorized)
 		return
 	}
 
@@ -65,6 +74,15 @@ func (a *App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := a.Users.CreateSession(user.ID, user.Password, token, time.Now().Add(services.SessionTTL)); err != nil {
+		httpx.SendResponse(w, "error", "Gagal membuat sesi aktif.", nil, http.StatusUnauthorized)
+		return
+	}
+	a.setPortalCookie(w, r, token, int(services.SessionTTL.Seconds()))
+	if r.Header.Get("X-SAMPIRA-Portal") == "1" {
+		httpx.SendResponse(w, "success", "Login berhasil.", map[string]interface{}{"id": user.ID, "name": user.Name, "role": user.Role}, http.StatusOK)
+		return
+	}
 	respData := map[string]interface{}{
 		"id":                    user.ID,
 		"name":                  user.Name,
@@ -99,14 +117,9 @@ func (a *App) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		httpx.SendResponse(w, "error", "Format email tidak valid.", nil, http.StatusBadRequest)
 		return
 	}
-	if len(password) < 6 {
-		httpx.SendResponse(w, "error", "Password harus minimal terdiri dari 6 karakter.", nil, http.StatusBadRequest)
+	if len(password) < 6 || len(password) > 72 {
+		httpx.SendResponse(w, "error", "Password harus terdiri dari 6 hingga 72 byte.", nil, http.StatusBadRequest)
 		return
-	}
-
-	role := data["role"]
-	if role == "" || (role != "user" && role != "collector" && role != "admin") {
-		role = "user"
 	}
 
 	exists, err := a.Users.EmailExists(email)
@@ -125,7 +138,7 @@ func (a *App) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.Users.Create(name, email, string(hashedPassword), role); err != nil {
+	if err := a.Users.Create(name, email, string(hashedPassword), models.RoleUser); err != nil {
 		httpx.SendResponse(w, "error", "Gagal menyimpan data pengguna.", nil, http.StatusInternalServerError)
 		return
 	}
@@ -138,7 +151,7 @@ func (a *App) ProfileGetHandler(w http.ResponseWriter, r *http.Request) {
 		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
 		return
 	}
-	sessionUser, err := a.Auth.UserFromRequest(r)
+	sessionUser, err := a.apiSession(r)
 	if err != nil {
 		httpx.SendResponse(w, "error", err.Error(), nil, http.StatusUnauthorized)
 		return
@@ -161,7 +174,7 @@ func (a *App) ProfileUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
 		return
 	}
-	sessionUser, err := a.Auth.UserFromRequest(r)
+	sessionUser, err := a.apiSession(r)
 	if err != nil {
 		httpx.SendResponse(w, "error", err.Error(), nil, http.StatusUnauthorized)
 		return
@@ -207,20 +220,20 @@ func (a *App) ListCollectorsHandler(w http.ResponseWriter, r *http.Request) {
 		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
 		return
 	}
-	sessionUser, err := a.Auth.UserFromRequest(r)
+	sessionUser, err := a.apiSession(r)
 	if err != nil {
 		httpx.SendResponse(w, "error", err.Error(), nil, http.StatusUnauthorized)
 		return
 	}
-	if sessionUser.Role != "admin" {
-		httpx.SendResponse(w, "error", "Akses ditolak. Hanya Admin yang dapat melihat daftar kolektor.", nil, http.StatusForbidden)
+	if sessionUser.Role != models.RoleAdministrator {
+		httpx.SendResponse(w, "error", "Akses ditolak. Hanya Administrator yang dapat melihat daftar petugas.", nil, http.StatusForbidden)
 		return
 	}
 
 	collectors, err := a.Users.ListCollectors()
 	if err != nil {
-		httpx.SendResponse(w, "error", "Gagal mengambil daftar kolektor.", nil, http.StatusInternalServerError)
+		httpx.SendResponse(w, "error", "Gagal mengambil daftar petugas.", nil, http.StatusInternalServerError)
 		return
 	}
-	httpx.SendResponse(w, "success", "Daftar kolektor berhasil diambil.", collectors, http.StatusOK)
+	httpx.SendResponse(w, "success", "Daftar petugas berhasil diambil.", collectors, http.StatusOK)
 }

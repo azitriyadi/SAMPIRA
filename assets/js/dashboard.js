@@ -30,15 +30,15 @@ if (categoryGrid) {
 const pickupStatusFlow = ['pending', 'pickup', 'transit', 'arrived', 'completed'];
 const pickupStatusMeta = {
     pending: {
-        label: 'Menunggu Kolektor',
+        label: 'Menunggu Petugas',
         icon: 'fa-clock',
-        description: 'Pengajuan diterima dan sedang menunggu kolektor mengambil tugas.',
-        nextAction: 'Berikutnya: kolektor menerima pickup.'
+        description: 'Pengajuan diterima dan sedang menunggu petugas mengambil tugas.',
+        nextAction: 'Berikutnya: petugas menerima pickup.'
     },
     pickup: {
-        label: 'Kolektor Ditugaskan',
+        label: 'Petugas Ditugaskan',
         icon: 'fa-truck-pickup',
-        description: 'Kolektor sudah mengambil tugas dan akan menuju alamat penjemputan.',
+        description: 'Petugas sudah mengambil tugas dan akan menuju alamat penjemputan.',
         nextAction: 'Berikutnya: barang dijemput dan dibawa menuju hub.'
     },
     transit: {
@@ -48,30 +48,41 @@ const pickupStatusMeta = {
         nextAction: 'Berikutnya: barang diterima oleh hub.'
     },
     arrived: {
-        label: 'Menunggu Payout',
+        label: 'Tiba di Hub',
         icon: 'fa-clipboard-check',
-        description: 'Sampah sudah tiba di hub dan menunggu validasi payout admin.',
-        nextAction: 'Berikutnya: admin memproses reward.'
+        description: 'Sampah sudah tiba di hub dan menunggu verifikasi berat aktual.',
+        nextAction: 'Berikutnya, Petugas mencatat berat aktual.'
     },
     completed: {
-        label: 'Selesai Dibayar',
+        label: 'Selesai',
         icon: 'fa-circle-check',
-        description: 'Pickup selesai dan reward sudah diproses.',
+        description: 'Penjemputan selesai. Status pembayaran ditampilkan terpisah.',
         nextAction: 'Proses selesai.'
     },
     cancelled: {
         label: 'Dibatalkan',
         icon: 'fa-ban',
-        description: 'Pengajuan dibatalkan sebelum kolektor mengambil tugas.',
+        description: 'Pengajuan dibatalkan sebelum petugas mengambil tugas.',
         nextAction: 'Buat pengajuan baru jika masih ingin menyetor sampah.'
     }
 };
 
-function getPickupNetReward(item) {
-    if (item.final_eco_reward && item.final_processing_fee) {
-        return Number.parseFloat(item.final_eco_reward) - Number.parseFloat(item.final_processing_fee);
+function pickupPaymentLabel(item) {
+    if (item.reward_amount == null) {
+        return item.payment_status === 'requires_reconciliation' ? 'Perlu rekonsiliasi' : 'Belum ditimbang';
     }
-    return Number.parseFloat(item.eco_reward) - Number.parseFloat(item.processing_fee);
+    if (item.payment_status === 'not_due') return 'Tanpa pembayaran';
+    return item.payment_status === 'paid' ? 'Pembayaran tercatat' : 'Menunggu pembayaran';
+}
+
+function pickupRewardLabel(item) {
+    const format = amount => new Intl.NumberFormat('id-ID', {
+        style: 'currency', currency: 'IDR', maximumFractionDigits: 2
+    }).format(amount);
+    if (item.reward_amount != null) return 'Final ' + format(Number(item.reward_amount));
+    if (item.payment_status === 'requires_reconciliation') return 'Catatan historis';
+    if (item.eco_reward == null) return '—';
+    return 'Estimasi ' + format(Math.max(0, Number(item.eco_reward) - Number(item.processing_fee)));
 }
 
 function getPickupStatusMeta(status) {
@@ -165,33 +176,35 @@ document.addEventListener('keydown', event => {
 });
 
 // Payout Preview Calculation
-function calculateFormPreview() {
+
+let previewRequest = 0;
+async function calculateFormPreview() {
     const categorySelect = document.getElementById('form-waste-category');
     const weightInput = document.getElementById('form-waste-weight');
-    
     if (!categorySelect || !weightInput) return;
-
-    const weight = Number.parseFloat(weightInput.value) || 0;
-    
+    const request = ++previewRequest;
     const category = categorySelect.value;
+    const weight = weightInput.value;
     const config = categoryConfig[category] || categoryConfig['Small Gadgets'];
-
-    const gross = weight * config.rate;
-    const fee = weight * config.feePerKg;
-    const net = gross - fee;
-    const carbon = (weight * 2.5).toFixed(1);
-    document.getElementById("category-handling-note").textContent = config.note;
-
-    const formatter = new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0
-    });
-
-    document.getElementById('preview-gross-reward').innerText = formatter.format(gross);
-    document.getElementById('preview-fee').innerText = formatter.format(fee);
-    document.getElementById('preview-net-reward').innerText = formatter.format(net);
-    document.getElementById('preview-carbon').innerText = carbon;
+    document.getElementById('category-handling-note').textContent = config.note;
+    const fields = ['preview-gross-reward', 'preview-fee', 'preview-net-reward', 'preview-carbon'];
+    for (const id of fields) document.getElementById(id).textContent = '—';
+    if (!weight || !weightInput.validity.valid) return;
+    try {
+        const response = await portalFetch('/api/ecorecycle/estimate_reward', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({category, weight_kg: weight})
+        });
+        if (!response.ok || request !== previewRequest) return;
+        const {data} = await response.json();
+        if (request !== previewRequest) return;
+        const currency = new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR', maximumFractionDigits: 2});
+        const values = [currency.format(data.total_estimate), currency.format(data.processing_fee),
+            currency.format(data.net_estimate), Number(data.co2_saved).toFixed(1)];
+        fields.forEach((id,index) => { document.getElementById(id).textContent = values[index]; });
+    } catch {
+        // Leave the placeholder if the server has no valid estimate.
+    }
 }
 
 const formWeight = document.getElementById('form-waste-weight');
@@ -284,8 +297,7 @@ if (removePhotoBtn) removePhotoBtn.addEventListener('click', clearPhotoPreview);
 
 // Logout
 function logoutUser() {
-    localStorage.removeItem('user');
-    window.location.href = 'login';
+    logoutPortal();
 }
 
 // System Notification Alert Close
@@ -301,15 +313,6 @@ function openTrackingDetail(trackingNumber) {
     searchTracking();
 }
 
-function getUserAuthHeaders() {
-    const userSession = localStorage.getItem('user');
-    if (!userSession) return null;
-    const user = JSON.parse(userSession);
-    return {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + user.token
-    };
-}
 
 async function editPendingPickup(encodedItem) {
     const item = JSON.parse(decodeURIComponent(encodedItem));
@@ -318,17 +321,17 @@ async function editPendingPickup(encodedItem) {
         html: `
             <div style="text-align:left;">
                 <label class="swal-form-label">Deskripsi barang</label>
-                <textarea id="edit-item-description" class="swal2-textarea" style="margin:0 0 10px; width:100%;">${item.item_description || ''}</textarea>
+                <textarea id="edit-item-description" class="swal2-textarea" style="margin:0 0 10px; width:100%;">${escapePortalHTML(item.item_description || '')}</textarea>
                 <label class="swal-form-label">Alamat penjemputan</label>
-                <textarea id="edit-pickup-address" class="swal2-textarea" style="margin:0 0 10px; width:100%;">${item.pickup_address || ''}</textarea>
+                <textarea id="edit-pickup-address" class="swal2-textarea" style="margin:0 0 10px; width:100%;">${escapePortalHTML(item.pickup_address || '')}</textarea>
                 <label class="swal-form-label">Nomor HP / WhatsApp</label>
-                <input id="edit-contact-phone" class="swal2-input" style="margin:0 0 10px; width:100%;" value="${item.contact_phone || ''}">
+                <input id="edit-contact-phone" class="swal2-input" style="margin:0 0 10px; width:100%;" value="${escapePortalHTML(item.contact_phone || '')}">
                 <label class="swal-form-label">Kategori</label>
                 <select id="edit-category" class="swal2-select" style="margin:0 0 10px; width:100%;">
                     ${Object.keys(categoryConfig).map(category => `<option value="${category}" ${item.category_name === category ? 'selected' : ''}>${categoryConfig[category].label}</option>`).join('')}
                 </select>
                 <label class="swal-form-label">Estimasi berat (KG)</label>
-                <input id="edit-weight" type="number" min="0.1" step="0.1" class="swal2-input" style="margin:0; width:100%;" value="${item.weight_kg || ''}">
+                <input id="edit-weight" type="number" min="0.01" max="99999.99" step="0.01" class="swal2-input" style="margin:0; width:100%;" value="${item.weight_kg || ''}">
             </div>
         `,
         icon: 'info',
@@ -355,10 +358,9 @@ async function editPendingPickup(encodedItem) {
     });
 
     if (!result.isConfirmed) return;
-    const headers = getUserAuthHeaders();
-    if (!headers) return;
+    const headers = {'Content-Type': 'application/json'};
 
-    fetch('api/ecorecycle/update_pickup', {
+    portalFetch('api/ecorecycle/update_pickup', {
         method: 'POST',
         headers,
         body: JSON.stringify(result.value)
@@ -366,7 +368,7 @@ async function editPendingPickup(encodedItem) {
     .then(res => res.json())
     .then(data => {
         if (data.status === 'success') {
-            Swal.fire({ icon: 'success', title: 'Pengajuan Diperbarui', text: 'Perubahan berhasil disimpan sebelum pickup diambil kolektor.', confirmButtonColor: '#10b981' });
+            Swal.fire({ icon: 'success', title: 'Pengajuan Diperbarui', text: 'Perubahan berhasil disimpan sebelum pickup diambil petugas.', confirmButtonColor: '#10b981' });
             loadDashboardData();
         } else {
             Swal.fire({ icon: 'error', title: 'Gagal', text: data.message, confirmButtonColor: '#10b981' });
@@ -379,7 +381,7 @@ async function cancelPendingPickup(trackingNumber) {
     const result = await Swal.fire({
         title: 'Batalkan Pengajuan?',
         html: `
-            <p style="color:#475569;">Pengajuan <strong>${trackingNumber}</strong> hanya bisa dibatalkan selama masih menunggu kolektor.</p>
+            <p style="color:#475569;">Pengajuan <strong>${escapePortalHTML(trackingNumber)}</strong> hanya bisa dibatalkan selama masih menunggu petugas.</p>
             <textarea id="cancel-reason" class="swal2-textarea" placeholder="Alasan pembatalan (opsional)" style="width:100%; margin:10px 0 0;"></textarea>
         `,
         icon: 'warning',
@@ -391,10 +393,9 @@ async function cancelPendingPickup(trackingNumber) {
     });
     if (!result.isConfirmed) return;
 
-    const headers = getUserAuthHeaders();
-    if (!headers) return;
+    const headers = {'Content-Type': 'application/json'};
 
-    fetch('api/ecorecycle/cancel_pickup', {
+    portalFetch('api/ecorecycle/cancel_pickup', {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -405,7 +406,7 @@ async function cancelPendingPickup(trackingNumber) {
     .then(res => res.json())
     .then(data => {
         if (data.status === 'success') {
-            Swal.fire({ icon: 'success', title: 'Pengajuan Dibatalkan', text: 'Pickup dibatalkan dan tidak akan masuk antrean kolektor.', confirmButtonColor: '#10b981' });
+            Swal.fire({ icon: 'success', title: 'Pengajuan Dibatalkan', text: 'Pickup dibatalkan dan tidak akan masuk antrean petugas.', confirmButtonColor: '#10b981' });
             loadDashboardData();
         } else {
             Swal.fire({ icon: 'error', title: 'Gagal', text: data.message, confirmButtonColor: '#10b981' });
@@ -417,14 +418,6 @@ async function cancelPendingPickup(trackingNumber) {
 function setInputValue(id, value) {
     const field = document.getElementById(id);
     if (field) field.value = value || '';
-}
-
-function mergeSessionUser(profile) {
-    const userSession = localStorage.getItem('user');
-    if (!userSession || !profile) return;
-    const current = JSON.parse(userSession);
-    const merged = { ...current, ...profile, token: current.token };
-    localStorage.setItem('user', JSON.stringify(merged));
 }
 
 function populateProfileFields(profile) {
@@ -442,33 +435,8 @@ function populateProfileFields(profile) {
     setInputValue('form-pickup-address', profile.address);
 }
 
-function loadUserProfileSettings() {
-    const userSession = localStorage.getItem('user');
-    if (!userSession) return;
-    const user = JSON.parse(userSession);
-
-    fetch('api/user/profile', {
-        method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + user.token
-        }
-    })
-    .then(res => {
-        if (res.status === 401) logoutUser();
-        return res.json();
-    })
-    .then(data => {
-        if (data.status === 'success') {
-            mergeSessionUser(data.data);
-            populateProfileFields(data.data);
-        }
-    })
-    .catch(err => console.error('Error loading profile:', err));
-}
-
 function renderUserHistoryRow(item) {
     const weight = Number.parseFloat(item.weight_kg);
-    const netReward = getPickupNetReward(item);
     const dateObj = new Date(item.created_at);
     const dateStr = dateObj.getDate() + ' ' + dateObj.toLocaleString('id-ID', {month: 'short'}) + ' ' + dateObj.getFullYear();
     const statusMeta = getPickupStatusMeta(item.status);
@@ -476,10 +444,10 @@ function renderUserHistoryRow(item) {
     return `
                     <tr>
                         <td style="padding: 16px;">${dateStr}</td>
-                        <td style="padding: 16px;"><strong>${item.tracking_number}</strong></td>
-                        <td style="padding: 16px;">${item.category_name}</td>
-                        <td style="padding: 16px; font-weight:700;">${weight} KG</td>
-                        <td style="padding: 16px; font-weight:800; color:#087443;">Rp ${netReward.toLocaleString('id-ID')}</td>
+                        <td style="padding: 16px;"><button type="button" class="btn btn-outline pickup-flow-track-btn" data-tracking="${escapePortalHTML(item.tracking_number)}" onclick="openTrackingDetail(this.dataset.tracking)">${escapePortalHTML(item.tracking_number)}</button></td>
+                        <td style="padding: 16px;">${escapePortalHTML(item.category_name)}</td>
+                        <td style="padding: 16px; font-weight:700;">${weight} KG${item.final_weight_kg == null ? "" : " / Aktual " + item.final_weight_kg + " KG"}</td>
+                        <td style="padding: 16px; font-weight:800; color:#087443;">${pickupRewardLabel(item)}<br><small>${pickupPaymentLabel(item)}</small></td>
                         <td style="padding: 16px;"><span class="status-badge ${badgeClass}">${statusMeta.label}</span></td>
                     </tr>
                 `;
@@ -492,15 +460,15 @@ function renderUserActivePickup(item) {
     const badgeClass = getStatusBadgeClass(item.status);
     const encodedItem = encodeURIComponent(JSON.stringify(item));
     const pendingActions = item.status === 'pending' ? `
-                        <button type="button" class="btn btn-outline pickup-flow-track-btn" onclick="editPendingPickup('${encodedItem}')">Edit</button>
-                        <button type="button" class="btn btn-outline pickup-flow-track-btn danger" onclick="cancelPendingPickup('${item.tracking_number}')">Batalkan</button>
+                        <button type="button" class="btn btn-outline pickup-flow-track-btn" data-item="${encodedItem}" onclick="editPendingPickup(this.dataset.item)">Edit</button>
+                        <button type="button" class="btn btn-outline pickup-flow-track-btn danger" data-tracking="${escapePortalHTML(item.tracking_number)}" onclick="cancelPendingPickup(this.dataset.tracking)">Batalkan</button>
                     ` : '';
     return `
                         <div class="active-pickup-card pickup-flow-card">
                             <div class="pickup-flow-card-main">
                                 <span style="font-size:0.75rem; font-weight:800; color:var(--text-secondary); text-transform:uppercase;">No. Tracking</span>
-                                <h4 style="font-weight:900; color:var(--brand-dark); margin:2px 0;">${item.tracking_number}</h4>
-                                <p style="font-size:0.8rem; color:var(--text-secondary); margin:4px 0 0 0;">${item.category_name} • ${weight} KG</p>
+                                <h4 style="font-weight:900; color:var(--brand-dark); margin:2px 0;">${escapePortalHTML(item.tracking_number)}</h4>
+                                <p style="font-size:0.8rem; color:var(--text-secondary); margin:4px 0 0 0;">${escapePortalHTML(item.category_name)} • ${weight} KG</p>
                             </div>
                             <div class="pickup-flow-card-status">
                                 <div class="pickup-flow-icon"><i class="fas ${statusMeta.icon}"></i></div>
@@ -509,7 +477,7 @@ function renderUserActivePickup(item) {
                                     <p>${statusMeta.description}</p>
                                     <small>${statusMeta.nextAction}</small>
                                 </div>
-                                <button type="button" class="btn btn-outline pickup-flow-track-btn" onclick="openTrackingDetail('${item.tracking_number}')">Lacak</button>
+                                <button type="button" class="btn btn-outline pickup-flow-track-btn" data-tracking="${escapePortalHTML(item.tracking_number)}" onclick="openTrackingDetail(this.dataset.tracking)">Lacak</button>
                                 ${pendingActions}
                             </div>
                         </div>
@@ -519,12 +487,14 @@ function renderUserActivePickup(item) {
 function summarizeUserPickups(pickups) {
     const summary = {totalWeight: 0, totalCarbon: 0, totalReward: 0, activeHtml: '', historyHtml: '', monthlyWeights: {}};
     for (const item of pickups) {
-        const weight = Number.parseFloat(item.weight_kg);
-        summary.totalWeight += weight;
-        summary.totalCarbon += weight * 2.5;
-        if (item.status === 'completed') summary.totalReward += getPickupNetReward(item);
-        const month = new Date(item.created_at).toLocaleString('id-ID', {month: 'short'});
-        summary.monthlyWeights[month] = (summary.monthlyWeights[month] || 0) + weight;
+        if (item.status === 'completed' && item.reward_amount != null && item.final_weight_kg != null) {
+            const weight = Number(item.final_weight_kg);
+            summary.totalWeight += weight;
+            summary.totalCarbon += weight * 2.5;
+            const month = new Date(item.verified_at || item.created_at).toLocaleString('id-ID', {month: 'short', year: 'numeric'});
+            summary.monthlyWeights[month] = (summary.monthlyWeights[month] || 0) + weight;
+        }
+        if (item.payment_status === 'paid') summary.totalReward += Number(item.reward_amount);
         summary.historyHtml += renderUserHistoryRow(item);
         summary.activeHtml += renderUserActivePickup(item);
     }
@@ -541,7 +511,7 @@ function showPickupNotification(item) {
     const box = document.getElementById('system-notification-box');
     const message = document.getElementById('notification-message');
     if (!box || !message) return;
-    message.innerHTML = 'Penjemputan <strong>' + item.tracking_number + '</strong> dalam status: <strong>' + item.status.toUpperCase() + '</strong>.';
+    message.innerHTML = 'Penjemputan <strong>' + escapePortalHTML(item.tracking_number) + '</strong> dalam status: <strong>' + escapePortalHTML(item.status.toUpperCase()) + '</strong>.';
     box.style.display = 'flex';
 }
 
@@ -557,19 +527,14 @@ function renderUserDashboard(pickups) {
     document.getElementById('metric-total-reward').innerText = new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR', minimumFractionDigits: 0}).format(summary.totalReward);
     setDashboardMarkup('payout-history-table-body', summary.historyHtml, '<tr><td colspan="6" style="text-align:center; padding:24px;">Belum ada riwayat donasi sampah.</td></tr>');
     setDashboardMarkup('active-pickups-container', summary.activeHtml, '<div style="text-align:center; padding:24px;">Tidak ada penjemputan sampah aktif saat ini.</div>');
-    if (summary.activeHtml) showPickupNotification(pickups[0]);
+    if (summary.activeHtml) showPickupNotification(pickups.find(item => !['completed', 'cancelled'].includes(item.status)));
     renderChart(summary.monthlyWeights);
 }
 
 // 4. Load User Data & Pickups
-function loadDashboardData() {
-    const userSession = localStorage.getItem('user');
-    if (!userSession) {
-        window.location.href = 'login';
-        return;
-    }
-
-    const user = JSON.parse(userSession);
+async function loadDashboardData() {
+    const user = await portalUser('user');
+    if (!user) return;
     
     // Set Profile Info
     document.getElementById('hero-welcome').innerText = `Halo, ${user.name}!`;
@@ -584,14 +549,11 @@ function loadDashboardData() {
     const donorNameInput = document.getElementById('form-donor-name');
     if (donorNameInput) donorNameInput.value = user.name;
     populateProfileFields(user);
-    loadUserProfileSettings();
+    populateProfileFields(user);
 
     // Fetch Pickups from API
-    fetch('api/ecorecycle/list_pickups?type=user', {
+    portalFetch('api/ecorecycle/list_pickups?type=user', {
         method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + user.token
-        }
     })
     .then(res => {
         if (res.status === 401) {
@@ -612,10 +574,6 @@ const pickupForm = document.getElementById('pickup-request-form');
 if (pickupForm) {
     pickupForm.addEventListener('submit', function (e) {
         e.preventDefault();
-
-        const userSession = localStorage.getItem('user');
-        if (!userSession) return;
-        const user = JSON.parse(userSession);
 
         const btn = this.querySelector('button[type="submit"]');
         const originalHtml = btn.innerHTML;
@@ -660,11 +618,8 @@ if (pickupForm) {
             formData.append('photo', photoInput.files[0]);
         }
 
-        fetch('api/ecorecycle/request_pickup', {
+        portalFetch('api/ecorecycle/request_pickup', {
             method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + user.token
-            },
             body: formData
         })
         .then(res => res.json())
@@ -673,7 +628,7 @@ if (pickupForm) {
                 Swal.fire({
                     icon: 'success',
                     title: 'Permohonan Berhasil!',
-                    html: `Nomor Tracking: <strong>${data.data.tracking_number}</strong><br>Kolektor kami akan segera menghubungi Anda.`,
+                    html: `Nomor Tracking: <strong>${data.data.tracking_number}</strong><br>Petugas kami akan segera menghubungi Anda.`,
                     confirmButtonColor: '#10b981',
                     confirmButtonText: 'Lacak Status'
                 }).then(() => {
@@ -729,15 +684,8 @@ function searchTracking() {
         return;
     }
 
-    const userSession = localStorage.getItem('user');
-    if (!userSession) return;
-    const user = JSON.parse(userSession);
-
-    fetch(`api/ecorecycle/pickup_status?tracking_number=${trackingNum}`, {
+    portalFetch(`api/ecorecycle/pickup_status?tracking_number=${encodeURIComponent(trackingNum)}`, {
         method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + user.token
-        }
     })
     .then(res => res.json())
     .then(data => {
@@ -755,7 +703,12 @@ function searchTracking() {
             statusBadge.className = `status-badge ${badgeClass}`;
             statusBadge.innerText = statusMeta.label;
 
-            document.getElementById('track-disp-detail').innerText = `${item.category_name} • ${item.weight_kg} KG`;
+            document.getElementById('track-disp-detail').innerText = `${item.category_name} • Estimasi ${item.weight_kg} KG` +
+                (item.final_weight_kg == null ? "" : ` • Aktual ${item.final_weight_kg} KG`);
+
+            document.getElementById('track-disp-reward').textContent = [
+                pickupRewardLabel(item), pickupPaymentLabel(item), item.payment_reference ? 'Ref. ' + item.payment_reference : ''
+            ].filter(Boolean).join(' • ');
 
             // Populate Timeline
             const timelineList = document.getElementById('track-timeline-list');
@@ -774,7 +727,7 @@ function searchTracking() {
                             <div class="timeline-node-dot"></div>
                             <div class="timeline-node-time">${timeStr}</div>
                             <div class="timeline-node-title">${logMeta.label}</div>
-                            <div class="timeline-node-desc">Lokasi: <strong>${log.location}</strong><br>${log.notes}</div>
+                            <div class="timeline-node-desc">Lokasi: <strong>${escapePortalHTML(log.location)}</strong><br>${log.status === "completed" && item.payment_status === "requires_reconciliation" ? "Catatan historis memerlukan rekonsiliasi pembayaran." : escapePortalHTML(log.notes)}</div>
                         </div>
                     `;
                 });
@@ -813,10 +766,6 @@ if (settingsForm) {
     settingsForm.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        const userSession = localStorage.getItem('user');
-        if (!userSession) return;
-        const user = JSON.parse(userSession);
-
         const payload = {
             name: document.getElementById('settings-name').value.trim(),
             phone: document.getElementById('settings-phone').value.trim(),
@@ -851,18 +800,16 @@ if (settingsForm) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
 
-        fetch('api/user/profile', {
+        portalFetch('api/user/profile', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + user.token
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(payload)
         })
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
-                mergeSessionUser(data.data);
                 populateProfileFields(data.data);
                 document.getElementById('hero-welcome').innerText = `Halo, ${data.data.name}!`;
                 document.getElementById('user-display-name').innerText = data.data.name;
@@ -870,7 +817,7 @@ if (settingsForm) {
                 Swal.fire({
                     icon: 'success',
                     title: 'Profil Disimpan',
-                    text: 'Data payout sudah siap digunakan admin saat reward dicairkan.',
+                    text: 'Data tujuan pembayaran tersimpan di profil Anda.',
                     confirmButtonColor: '#10b981'
                 });
             } else {

@@ -7,16 +7,17 @@ import (
 	"strings"
 
 	httpx "ecorecycle/internal/middleware"
+	"ecorecycle/internal/models"
 )
 
 func (a *App) ListAnnouncementsHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := a.Auth.UserFromRequest(r)
+	user, err := a.apiSession(r)
 	if err != nil {
 		httpx.SendResponse(w, "error", err.Error(), nil, http.StatusUnauthorized)
 		return
 	}
 
-	items, err := a.Announcements.List(user.Role, user.Role == "admin")
+	items, err := a.Announcements.List(user.Role, user.Role == models.RoleAdministrator)
 	if err != nil {
 		httpx.SendResponse(w, "error", "Gagal mengambil pengumuman portal.", nil, http.StatusInternalServerError)
 		return
@@ -25,12 +26,12 @@ func (a *App) ListAnnouncementsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) ManageAnnouncementsHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := a.Auth.UserFromRequest(r)
+	user, err := a.apiSession(r)
 	if err != nil {
 		httpx.SendResponse(w, "error", err.Error(), nil, http.StatusUnauthorized)
 		return
 	}
-	if user.Role != "admin" {
+	if user.Role != models.RoleAdministrator {
 		httpx.SendResponse(w, "error", "Akses ditolak. Perlu hak akses Administrator.", nil, http.StatusForbidden)
 		return
 	}
@@ -62,8 +63,15 @@ func (a *App) ManageAnnouncementsHandler(w http.ResponseWriter, r *http.Request)
 	title := strings.TrimSpace(data["title"])
 	message := strings.TrimSpace(data["message"])
 	targetRole := data["target_role"]
-	if targetRole != "all" && targetRole != "user" && targetRole != "collector" {
+	switch targetRole {
+	case "":
 		targetRole = "all"
+	case "collector":
+		targetRole = models.RolePetugas
+	case "all", models.RoleUser, models.RolePetugas:
+	default:
+		httpx.SendResponse(w, "error", "Target pengumuman tidak valid.", nil, http.StatusBadRequest)
+		return
 	}
 	if len(title) < 3 || len(title) > 120 || len(message) < 5 || len(message) > 1000 {
 		httpx.SendResponse(w, "error", "Judul harus 3-120 karakter dan isi 5-1000 karakter.", nil, http.StatusBadRequest)
@@ -79,12 +87,12 @@ func (a *App) ManageAnnouncementsHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (a *App) DeleteAnnouncementHandler(w http.ResponseWriter, r *http.Request) {
-	user, err := a.Auth.UserFromRequest(r)
+	user, err := a.apiSession(r)
 	if err != nil {
 		httpx.SendResponse(w, "error", err.Error(), nil, http.StatusUnauthorized)
 		return
 	}
-	if user.Role != "admin" {
+	if user.Role != models.RoleAdministrator {
 		httpx.SendResponse(w, "error", "Akses ditolak. Perlu hak akses Administrator.", nil, http.StatusForbidden)
 		return
 	}

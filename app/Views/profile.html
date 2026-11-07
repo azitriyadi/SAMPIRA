@@ -503,6 +503,7 @@
         }
     @media (prefers-reduced-motion: reduce) { .pane { animation: none; } .sidebar, .sidebar-item, .main-content, .action-btn, .slider, .slider::before { transition: none; } }
     </style>
+    <script src="/assets/js/portal-session.js?v=phase1-final"></script>
 </head>
 
 <body class="portal-page">
@@ -601,7 +602,7 @@
                             </div>
                             <div class="data-group" style="grid-column: 1 / -1;">
                                 <label for="profile-input-address">Alamat Utama Penjemputan (Bandung)</label>
-                                <textarea id="profile-input-address" class="data-input" rows="4">Jl. Telekomunikasi No. 1, Terusan Buahbatu, Bandung, Jawa Barat</textarea>
+                                <textarea id="profile-input-address" class="data-input" rows="4"></textarea>
                             </div>
                         </div>
                         <button type="button" class="action-btn" onclick="alert('Profil berhasil diperbarui!')"><i class="fas fa-save"></i> Simpan Perubahan</button>
@@ -713,15 +714,10 @@
             });
         });
 
-        // Initialize User Data from LocalStorage
-        function loadUserData() {
-            const userSession = localStorage.getItem('user');
-            if(!userSession) {
-                window.location.href = 'login';
-                return;
-            }
-
-            const user = JSON.parse(userSession);
+        // Read the profile from the current server session
+        async function loadUserData() {
+            const user = await portalUser('user');
+            if (!user) return;
 
             // Sidebar Data
             const navUserName = document.getElementById('nav-user-name');
@@ -749,12 +745,13 @@
 
             if(inputName) inputName.value = user.name;
             if(inputEmail) inputEmail.value = user.email;
+            document.getElementById('profile-input-phone').value = user.phone || '';
+            document.getElementById('profile-input-address').value = user.address || '';
         }
 
         function logoutProfile(e) {
             if(e) e.preventDefault();
-            localStorage.removeItem('user');
-            window.location.href = 'login';
+            logoutPortal();
         }
 
         // Run on load

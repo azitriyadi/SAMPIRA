@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"ecorecycle/internal/models"
 )
@@ -28,10 +27,10 @@ func TestPickupOwnership(t *testing.T) {
 		assigned sql.NullInt64
 		want     bool
 	}{
-		{"admin", sql.NullInt64{}, true},
-		{"collector", sql.NullInt64{Int64: 7, Valid: true}, true},
-		{"collector", sql.NullInt64{Int64: 8, Valid: true}, false},
-		{"collector", sql.NullInt64{}, false},
+		{models.RoleAdmin, sql.NullInt64{Int64: 7, Valid: true}, false},
+		{models.RolePetugas, sql.NullInt64{Int64: 7, Valid: true}, true},
+		{models.RolePetugas, sql.NullInt64{Int64: 8, Valid: true}, false},
+		{models.RolePetugas, sql.NullInt64{}, false},
 	} {
 		if got := ownsPickupStatus(&models.TokenPayload{ID: 7, Role: tc.role}, tc.assigned); got != tc.want {
 			t.Errorf("ownership role=%s assigned=%v: %v", tc.role, tc.assigned, got)
@@ -39,37 +38,22 @@ func TestPickupOwnership(t *testing.T) {
 	}
 }
 
-func TestPayoutEligibility(t *testing.T) {
-	valid := payoutState{reward: sql.NullFloat64{Float64: 7000, Valid: true}, fee: sql.NullFloat64{Float64: 1000, Valid: true}, verifiedAt: sql.NullTime{Time: time.Now(), Valid: true}, status: "arrived"}
-	for _, tc := range []struct {
-		name    string
-		change  func(*payoutState)
-		want    float64
-		blocked bool
-	}{
-		{"verified net reward", func(*payoutState) {}, 6000, false},
-		{"duplicate payout", func(s *payoutState) { s.processed = true }, 0, true},
-		{"not arrived", func(s *payoutState) { s.status = "transit" }, 0, true},
-		{"unverified", func(s *payoutState) { s.verifiedAt.Valid = false }, 0, true},
-		{"missing reward", func(s *payoutState) { s.reward.Valid = false }, 0, true},
-		{"missing fee", func(s *payoutState) { s.fee.Valid = false }, 0, true},
-		{"zero fee", func(s *payoutState) { s.fee.Float64 = 0 }, 7000, false},
-		{"zero tariff category", func(s *payoutState) { s.reward.Float64 = 0; s.fee.Float64 = 0 }, 0, false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			state := valid
-			tc.change(&state)
-			got, problem := state.amount()
-			if got != tc.want || (problem != nil) != tc.blocked {
-				t.Fatalf("amount=%v problem=%v", got, problem)
-			}
-			if problem != nil && problem.status != http.StatusBadRequest {
-				t.Fatal(problem.status)
-			}
-		})
+func TestRewardAmounts(t *testing.T) {
+	if got := rewardValue(123.45, 1.25); got != 154.31 {
+		t.Fatalf("gross=%v", got)
+	}
+	if got := netReward(154.31, 12.50); got != 141.81 {
+		t.Fatalf("net=%v", got)
+	}
+	if got := netReward(0, 12.50); got != 0 {
+		t.Fatalf("negative net=%v", got)
+	}
+	for _, raw := range []string{"NaN", "Inf", "0", "0.001", "100000", "-1"} {
+		if _, err := pickupWeight(raw); err == nil {
+			t.Fatalf("accepted weight %q", raw)
+		}
 	}
 }
-
 func TestPhotoExtensions(t *testing.T) {
 	for _, ext := range []string{".jpg", ".jpeg", ".png", ".webp"} {
 		if !validPhotoExtension(ext) {

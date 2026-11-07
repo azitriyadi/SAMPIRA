@@ -1,4 +1,4 @@
-// Landing page tariffs mirror the initial database categories.
+// Keep the landing estimate aligned with the server tariff.
 const menuToggle = document.querySelector('.menu-toggle');
 const mainNav = document.getElementById('main-nav');
 function closeMenu() {
@@ -26,22 +26,42 @@ const weightInput = document.getElementById('estimator-weight');
 const resultCard = document.getElementById('estimator-result-card');
 const rupiah = new Intl.NumberFormat('id-ID', {style:'currency',currency:'IDR',maximumFractionDigits:0});
 const compactRupiah = (amount) => rupiah.format(amount).replace(/\s/g, '');
-estimatorForm.addEventListener('submit', (event) => {
+const estimateStatus = document.getElementById('estimator-status');
+let estimateRequest = 0;
+estimatorForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const weight = Number(weightInput.value);
-    if (!estimatorForm.reportValidity() || !Number.isFinite(weight) || weight <= 0) return;
+    if (!estimatorForm.reportValidity()) return;
+    const request = ++estimateRequest;
     const category = wasteCategories.find(item => item.name === categorySelect.value);
-    const grossReward = category.rate * weight;
-    const processingFee = category.feePerKg * weight;
-    document.getElementById('result-rate-label').textContent = `${compactRupiah(category.rate)} × ${new Intl.NumberFormat('id-ID').format(weight)} kg`;
-    document.getElementById('result-gross-val').textContent = compactRupiah(grossReward);
-    document.getElementById('result-fee-val').textContent = compactRupiah(processingFee);
-    document.getElementById('result-reward-val').textContent = compactRupiah(grossReward - processingFee);
-    document.getElementById('result-net-val').textContent = compactRupiah(grossReward - processingFee);
-    document.getElementById("estimator-category-note").textContent = category.note;
-    resultCard.hidden = false;
+    const weight = weightInput.value;
+    resultCard.hidden = true;
+    estimateStatus.textContent = 'Menghitung estimasi…';
+    try {
+        const response = await fetch('/api/ecorecycle/estimate_reward', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({category: categorySelect.value, weight_kg: weight})
+        });
+        const result = await response.json();
+        if (request !== estimateRequest) return;
+        if (!response.ok) throw new Error(result.message);
+        const data = result.data;
+        document.getElementById('result-rate-label').textContent = compactRupiah(data.reward_rate) + ' × ' + new Intl.NumberFormat('id-ID').format(data.weight_kg) + ' kg';
+        document.getElementById('result-gross-val').textContent = compactRupiah(data.total_estimate);
+        document.getElementById('result-fee-val').textContent = compactRupiah(data.processing_fee);
+        document.getElementById('result-reward-val').textContent = compactRupiah(data.net_estimate);
+        document.getElementById('result-net-val').textContent = compactRupiah(data.net_estimate);
+        document.getElementById('estimator-category-note').textContent = category?.note || '';
+        estimateStatus.textContent = '';
+        resultCard.hidden = false;
+    } catch (error) {
+        if (request === estimateRequest) estimateStatus.textContent = error.message || 'Estimasi belum tersedia.';
+    }
 });
-estimatorForm.addEventListener('input', () => { resultCard.hidden = true; });
+estimatorForm.addEventListener('input', () => {
+    estimateRequest++;
+    resultCard.hidden = true;
+    estimateStatus.textContent = '';
+});
 
 // Content stays visible without JavaScript; animate each section only on first entry.
 const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');

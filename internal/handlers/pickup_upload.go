@@ -3,6 +3,7 @@ package handlers
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -10,46 +11,53 @@ import (
 	"strings"
 )
 
-func savePickupPhoto(r *http.Request) (*string, *apiProblem) {
-	file, header, err := r.FormFile("photo")
+const maxPickupImage = 5 << 20
+
+var photoTypes = map[string]string{
+	".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp",
+}
+
+func readPickupImage(r *http.Request, field string) ([]byte, string, string, *apiProblem) {
+	file, header, err := r.FormFile(field)
+	if errors.Is(err, http.ErrMissingFile) || errors.Is(err, http.ErrNotMultipart) {
+		return nil, "", "", nil
+	}
 	if err != nil {
-		return nil, nil
+		return nil, "", "", &apiProblem{"Unggahan tidak dapat dibaca.", http.StatusBadRequest}
 	}
 	defer file.Close()
 	ext := strings.ToLower(filepath.Ext(header.Filename))
-	if !validPhotoExtension(ext) {
-		return nil, &apiProblem{"Ekstensi file foto tidak diizinkan (Hanya JPG, JPEG, PNG, WEBP).", http.StatusBadRequest}
+	if !validPhotoExtension(ext) || header.Size > maxPickupImage {
+		return nil, "", "", &apiProblem{"Gunakan gambar JPG, PNG, atau WEBP hingga 5 MB.", http.StatusBadRequest}
 	}
-	bytes := make([]byte, 16)
-	if _, err := rand.Read(bytes); err != nil {
-		return nil, &apiProblem{"Gagal menyiapkan nama berkas foto.", http.StatusInternalServerError}
+	data, err := io.ReadAll(io.LimitReader(file, maxPickupImage+1))
+	if err != nil || len(data) == 0 || len(data) > maxPickupImage || http.DetectContentType(data) != photoTypes[ext] {
+		return nil, "", "", &apiProblem{"Isi atau ukuran gambar tidak valid.", http.StatusBadRequest}
 	}
-	name := hex.EncodeToString(bytes) + ext
-	if err := storePickupPhoto(file, name); err != nil {
-		return nil, &apiProblem{"Gagal menyimpan berkas foto.", http.StatusInternalServerError}
+	return data, ext, photoTypes[ext], nil
+}
+
+func savePickupPhoto(r *http.Request) (*string, *apiProblem) {
+	data, ext, _, problem := readPickupImage(r, "photo")
+	if problem != nil || data == nil {
+		return nil, problem
+	}
+	nonce := make([]byte, 16)
+	if _, err := rand.Read(nonce); err != nil {
+		return nil, &apiProblem{"Gagal membuat nama foto.", http.StatusInternalServerError}
+	}
+	if err := os.MkdirAll("uploads", 0700); err != nil {
+		return nil, &apiProblem{"Gagal menyimpan foto.", http.StatusInternalServerError}
+	}
+	name := hex.EncodeToString(nonce) + ext
+	if err := os.WriteFile(filepath.Join("uploads", name), data, 0600); err != nil {
+		return nil, &apiProblem{"Gagal menyimpan foto.", http.StatusInternalServerError}
 	}
 	url := "uploads/" + name
 	return &url, nil
 }
 
 func validPhotoExtension(ext string) bool {
-	switch ext {
-	case ".jpg", ".jpeg", ".png", ".webp":
-		return true
-	default:
-		return false
-	}
-}
-
-func storePickupPhoto(file io.Reader, name string) error {
-	if err := os.MkdirAll("./uploads", 0755); err != nil {
-		return err
-	}
-	out, err := os.Create(filepath.Join("./uploads", name))
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-	_, err = io.Copy(out, file)
-	return err
+	_, ok := photoTypes[ext]
+	return ok
 }

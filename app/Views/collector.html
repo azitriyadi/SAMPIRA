@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="assets/css/collector-inline.css?v=quality4">
     <link rel="stylesheet" href="assets/css/portal-system.css?v=20261029-quality5">
     <link rel="stylesheet" href="assets/css/portal-controls.css?v=20261029-quality5">
+    <script src="/assets/js/portal-session.js?v=phase1-final"></script>
 </head>
 
 <body class="portal-page role-collector">
@@ -51,7 +52,7 @@
             <header class="desktop-header">
                 <div class="header-left">
                     <h1>Eco Command Center</h1>
-                    <p id="desktop-greeting">Selamat bertugas, Kolektor. Siap menjemput kontribusi penyelamat bumi?</p>
+                    <p id="desktop-greeting">Selamat bertugas, Petugas. Siap menjemput kontribusi penyelamat bumi?</p>
                 </div>
                 <div data-portal-style="display:flex; gap:16px; align-items:center;" class="collector-7172ab67fc">
                     <span class="status-pill success collector-3fb11f7751" data-portal-style="background:#d1fae5; color:#065f46; font-weight:800; padding:6px 16px; border-radius:50px;">ON DUTY</span>
@@ -63,7 +64,7 @@
                     <div data-portal-style="display:flex; align-items:center; gap:12px;" class="collector-a527d03795">
                         <div class="avatar-circle collector-6296ba4103" id="mobile-avatar" data-portal-style="width: 48px; height: 48px; border-radius: 50%; background:#087443; color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.1rem;">EC</div>
                         <div>
-                            <div data-portal-style="font-weight:900; font-size: 1.1rem;" id="mobile-name" class="collector-42c61adbe7">Kolektor</div>
+                            <div data-portal-style="font-weight:900; font-size: 1.1rem;" id="mobile-name" class="collector-42c61adbe7">Petugas</div>
                             <div data-portal-style="font-size:0.75rem; opacity:0.8;" class="collector-ed622dca03">Collector Partner • EcoRecycle</div>
                         </div>
                     </div>
@@ -100,7 +101,7 @@
                 <div class="portal-section-heading">
                     <div>
                         <span class="portal-eyebrow">Briefing operasional</span>
-                        <h3>Informasi untuk Kolektor</h3>
+                        <h3>Informasi untuk Petugas</h3>
                     </div>
                     <i class="fas fa-bullhorn"></i>
                 </div>
@@ -229,21 +230,21 @@
 
         <!-- VIEW: EARNINGS -->
         <div id="view-earnings" class="view-section">
-            <h2 data-portal-style="font-weight:900; margin-bottom:24px; color:#064e3b;" class="collector-9b1d182755">Dompet Kolektor</h2>
+            <h2 data-portal-style="font-weight:900; margin-bottom:24px; color:#064e3b;" class="collector-9b1d182755">Dompet Petugas</h2>
             <div class="balance-card collector-10394b0a6f" data-portal-style="background: linear-gradient(135deg, #064e3b 0%, #022c22 100%); color:white; padding:40px; border-radius:24px; max-width:600px; box-shadow: 0 10px 30px rgba(6,78,59,0.15);">
                 <div data-portal-style="font-size:0.9rem; opacity:0.8; font-weight:700;" class="collector-31486f07f4">TOTAL KOMISI DIDAPAT</div>
                 <h2 data-portal-style="font-size:3.5rem; font-weight:900; margin:12px 0; letter-spacing: -2px;" id="earnings-total" class="collector-95a68d1cc0">Rp 0</h2>
-                <button class="btn-primary collector-6d82a9c18c" data-portal-style="background:white; color:#064e3b; width: auto; padding: 12px 28px; border-radius:12px; font-weight:800;" onclick="alert('Komisi akan ditransfer ke rekening bank terdaftar Anda.')">Cairkan Pendapatan</button>
+                <button class="btn-primary collector-6d82a9c18c" data-portal-style="background:white; color:#064e3b; width: auto; padding: 12px 28px; border-radius:12px; font-weight:800;" disabled>Pencairan belum tersedia</button>
             </div>
         </div>
 
         <!-- VIEW: PROFILE -->
         <div id="view-profile" class="view-section">
-            <h2 data-portal-style="font-weight:900; margin-bottom:24px; color:#064e3b;" class="collector-9b1d182755">Profil Kolektor</h2>
+            <h2 data-portal-style="font-weight:900; margin-bottom:24px; color:#064e3b;" class="collector-9b1d182755">Profil Petugas</h2>
             <div class="enterprise-card collector-643f5faaad" data-portal-style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0; max-width:600px; text-align:center;">
                 <div class="profile-header collector-293242ee3e" data-portal-style="margin-bottom:32px;">
                     <div class="avatar-circle collector-3dfb5b2e10" id="profile-avatar-large" data-portal-style="width: 100px; height: 100px; border-radius: 50%; background:#064e3b; color:white; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:2.2rem; margin:0 auto 16px;">C</div>
-                    <h2 data-portal-style="margin:0; font-size: 1.5rem; font-weight: 900; color:#064e3b;" id="profile-name" class="collector-0d3dc6aec0">Eco Collector</h2>
+                    <h2 data-portal-style="margin:0; font-size: 1.5rem; font-weight: 900; color:#064e3b;" id="profile-name" class="collector-0d3dc6aec0">Petugas</h2>
                     <p data-portal-style="color:#64748b; font-size: 0.9rem; margin-top:4px;" class="collector-6d6eba2899">Expert Partner • EcoRecycle</p>
                 </div>
                 <div class="info-grid collector-4db4254359" data-portal-style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:32px;">
@@ -274,8 +275,8 @@
     </nav>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
-    <script src="assets/js/portal-announcements.js?v=20260702"></script>
-    <script src="assets/js/collector.js?v=20261029-quality5"></script>
+    <script src="assets/js/portal-announcements.js?v=phase1-final"></script>
+    <script src="assets/js/collector.js?v=phase2"></script>
 </body>
 
 </html>
