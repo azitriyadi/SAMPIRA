@@ -66,12 +66,16 @@ export async function checkHandlingBrowser({send, js, login, click, text, waitFo
     }
     const queue = () => openCard(root+' .facility-cards');
     const workflowButton = name => clickText(root+' .handling-actions button',name);
-    async function fill(fields) {
-        for (const [name, text] of Object.entries(fields)) {
-            const selector = dialog+' [name="'+name+'"]';
-            await waitFor(() => js('(()=>{const field=document.querySelector('+q(selector)+');return field && (!field.options||Array.from(field.options).some(o=>o.value==='+q(String(text))+'))})()'), 'Missing field or option ' + name);
-            await value(selector,text);
-        }
+    async function fillField(name, fieldValue) {
+        const selector = dialog+' [name="'+name+'"]';
+        await waitFor(() => js('(()=>{const field=document.querySelector('+q(selector)+');return field && (!field.options||Array.from(field.options).some(o=>o.value==='+q(String(fieldValue))+'))})()'), 'Missing field or option ' + name);
+        await value(selector,fieldValue);
+    }
+    function fill(fields) {
+        return Object.entries(fields).reduce(
+            (previous, [name, fieldValue]) => previous.then(() => fillField(name, fieldValue)),
+            Promise.resolve()
+        );
     }
     async function upload() {
         const {root:doc} = await send('DOM.getDocument');
@@ -91,11 +95,14 @@ export async function checkHandlingBrowser({send, js, login, click, text, waitFo
         await save();
         await text(root+' .facility-notice','Perubahan tersimpan');
     }
+    async function assertLayoutAtWidth(width) {
+        await viewport(width);
+        assert(await js('document.documentElement.scrollWidth <= innerWidth + 2'), 'Horizontal overflow at ' + width);
+    }
     async function assertLayout() {
-        for (const width of [1280,390,320]) {
-            await viewport(width);
-            assert(await js('document.documentElement.scrollWidth <= innerWidth + 2'), 'Horizontal overflow at ' + width);
-        }
+        await assertLayoutAtWidth(1280);
+        await assertLayoutAtWidth(390);
+        await assertLayoutAtWidth(320);
     }
     async function openOwner() {
         await login(ownerEmail,'/dashboard');
@@ -219,12 +226,13 @@ export async function checkHandlingBrowser({send, js, login, click, text, waitFo
     await text(root,'Ulangi uji pengunci setelah penyesuaian.');
     assert(!(await js('Array.from(document.querySelectorAll('+q(root+' .handling-actions button')+')).some(x=>x.textContent==="Serahkan hasil")')));
     await act('Catat tindakan',{action_taken:'Menyesuaikan posisi pengunci dan menguji kembali.'});
-    let state = await api(path,{token:second.token});
-    for (let index=0; index<8; index++) {
-        state = await api(path+'/activity',{token:second.token,method:'POST',body:validForm({
-            version:state.version,action:'record_progress',action_taken:'Pemeriksaan berulang '+(index+1)
-        })});
-    }
+    // Each progress update needs the version returned by the previous one.
+    const progressNotes = Array.from({length:8}, (_, index) => 'Pemeriksaan berulang '+(index+1));
+    await progressNotes.reduce((previous, note) => previous.then(state =>
+        api(path+'/activity',{token:second.token,method:'POST',body:validForm({
+            version:state.version,action:'record_progress',action_taken:note
+        })})
+    ), api(path,{token:second.token}));
     await clickText(root+' button','Muat ulang detail');
     await text(root,'Pemeriksaan berulang 8');
     await act('Serahkan hasil',{result:'Pengunci lulus uji ulang.'},true);
@@ -252,8 +260,9 @@ export async function checkHandlingBrowser({send, js, login, click, text, waitFo
     await text(publicPanel,'23 aktivitas ditampilkan.');
     await waitFor(() => js('document.querySelector(".handling-public img")?.naturalWidth === 1'), 'Published photo did not load');
     assert.equal(await js('document.querySelectorAll(".handling-public img").length'),1);
+    const publicHistory = await js('document.querySelector(".handling-public").innerText');
     for (const privateText of ['Temuan teknis privat','Ulangi uji pengunci','Instansi Fixture','SURAT-FIXTURE']) {
-        assert(!(await js('document.querySelector(".handling-public").innerText.includes('+q(privateText)+')')));
+        assert(!publicHistory.includes(privateText), 'Private text appeared in public history: '+privateText);
     }
     await api(path+'/history/'+assessment.version+'/photo',{token:owner.token},404);
     await api(path+'/history/'+submitted.version+'/photo',{token:owner.token});
