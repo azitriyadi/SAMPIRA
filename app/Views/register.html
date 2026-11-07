@@ -1,47 +1,84 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#126048">
-    <title>Daftar — EcoRecycle</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f7f9f5">
+    <title>Daftar | SAMPIRA</title>
+    <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/auth-flat.css?v=20261029-quality5">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" defer integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
-    <script src="assets/js/auth.js?v=phase1-final" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/auth-flat.css?v=phase6b2-bg">
+    <script src="/assets/js/auth.js?v=phase6b2" defer></script>
 </head>
 <body data-auth-page="register">
     <a class="skip-link" href="#auth-form">Lewati ke formulir</a>
-    <header class="auth-header">
-        <a class="brand" href="home" aria-label="EcoRecycle, halaman utama"><span class="brand-leaves" aria-hidden="true"></span>EcoRecycle</a>
-
-    </header>
-    <main class="auth-layout">
-        <a class="back-link" href="home" aria-label="Kembali ke beranda" title="Kembali ke beranda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14"/></svg></a>
-        <section class="auth-story" aria-labelledby="story-title">
-            <div class="story-copy"><p class="eyebrow">Langkah kecil, siklus baru.</p><h1 id="story-title">Mulai dari rumah.<br><span>Beri manfaat baru.</span></h1><p>Pilah organik, anorganik, elektronik, dan B3 rumah tangga. Buat akun untuk mulai mengajukan penjemputan.</p></div>
-            <img class="story-image" src="assets/img/landing-hero-fresh.png" width="1536" height="1024" alt="Warga menyerahkan perangkat elektronik bekas kepada kolektor untuk didaur ulang">
-            <div class="story-footer"><span class="cycle-symbol" aria-hidden="true">↻</span><p>Untuk barang yang tak lagi terpakai.<br><strong>Untuk lingkungan yang lebih baik.</strong></p></div>
-        </section>
-        <section class="auth-panel" aria-labelledby="form-title">
-            <div class="auth-form-wrap" id="auth-form">
-                <nav class="auth-tabs" aria-label="Akses akun"><a href="login" >Masuk</a><a href="register" aria-current="page">Daftar</a></nav>
-                <div class="auth-page-content">
-                <div class="form-heading"><p class="eyebrow">Mulai langkah pertamamu</p><h2 id="form-title">Buat akun.<br>Mulai berkontribusi.</h2><p>Isi data di bawah untuk bergabung dengan EcoRecycle.</p></div>
-                <form id="register-form">
-                    <div class="form-field"><label for="register-name">Nama lengkap</label><input type="text" id="register-name" name="name" placeholder="Nama lengkap kamu" autocomplete="name" required></div>
-                    <div class="form-field"><label for="register-email">Alamat email</label><input type="email" id="register-email" name="email" placeholder="nama@email.com" autocomplete="email" required></div>
-                    <div class="form-field"><label for="register-password">Kata sandi</label><div class="password-field"><input type="password" id="register-password" name="password" placeholder="Buat kata sandi" autocomplete="new-password" aria-describedby="password-hint" required><button class="password-toggle" type="button" aria-controls="register-password" aria-label="Tampilkan kata sandi" aria-pressed="false">Lihat</button></div><p class="field-hint" id="password-hint">Gunakan kata sandi yang unik untuk akunmu.</p></div>
-                    <button class="submit-button" type="submit">Buat akun</button>
-                </form>
-                <p class="switch-account">Sudah punya akun? <a href="login">Masuk di sini</a></p>
-                <a class="help-link" href="home#faq">Punya pertanyaan? Lihat FAQ <span aria-hidden="true">↗</span></a>
-                </div>
+    <main class="auth-card" aria-labelledby="form-title">
+        <header class="auth-scene">
+            <img src="/assets/img/auth-bandung.webp" width="960" height="320" alt="" fetchpriority="high">
+            <a class="back-link" href="/home" aria-label="Kembali ke Beranda" title="Kembali ke Beranda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14"/></svg></a>
+            <svg class="scene-edge" viewBox="0 0 600 36" preserveAspectRatio="none" aria-hidden="true">
+                <path fill="#dcefd7" d="M0 11C190 73 445-36 600 13V36H0Z"/>
+                <path fill="#fff" d="M0 19C193 66 441-22 600 24V36H0Z"/>
+            </svg>
+        </header>
+        <div class="auth-body" id="auth-form" tabindex="-1">
+            <div class="auth-brand"><img src="/assets/img/sampira-mark.svg" width="37" height="37" alt=""> SAMPIRA</div>
+            <div class="form-heading">
+                <h1 id="form-title">Buat Akun Baru</h1>
+                <p>Daftar sekarang dan gunakan berbagai layanan SAMPIRA.</p>
             </div>
-            <p class="panel-footer">© 2026 EcoRecycle <span>Barang lama. Manfaat baru.</span></p>
-        </section>
+            <noscript><p class="auth-notice">Aktifkan JavaScript untuk mendaftar.</p></noscript>
+            <p class="sr-only" role="status" id="auth-progress"></p>
+            <form id="register-form" method="post">
+                <div class="form-field">
+                    <label for="register-name">Nama lengkap</label>
+                    <div class="field-control">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/></svg>
+                        <input type="text" id="register-name" name="name" autocomplete="name" placeholder="Masukkan nama lengkap" aria-describedby="register-name-error" required>
+                    </div>
+                    <p class="field-error" id="register-name-error" aria-live="polite"></p>
+                </div>
+                <div class="form-field">
+                    <label for="register-email">Alamat email</label>
+                    <div class="field-control">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+                        <input type="email" id="register-email" name="email" autocomplete="email" placeholder="nama@contoh.com" aria-describedby="register-email-error" required>
+                    </div>
+                    <p class="field-error" id="register-email-error" aria-live="polite"></p>
+                </div>
+                <div class="form-field">
+                    <label for="register-password">Kata sandi</label>
+                    <div class="field-control">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3m-4 4v3"/></svg>
+                        <input type="password" id="register-password" name="password" autocomplete="new-password" placeholder="Buat kata sandi" aria-describedby="password-hint register-password-error" required>
+                        <button class="password-toggle" type="button" aria-controls="register-password" aria-label="Lihat kata sandi" aria-pressed="false">Lihat</button>
+                    </div>
+                    <p class="field-hint" id="password-hint">6–72 byte. Huruf atau simbol tertentu dapat memakai lebih dari satu byte.</p>
+                    <p class="field-error" id="register-password-error" aria-live="polite"></p>
+                </div>
+                <div class="form-field">
+                    <label for="register-confirm-password">Konfirmasi kata sandi</label>
+                    <div class="field-control">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3m-4 4v3"/></svg>
+                        <input type="password" id="register-confirm-password" autocomplete="new-password" placeholder="Ulangi kata sandi" aria-describedby="register-confirm-password-error" required>
+                        <button class="password-toggle" type="button" aria-controls="register-confirm-password" aria-label="Lihat konfirmasi kata sandi" aria-pressed="false">Lihat</button>
+                    </div>
+                    <p class="field-error" id="register-confirm-password-error" aria-live="polite"></p>
+                </div>
+                <p class="auth-notice auth-error" role="alert" tabindex="-1" hidden></p>
+                <button class="submit-button" type="submit"><span>Daftar</span></button>
+            </form>
+            <section id="register-success" class="auth-success" tabindex="-1" aria-labelledby="register-success-title" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                <h2 id="register-success-title">Pendaftaran berhasil</h2>
+                <p>Akun Anda sudah dibuat. Silakan masuk untuk menggunakan layanan SAMPIRA.</p>
+                <a class="submit-button" href="/login">Masuk sekarang <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></a>
+            </section>
+            <p class="switch-account">Sudah punya akun? <a href="/login">Masuk sekarang</a></p>
+            <a class="auth-help" href="/home#faq">Bantuan penggunaan SAMPIRA</a>
+        </div>
     </main>
 </body>
 </html>

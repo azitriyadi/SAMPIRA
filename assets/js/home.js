@@ -1,6 +1,7 @@
 // Keep the landing estimate aligned with the server tariff.
 const menuToggle = document.querySelector('.menu-toggle');
 const mainNav = document.getElementById('main-nav');
+document.querySelector('.site-header').setAttribute('data-menu-ready', '');
 function closeMenu() {
     mainNav.classList.remove('is-open');
     menuToggle.setAttribute('aria-expanded', 'false');
@@ -9,9 +10,20 @@ menuToggle.addEventListener('click', () => {
     const expanded = menuToggle.getAttribute('aria-expanded') !== 'true';
     menuToggle.setAttribute('aria-expanded', String(expanded));
     mainNav.classList.toggle('is-open', expanded);
+    if (expanded) mainNav.querySelector('a').focus();
 });
 mainNav.addEventListener('click', (event) => {
-    if (event.target.closest('a')) closeMenu();
+    const link = event.target.closest('a');
+    if (!link) return;
+    const wasOpen = menuToggle.getAttribute('aria-expanded') === 'true';
+    closeMenu();
+    if (wasOpen && link.hash) {
+        const target = document.getElementById(link.hash.slice(1));
+        if (target) {
+            target.tabIndex = -1;
+            target.focus({preventScroll: true});
+        }
+    }
 });
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && menuToggle.getAttribute('aria-expanded') === 'true') {
@@ -19,9 +31,25 @@ document.addEventListener('keydown', (event) => {
         menuToggle.focus();
     }
 });
+
+const estimator = document.getElementById('estimator');
+function updateAnchor() {
+    if (location.hash === '#estimator') estimator.open = true;
+    for (const link of mainNav.querySelectorAll('a[href^="#"]')) {
+        const current = link.hash === (location.hash || '#beranda');
+        if (current) link.setAttribute('aria-current', 'location');
+        else link.removeAttribute('aria-current');
+    }
+}
+document.addEventListener('click', event => {
+    if (event.target.closest('a[href="#estimator"]')) estimator.open = true;
+});
+window.addEventListener('hashchange', updateAnchor);
+updateAnchor();
+
 const estimatorForm = document.getElementById('estimator-form');
 const categorySelect = document.getElementById('estimator-category');
-populateWasteOptions(categorySelect, 'Computers');
+populateWasteOptions(categorySelect, 'Computers', {showTariff: false});
 const weightInput = document.getElementById('estimator-weight');
 const resultCard = document.getElementById('estimator-result-card');
 const rupiah = new Intl.NumberFormat('id-ID', {style:'currency',currency:'IDR',maximumFractionDigits:0});
@@ -63,7 +91,7 @@ estimatorForm.addEventListener('input', () => {
     estimateStatus.textContent = '';
 });
 
-// Content stays visible without JavaScript; animate each section only on first entry.
+// Keep scrolling and control transitions optional.
 const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
 const motionToggle = document.querySelector('.motion-toggle');
 let motionPaused = false;
@@ -72,8 +100,8 @@ function updateMotionControl() {
     document.body.classList.toggle('motion-paused', motionPaused || reduced);
     motionToggle.disabled = reduced;
     motionToggle.setAttribute('aria-pressed', String(motionPaused || reduced));
-    let label = 'Jeda animasi Ⅱ';
-    if (motionPaused) label = 'Putar animasi ▷';
+    let label = 'Jeda animasi';
+    if (motionPaused) label = 'Aktifkan animasi';
     if (reduced) label = 'Animasi nonaktif';
     motionToggle.textContent = label;
 }
@@ -83,18 +111,3 @@ motionToggle.addEventListener('click', () => {
 });
 motionPreference.addEventListener('change', updateMotionControl);
 updateMotionControl();
-
-if ('IntersectionObserver' in window) {
-    const revealObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach((entry) => {
-            if (!entry.isIntersecting) return;
-            if (!motionPreference.matches && !motionPaused) entry.target.classList.add('is-visible');
-            observer.unobserve(entry.target);
-        });
-    }, { threshold: 0.12 });
-    document.querySelectorAll('.hero-copy, .category, .steps li, .estimate-copy, .estimator-card, .future-inner, .faq-section > h2, .faq-list, .closing-inner').forEach((element, index) => {
-        element.classList.add('reveal-item');
-        element.style.setProperty('--reveal-delay', `${(index % 3) * 80}ms`);
-        revealObserver.observe(element);
-    });
-}

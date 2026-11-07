@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Collector Portal | EcoRecycle</title>
+    <meta name="sampira-routing-url" content="">
+    <meta name="sampira-routing-profile" content="driving">
+    <title>Petugas | SAMPIRA</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,10 +22,17 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/collector-base.css?v=quality4">
+    <link rel="stylesheet" href="/assets/css/location-map.css?v=phase5b">
     <link rel="stylesheet" href="assets/css/collector-inline.css?v=quality4">
-    <link rel="stylesheet" href="assets/css/portal-system.css?v=20261029-quality5">
+    <link rel="stylesheet" href="assets/css/portal-system.css?v=phase5b">
     <link rel="stylesheet" href="assets/css/portal-controls.css?v=20261029-quality5">
-    <script src="/assets/js/portal-session.js?v=phase1-final"></script>
+    <script src="/assets/js/portal-session.js?v=phase5b"></script>
+    <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase4b">
+    <link rel="stylesheet" href="/assets/css/facility-handling.css?v=phase4b">
+    <script type="module" src="/assets/js/facility-handling.js?v=phase5b"></script>
+    <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/assets/css/sampira.css?v=phase6b-live">
+    <script type="module" src="/assets/js/operations.js?v=phase6b"></script>
 </head>
 
 <body class="portal-page role-collector">
@@ -31,12 +40,14 @@
     <!-- Sidebar (Desktop) -->
     <aside class="sidebar">
         <a href="home" class="sidebar-logo">
-            <span class="brand-mark"><i class="fas fa-leaf"></i></span>
-            <span>EcoRecycle<small>Collector Portal</small></span>
+            <img src="/assets/img/sampira-mark.svg" width="34" height="34" alt="">
+            <span>SAMPIRA<small>Operasional Petugas</small></span>
         </a>
         <div class="sidebar-nav">
             <button type="button" class="sidebar-item active" onclick="switchView('dashboard', this)"><i class="fas fa-house-chimney"></i> Dashboard</button>
             <button type="button" class="sidebar-item" onclick="openActiveMission()"><i class="fas fa-route"></i> Pickup Aktif</button>
+            <button type="button" class="sidebar-item" data-collector-view="operations" onclick="switchView('operations', this)"><i class="fas fa-map" aria-hidden="true"></i> Peta Operasional</button>
+            <button type="button" class="sidebar-item" data-open-handling aria-controls="view-facility" onclick="switchView('facility', this)"><i class="fas fa-clipboard-list" aria-hidden="true"></i> Tugas Fasilitas</button>
             <button type="button" class="sidebar-item" onclick="switchView('history', this)"><i class="fas fa-list-check"></i> Riwayat Misi</button>
             <button type="button" class="sidebar-item" onclick="switchView('earnings', this)"><i class="fas fa-wallet"></i> Komisi</button>
             <button type="button" class="sidebar-item" onclick="switchView('profile', this)"><i class="fas fa-user-circle"></i> Profil</button>
@@ -51,11 +62,11 @@
         <div id="view-dashboard" class="view-section active">
             <header class="desktop-header">
                 <div class="header-left">
-                    <h1>Eco Command Center</h1>
+                    <h1>Operasional Petugas</h1>
                     <p id="desktop-greeting">Selamat bertugas, Petugas. Siap menjemput kontribusi penyelamat bumi?</p>
                 </div>
                 <div data-portal-style="display:flex; gap:16px; align-items:center;" class="collector-7172ab67fc">
-                    <span class="status-pill success collector-3fb11f7751" data-portal-style="background:#d1fae5; color:#065f46; font-weight:800; padding:6px 16px; border-radius:50px;">ON DUTY</span>
+                    <span class="sp-kicker">Portal Petugas</span>
                 </div>
             </header>
 
@@ -65,10 +76,10 @@
                         <div class="avatar-circle collector-6296ba4103" id="mobile-avatar" data-portal-style="width: 48px; height: 48px; border-radius: 50%; background:#087443; color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.1rem;">EC</div>
                         <div>
                             <div data-portal-style="font-weight:900; font-size: 1.1rem;" id="mobile-name" class="collector-42c61adbe7">Petugas</div>
-                            <div data-portal-style="font-size:0.75rem; opacity:0.8;" class="collector-ed622dca03">Collector Partner • EcoRecycle</div>
+                            <div data-portal-style="font-size:0.75rem; opacity:0.8;" class="collector-ed622dca03">Petugas SAMPIRA</div>
                         </div>
                     </div>
-                    <i class="fas fa-leaf collector-87039d3b62" data-portal-style="font-size:1.3rem; color:#087443;"></i>
+                    <img src="/assets/img/sampira-mark.svg" width="34" height="34" alt="">
                 </div>
             </header>
 
@@ -91,8 +102,8 @@
                 <div class="kpi-card collector-56dc07fe6c" data-portal-style="background:white; padding:24px; border-radius:20px; border:1px solid #e2e8f0; display:flex; align-items:center; gap:16px;">
                     <div class="kpi-icon collector-f26c5ee929" data-portal-style="background:#f0fdfa; color:#276e57; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem;"><i class="fas fa-star"></i></div>
                     <div>
-                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="collector-1b1c584415">Rating Kinerja</span>
-                        <h3 data-portal-style="font-size:1.8rem; font-weight:900; margin:0;" class="collector-1d693bc1bd">5.0</h3>
+                        <span data-portal-style="font-size:0.75rem; font-weight:800; color:#64748b; text-transform:uppercase;" class="collector-1b1c584415">Penjemputan Aktif</span>
+                        <h3 data-portal-style="font-size:1.8rem; font-weight:900; margin:0;" id="stat-active-tasks" class="collector-1d693bc1bd">—</h3>
                     </div>
                 </div>
             </div>
@@ -110,18 +121,13 @@
 
             <!-- Main Map and Open Pickups Grid -->
             <div class="layout-grid collector-a82c141b12" data-portal-style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:24px;">
-                <!-- Map Panel -->
-                <div class="mission-panel collector-33d3d18670" data-portal-style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0;">
-                    <div data-portal-style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;" class="collector-1b723f5e1c">
-                        <h2 data-portal-style="margin:0; font-size:1.2rem; font-weight:900; color:#064e3b;" class="collector-2b1c053ff6">Peta Rute Penjemputan (Bandung)</h2>
-                        <span class="status-pill warning collector-79f1a82301" data-portal-style="background:#fffbeb; color:#8a5315; padding:4px 12px; border-radius:50px; font-size:0.75rem; font-weight:800;">LIVE NAVIGATOR</span>
-                    </div>
-                    <div class="map-wrapper collector-4104c79aff" data-portal-style="height:350px; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; margin-bottom:20px;">
-                        <div id="map" data-portal-style="width: 100%; height: 100%;" class="collector-ed08e28b31"></div>
-                    </div>
-                    <button class="btn-primary collector-57f6fc976a" onclick="openActiveMission()" data-portal-style="width:100%; height:50px; border-radius:12px; font-weight:800;">Buka Detail Lokasi Penjemputan</button>
-                </div>
-
+                <section class="sp-panel sp-field-shortcut">
+                    <p class="sp-kicker">Peta dan rute</p>
+                    <h2>Tujuan tugas lapangan</h2>
+                    <p>Tinjau titik penjemputan dan fasilitas yang ditugaskan. Detail misi memuat alamat dan opsi navigasi.</p>
+                    <div class="sp-pager"><button class="sp-button" type="button" onclick="switchView('operations')">Buka Peta Operasional</button>
+                    <button class="sp-button sp-button--quiet" type="button" onclick="openActiveMission()">Buka Detail Lokasi Penjemputan</button></div>
+                </section>
                 <!-- Available open pickups list -->
                 <div class="queue-panel collector-33d3d18670" data-portal-style="background:white; padding:32px; border-radius:24px; border:1px solid #e2e8f0;">
                     <h3 data-portal-style="font-weight:900; font-size:1.2rem; margin-bottom:8px; color:#064e3b;" class="collector-d1ce672316">Antrean Penjemputan Bandung</h3>
@@ -193,11 +199,8 @@
                     </section>
                 </div>
 
+                <div id="mission-location" aria-live="polite"></div>
                 <div class="mission-actions">
-                    <button type="button" class="collector-action-btn secondary" onclick="openMissionRoute()">
-                        <i class="fas fa-diamond-turn-right"></i>
-                        <span>Buka rute</span>
-                    </button>
                     <button type="button" class="collector-action-btn primary" id="mission-btn">
                         <i class="fas fa-circle-check"></i>
                         <span>Perbarui status misi</span>
@@ -245,7 +248,7 @@
                 <div class="profile-header collector-293242ee3e" data-portal-style="margin-bottom:32px;">
                     <div class="avatar-circle collector-3dfb5b2e10" id="profile-avatar-large" data-portal-style="width: 100px; height: 100px; border-radius: 50%; background:#064e3b; color:white; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:2.2rem; margin:0 auto 16px;">C</div>
                     <h2 data-portal-style="margin:0; font-size: 1.5rem; font-weight: 900; color:#064e3b;" id="profile-name" class="collector-0d3dc6aec0">Petugas</h2>
-                    <p data-portal-style="color:#64748b; font-size: 0.9rem; margin-top:4px;" class="collector-6d6eba2899">Expert Partner • EcoRecycle</p>
+                    <p data-portal-style="color:#64748b; font-size: 0.9rem; margin-top:4px;" class="collector-6d6eba2899">Petugas lapangan SAMPIRA</p>
                 </div>
                 <div class="info-grid collector-4db4254359" data-portal-style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:32px;">
                     <div class="info-box collector-24692c0dde" data-portal-style="background:#f8fafc; border:1px solid #e2e8f0; padding:16px; border-radius:16px; text-align:left;">
@@ -263,20 +266,50 @@
             </div>
         </div>
 
+        <section id="view-facility" class="view-section" data-facility-handling="petugas" aria-label="Tugas fasilitas"></section>
+    <section id="view-operations" class="view-section sp-panel" data-operation-map="petugas"><p class="sp-kicker">Operasional lapangan</p>
+<h2 data-map-heading></h2>
+<p data-map-intro></p>
+<details class="sp-map-origin"><summary>Atur titik awal Petugas</summary>
+<form class="sp-filter" data-map-origin aria-label="Titik awal Petugas">
+    <label>Latitude awal<input name="lat" type="number" step="any" min="-90" max="90" required></label>
+    <label>Longitude awal<input name="lon" type="number" step="any" min="-180" max="180" required></label>
+    <button class="sp-button" type="submit">Simpan titik awal</button>
+    <button class="sp-button sp-button--quiet" type="button" data-use-gps>Gunakan Lokasi Saya</button>
+    <button class="sp-button sp-button--quiet" type="button" data-clear-origin>Hapus titik awal</button>
+    <output aria-live="polite"></output>
+</form>
+</details>
+<form class="sp-filter" data-operation-filter aria-label="Filter titik">
+    <label>Jenis atau kategori<select name="category"></select></label>
+    <label>Status<select name="status"></select></label>
+    <button class="sp-button" type="submit">Terapkan</button>
+    <button class="sp-button sp-button--quiet" type="reset">Reset filter</button>
+</form>
+<p class="sp-note">Peta jalan dimuat dari OpenStreetMap. Daftar alamat tetap tersedia jika peta tidak dapat dimuat.</p>
+<div class="sp-map-layout">
+    <div class="sp-map-canvas" data-map-canvas aria-label="Peta lokasi tugas"></div>
+    <div>
+        <p role="status"></p>
+        <ul class="sp-map-list"></ul>
+        <button class="sp-button sp-button--quiet" type="button" data-more hidden>Muat lagi</button>
+    </div>
+</div></section>
     </main>
 
     <!-- Bottom Navigation (Mobile) -->
-    <nav class="bottom-nav">
+    <nav class="bottom-nav" aria-label="Navigasi Petugas">
         <button type="button" class="nav-item active" onclick="switchView('dashboard', this)"><i class="fas fa-house"></i><span>Beranda</span></button>
         <button type="button" class="nav-item" onclick="openActiveMission()"><i class="fas fa-route"></i><span>Misi</span></button>
+        <button type="button" class="nav-item" data-open-handling aria-label="Tugas Fasilitas" aria-controls="view-facility" onclick="switchView('facility', this)"><i class="fas fa-clipboard-list" aria-hidden="true"></i><span>Fasilitas</span></button>
         <button type="button" class="nav-item" onclick="switchView('history', this)"><i class="fas fa-list-check"></i><span>Riwayat</span></button>
-        <button type="button" class="nav-item" onclick="switchView('earnings', this)"><i class="fas fa-wallet"></i><span>Dompet</span></button>
+        <button type="button" class="nav-item" data-collector-view="operations" onclick="switchView('operations', this)"><i class="fas fa-map" aria-hidden="true"></i><span>Peta</span></button>
         <button type="button" class="nav-item" onclick="switchView('profile', this)"><i class="fas fa-user-circle"></i><span>Profil</span></button>
     </nav>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="assets/js/portal-announcements.js?v=phase1-final"></script>
-    <script src="assets/js/collector.js?v=phase2"></script>
+    <script src="assets/js/collector.js?v=phase5b"></script>
 </body>
 
 </html>
