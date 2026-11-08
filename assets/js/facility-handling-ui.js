@@ -65,11 +65,32 @@ export function handlingCard(report, open, admin = false) {
         return row;
     }
     const card = element('li', undefined, 'facility-card handling-card');
+    const taskText = {
+        assigned: ['Tugas baru', 'Periksa kondisi fasilitas di lokasi.'],
+        assessment_in_progress: ['Sedang diperiksa', 'Catat kondisi dan hasil pemeriksaan fasilitas.'],
+        handling_in_progress: ['Sedang ditangani', 'Catat tindakan yang dilakukan, lalu kirim hasilnya.'],
+        resolution_submitted: ['Menunggu persetujuan Admin', 'Hasil sudah dikirim dan sedang menunggu pemeriksaan Admin.'],
+        resolution_revision_required: ['Perlu perbaikan', 'Buka tugas untuk melihat catatan perbaikan dari Admin.'],
+        completed: ['Selesai', 'Penanganan fasilitas sudah selesai dan disetujui Admin.']
+    }[report.status];
+    action.textContent = report.status === 'completed' ? 'Lihat hasil' : 'Buka tugas';
+    const taskBadge = badge(report.status);
+    if (taskText) taskBadge.textContent = taskText[0];
     const header = element('div', undefined, 'facility-card-head');
-    header.append(element('span', report.tracking_number, 'facility-ref'), badge(report.status));
+    const identity = element('div', undefined, 'handling-card-identity');
+    identity.append(element('span', 'No. laporan: ' + report.tracking_number, 'facility-ref'), element('h4', report.title));
+    header.append(identity, taskBadge);
+    const place = element('div', undefined, 'handling-card-location');
+    const icon = element('i', undefined, 'fas fa-building');
+    icon.setAttribute('aria-hidden', 'true');
+    const address = element('div');
+    address.append(element('strong', label(categories, report.category)), element('p', report.address));
+    place.append(icon, address);
     const foot = element('div', undefined, 'facility-actions facility-card-foot');
-    foot.append(element('p', 'Penugasan: ' + label(assignmentStatuses, report.assignment_status) + ' · Diperbarui ' + dateLabel(report.updated_at)), action);
-    card.append(header, element('h4', report.title), element('p', label(categories, report.category) + ' · ' + report.address), foot);
+    foot.append(element('p', 'Terakhir diperbarui ' + dateLabel(report.updated_at)), action);
+    card.append(header, place);
+    if (taskText) card.append(element('p', taskText[1], 'handling-card-guidance'));
+    card.append(foot);
     return card;
 }
 

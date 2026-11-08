@@ -59,7 +59,7 @@ try {
             if (error) callback.reject(new Error(error.message));
             else callback.resolve(result);
         } else if (method === 'Runtime.exceptionThrown') {
-            exceptions.push(params.exceptionDetails.exception?.description?.split('\n')[0] || params.exceptionDetails.text);
+            exceptions.push(params.exceptionDetails.exception?.description || params.exceptionDetails.text);
         } else if (method === 'Runtime.consoleAPICalled' && params.type === 'error') {
             consoleErrors.push(params.args.map(arg => arg.description || arg.value || arg.type).join(' ').split('\n')[0]);
         } else if (method === 'Network.requestWillBeSent') {
@@ -76,7 +76,7 @@ try {
     for (const domain of ['Page', 'Runtime', 'Network']) await send(domain + '.enable');
     const js = async expression => {
         const result = await send('Runtime.evaluate', {expression, returnByValue: true, awaitPromise: true});
-        if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
+        if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description || result.exceptionDetails.text);
         return result.result.value;
     };
     const waitPath = path => waitFor(() => js('location.pathname + location.search === ' + JSON.stringify(path) + ' && document.readyState !== "loading"'), 'Navigation failed for ' + path);
@@ -362,5 +362,12 @@ try {
     }
 } finally {
     socket?.close();
-    browser.kill();
+    // Only terminate this harness's own Chrome tree, so nested profiles unlock on Windows.
+    if (browser.exitCode === null && browser.pid) {
+        if (process.platform === 'win32') {
+            try { execFileSync('taskkill', ['/PID', String(browser.pid), '/T', '/F'], {stdio:'ignore',windowsHide:true}); }
+            catch { browser.kill(); }
+        } else browser.kill();
+        await Promise.race([new Promise(resolve=>{if(browser.exitCode!==null)resolve();else browser.once('exit',resolve);}),sleep(5000)]);
+    }
 }

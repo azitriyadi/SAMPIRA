@@ -6,11 +6,11 @@ const toggle = document.getElementById('admin-menu-toggle');
 const breadcrumb = document.getElementById('admin-current-view');
 const content = document.getElementById('admin-content');
 const overview = document.getElementById('admin-overview');
-const notice = overview.querySelector('[role=status]');
+const notice = overview.querySelector('[role=status], .sp-admin-overview-status');
 const metrics = overview.querySelectorAll('[data-overview-status]');
 const table = document.getElementById('admin-recent-reports');
 const state = document.getElementById('admin-recent-state');
-const tableRegion = table.closest('[role=region]');
+const tableRegion = table.closest('[role=region], .sp-table-wrap');
 const retry = overview.querySelector('[data-overview-retry]');
 let sequence = 0;
 

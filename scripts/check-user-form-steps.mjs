@@ -130,6 +130,35 @@ export async function checkUserFormSteps({send,js,nav,login,click,text,waitFor,p
     const legacy=await js(`(async()=>{const {mountLocationPicker}=await import('/assets/js/location-map.js?v=user-wizard-1');const host=document.createElement('div');document.body.append(host);const picker=mountLocationPicker(host,{title:'Compatibility fixture',prefix:'compatibility',digits:7});picker.selectPoint(-6.91,107.61);const before=picker.fields();host.querySelector('.location-actions .primary').click();const after=picker.fields();picker.dispose();host.remove();return {before,after};})()`);
     assert.equal(legacy.before,null);assert.equal(legacy.after.latitude,'-6.9100000');results.legacy_picker_confirmation_preserved=true;
     assert.equal(await js('wizardWrites.length'),2,'Premature or duplicate form submission');
+    if(process.env.SAMPIRA_TEST_USER_ESTIMATE_ONLY==='1') {
+        await click('.hub-tab[data-target="laporan-fasilitas"]');
+        await waitFor(()=>js('!document.getElementById("facility-form-view").hidden'),'Report form missing');
+        assert.equal(await js(`Array.from(document.querySelectorAll('#laporan-fasilitas .ref-form-hero')).filter(el=>el.getClientRects().length).length`),1,'Duplicate report hero');
+        assert.equal(await js('getComputedStyle(document.querySelector(".user-profile-header-card")).borderLeftWidth'),'0px');
+        assert.equal(await js('getComputedStyle(document.getElementById("sp-account-menu")).borderInlineStartWidth'),'1px');
+        await click('.hub-tab[data-target="riwayat-payout"]');
+        await waitFor(()=>js('pickupHistory.length>0'),'History missing');
+        // Display-only synthetic rows exercise pagination without changing database records.
+        await js('window.originalHistory=pickupHistory;pickupHistory=Array.from({length:12},(_,i)=>({...originalHistory[0],id:90000+i,tracking_number:"PAGINATION-FIXTURE-"+i}));pickupPage=0;renderPickupHistory();void 0');
+        assert.equal(await js('document.querySelector("#pickup-history-pages [aria-current]").textContent'),'1');
+        assert.equal(await js('getComputedStyle(document.querySelector("#pickup-history-pages [aria-current]")).color'),'rgb(255, 255, 255)');
+        await click('#pickup-history-pages [data-page="1"]');
+        assert.equal(await js('document.querySelector("#pickup-history-pages [aria-current]").textContent'),'2');
+        for(const width of [1280,390]) {
+            await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<600});
+            await js('document.querySelector(".sp-history-pagination").scrollIntoView({block:"center",behavior:"instant"});void 0');await sleep(150);
+            assert(await js('document.documentElement.scrollWidth<=innerWidth+2'),'History overflow');
+            const shot=await send('Page.captureScreenshot',{format:'png'});await writeFile(join(out,'history-pagination-'+width+'.png'),Buffer.from(shot.data,'base64'));
+        }
+        await js('pickupHistory=originalHistory;pickupPage=0;renderPickupHistory();void 0');
+        await click('.hub-tab[data-target="laporan-fasilitas"]');
+        for(const width of [1280,390]) {
+            await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<600});
+            await js('document.getElementById("facility-form-view").scrollIntoView({block:"start",behavior:"instant"});void 0');await sleep(150);
+            const shot=await send('Page.captureScreenshot',{format:'png'});await writeFile(join(out,'report-header-'+width+'.png'),Buffer.from(shot.data,'base64'));
+        }
+        results.header_history={single_profile_divider:true,single_report_hero:true,page_numbers_visible:true,page_navigation:true};
+    }
     await writeFile(join(out,'wizard-results.json'),JSON.stringify(results,null,2));
     console.log(process.env.SAMPIRA_TEST_USER_CAMERA_ONLY==='1'
         ? 'PASS both User cameras: capture, cancellation, denied permission, stream cleanup, 1280/390px, real photo uploads and readback; wizard/map regression passed.'

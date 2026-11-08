@@ -1,6 +1,6 @@
 import {base, request} from './facility-api.js?v=phase5b';
 import {adminTable, categories, element, options} from './facility-report-ui.js?v=admin-6b4';
-import {button, handlingCard, handlingEvent, handlingStatuses, handlingSummary} from './facility-handling-ui.js?v=admin-6b4';
+import {button, handlingCard, handlingEvent, handlingStatuses, handlingSummary} from './facility-handling-ui.js?v=collector-tasks-2';
 import {handlingActions, openHandlingForm} from './facility-handling-form.js?v=handling-photo-fix';
 import {mountLocationDetail} from './location-map.js?v=phase8';
 
@@ -148,6 +148,15 @@ function workspace(root) {
     const toolbar = element('div', undefined, 'facility-toolbar');
     toolbar.append(filters, reload);
     listView.append(element('h3', admin ? 'Antrean dan monitoring' : 'Daftar tugas saya'), toolbar, listStatus, queue, more);
+    if (!admin) {
+        heading.textContent = 'Tugas Fasilitas Kebersihan';
+        listView.classList.add('collector-facility-list');
+        detailView.classList.add('collector-facility-detail');
+        detailBody.classList.add('collector-facility-detail-body');
+        header.append(reload);
+        toolbar.replaceChildren(filters, listStatus);
+        listView.replaceChildren(toolbar, queue, more);
+    }
     root.append(header, notice, errorBox, listView, detailView);
 
     let listSequence = 0;

@@ -30,7 +30,7 @@ body.sp-portal.user-reference .sp-header-context h1 { color:#0c3b2e; font-size:1
 body.sp-portal.user-reference .sp-header-controls { gap:16px; }
 body.sp-portal.user-reference .sp-header-bell { width:30px; height:32px; padding:6px; background:transparent; border:0; color:#64748b; }
 body.sp-portal.user-reference #sp-notification-dot { background:#10b981; width:7px; height:7px; }
-body.sp-portal.user-reference .user-profile-header-card { padding:0 0 0 16px; border-left:1px solid #e2e8f0; gap:10px; min-height:32px; }
+body.sp-portal.user-reference .user-profile-header-card { padding:0; border-left:0; gap:10px; min-height:32px; }
 body.sp-portal.user-reference .avatar-circle { width:32px; height:32px; background:#d1fae5; color:#0c3b2e; border:2px solid #10b98126; font-size:12px; }
 body.sp-portal.user-reference .user-profile-header-card strong { font-size:12px; color:#1e293b; }
 body.sp-portal.user-reference .user-profile-header-card small { font-size:10px; color:#94a3b8; }
@@ -318,3 +318,40 @@ body.sp-portal.user-reference .location-picker-compact>p.location-picker-hint { 
 body.sp-portal.user-reference [data-facility-reports="user"] #facility-list-view { background: transparent; border: 0; padding: 0; box-shadow: none; }
 body.sp-portal.user-reference [data-facility-reports="user"] #facility-list-view .sp-history-switch { margin-top: 0; }
 body.sp-portal.user-reference #facility-list .sp-history-card-copy :is(h3, h4) { font-size: 14px; font-weight: 700; color: #0f172a; margin: 0; }
+
+/* Keep the current page number readable over its active background. */
+body.sp-portal.user-reference #pickup-history-pages .sp-button[aria-current=page] { background:#0c3b2e; border-color:#0c3b2e; color:#fff!important; }
+body.sp-portal.user-reference #pickup-history-pages .sp-button:not([aria-current]) { background:#fff; color:#334155; }
+
+/* Education uses a compact search toolbar and a consistent article grid. */
+body.sp-portal.user-reference #edukasi .sp-history-intro { padding-bottom:20px; margin-bottom:24px; }
+body.sp-portal.user-reference #edukasi .sp-education-feature:not([hidden]) { padding:28px; margin:0 0 28px; background:#0c3b2e; gap:28px; }
+body.sp-portal.user-reference #edukasi .sp-education-feature h3 { margin:14px 0 12px; font-size:clamp(22px,2.4vw,30px); line-height:1.35; }
+body.sp-portal.user-reference #edukasi .sp-education-feature-label { padding:5px 12px; font-size:11px; }
+body.sp-portal.user-reference #edukasi .sp-education-feature>img { max-height:200px; }
+body.sp-portal.user-reference #edukasi .sp-education-categories { margin:0 0 28px; }
+body.sp-portal.user-reference #edukasi .sp-education-category-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:16px; }
+body.sp-portal.user-reference #edukasi .sp-education-category-grid button { display:grid; justify-items:center; align-content:center; text-align:center; min-height:86px; padding:14px 10px; color:#476054; gap:10px; line-height:1.4; }
+body.sp-portal.user-reference #edukasi .sp-education-category-grid button[aria-pressed=true] { color:#0c3b2e; font-weight:750; background:#eaf5ee; }
+body.sp-portal.user-reference #edukasi .sp-education-list-heading { padding:20px 0; gap:16px; align-items:center; }
+body.sp-portal.user-reference #edukasi .sp-education-list-heading form { display:flex; align-items:flex-end; gap:8px; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
+body.sp-portal.user-reference #edukasi .sp-education-list-heading form label { display:grid; gap:6px; margin:0; font-size:11px; color:#61766a; }
+body.sp-portal.user-reference #edukasi .sp-education-list-heading input { width:240px; max-width:100%; min-height:40px; }
+body.sp-portal.user-reference #edukasi .sp-education-list-heading button { min-height:40px; }
+body.sp-portal.user-reference #edukasi .sp-portal-articles { gap:18px; }
+body.sp-portal.user-reference #edukasi .sp-article-card { display:flex; flex-direction:column; padding:16px; border:1px solid #e1eae5; border-radius:16px; background:#fff; }
+body.sp-portal.user-reference #edukasi .sp-education-cover { height:145px; padding:16px; margin-bottom:16px; border-radius:10px; background:#eef6f1; }
+body.sp-portal.user-reference #edukasi .sp-article-card h3 { margin:10px 0 8px; font-size:14px; line-height:1.55; }
+body.sp-portal.user-reference #edukasi .sp-article-card h3 a { color:#133e2e; text-decoration:none; }
+body.sp-portal.user-reference #edukasi .sp-article-card h3 a:hover { text-decoration:underline; }
+body.sp-portal.user-reference #edukasi .sp-article-card>p { margin:0 0 16px; color:#64748b; font-size:12px; line-height:1.65; }
+body.sp-portal.user-reference #edukasi .sp-article-card time { margin-top:auto; padding-top:12px; border-top:1px solid #edf2ef; font-size:11px; }
+body.sp-portal.user-reference #edukasi .sp-history-pagination { padding-top:20px; margin-top:20px; border-top:1px solid #e1eae5; gap:16px; justify-content:space-between; }
+@media(max-width:600px) {
+ body.sp-portal.user-reference #edukasi .sp-education-category-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ body.sp-portal.user-reference #edukasi .sp-education-feature:not([hidden]) { grid-template-columns:1fr; padding:22px; }
+ body.sp-portal.user-reference #edukasi .sp-education-feature>img { display:none; }
+ body.sp-portal.user-reference #edukasi .sp-education-list-heading form { width:100%; }
+ body.sp-portal.user-reference #edukasi .sp-education-list-heading form label { flex:1; min-width:0; }
+ body.sp-portal.user-reference #edukasi .sp-education-list-heading input { width:100%; }
+}

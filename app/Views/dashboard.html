@@ -26,21 +26,21 @@
     <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase4b">
     <script src="/assets/js/portal-session.js?v=phase5b"></script>
     <link rel="stylesheet" href="/assets/css/facility-handling.css?v=phase4b">
-    <script type="module" src="/assets/js/facility-reports.js?v=user-estimate-1"></script>
+    <script type="module" src="/assets/js/facility-reports.js?v=user-education-2"></script>
     <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/sampira.css?v=phase6b-live">
     <link rel="stylesheet" href="/assets/css/user-workspace.css?v=phase8">
     <link rel="stylesheet" href="/assets/css/user-theme.css?v=reward-summary-clean">
-    <script type="module" src="/assets/js/education.js?v=edukasi-pengaturan"></script>
+    <script type="module" src="/assets/js/education.js?v=user-education-2"></script>
     <script type="module" src="/assets/js/sampira-navigation.js?v=phase6b3"></script>
     <script type="module" src="/assets/js/user-activity.js?v=home-header-fresh"></script>
 <link rel="stylesheet" href="/assets/css/portal-design.css?v=roles-1">
 <link rel="stylesheet" href="/assets/css/contributions.css?v=phase9b">
 <script type="module" src="/assets/js/contributions.js?v=phase9b"></script>
-<link rel="stylesheet" href="/assets/css/user-reference.css?v=user-estimate-1">
+<link rel="stylesheet" href="/assets/css/user-reference.css?v=user-education-2">
 <script defer src="/assets/vendor/lucide/lucide.min.js"></script>
 <script defer src="/assets/js/user-reference.js?v=reference-1"></script>
-<script type="module" src="/assets/js/user-form-steps.js?v=user-estimate-1"></script>
+<script type="module" src="/assets/js/user-form-steps.js?v=user-education-2"></script>
 <script type="module" src="/assets/js/user-camera.js?v=camera-1"></script>
 </head>
 
@@ -153,7 +153,7 @@
                     </figure>
                 </section>
                 <div class="sp-dashboard-state" hidden>
-                    <p id="dashboard-load-status" role="status"></p>
+                    <output id="dashboard-load-status" aria-live="polite"></output>
                     <button id="dashboard-retry" class="sp-button sp-button--quiet" type="button" hidden>Coba lagi</button>
                 </div>
                 <dl class="sp-summary-grid" aria-label="Ringkasan aktivitas">
@@ -181,7 +181,7 @@
                             <li><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Laporan fasilitas</li>
                         </ul>
                         </div>
-                        <p id="own-map-status" role="status">Memuat lokasi…</p>
+                        <output id="own-map-status" aria-live="polite">Memuat lokasi…</output>
                         <button type="button" class="sp-button sp-button--quiet" id="own-map-more" hidden>Muat lokasi laporan berikutnya</button>
                     </section><section class="sp-panel sp-recent-panel" aria-labelledby="sp-recent-title">
                         <div class="sp-section-heading"><h2 id="sp-recent-title">Aktivitas Terbaru</h2><button type="button" class="sp-button sp-button--quiet" data-sp-user-tab="riwayat-payout">Lihat Riwayat</button></div>
@@ -217,9 +217,9 @@
                             <div><span>Simulasi CO₂ dihemat</span><strong><span id="metric-total-carbon">—</span> <small>kg</small></strong></div>
                         </div>
 
-                        <p id="monthly-waste-empty" role="status">Memuat data kontribusi…</p>
+                        <output id="monthly-waste-empty" aria-live="polite">Memuat data kontribusi…</output>
                         <div class="sp-monthly-chart" hidden>
-                            <canvas id="monthlyWasteChart" role="img" aria-label="Grafik berat sampah terverifikasi per bulan"></canvas>
+                            <canvas id="monthlyWasteChart" aria-label="Grafik berat sampah terverifikasi per bulan"></canvas>
                         </div>
                     </section>
                 </div>
@@ -329,7 +329,7 @@
                         </div>
                         <button class="btn btn-secondary" id="tracking-submit" type="submit">Lacak</button>
                     </form>
-                    <p id="tracking-feedback" role="status"></p>
+                    <output id="tracking-feedback" aria-live="polite"></output>
 
                     <!-- Timeline Hasil Lacak -->
                     <div id="tracking-timeline-container" data-inline-style="display: none; animation: fadeIn 0.4s ease;" class="u-316af56250">
@@ -368,14 +368,14 @@
                     <button type="button" class="sp-button sp-button--quiet" data-sp-user-tab="laporan-fasilitas" data-report-view="list"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Riwayat Lapor Fasilitas</button>
                 </div>
                 <div class="sp-workspace-filters sp-history-filters">
-                    <label class="sp-history-search"><span>Cari penjemputan</span><input id="pickup-history-search" type="search" placeholder="Cari berdasarkan judul atau ID…"></label>
-                    <label>Status<select id="pickup-history-status"><option value="">Semua status</option></select></label>
-                    <label>Urutkan<select id="pickup-history-sort"><option value="newest">Terbaru</option><option value="oldest">Terlama</option></select></label>
-                    <label>Kategori<select id="pickup-history-category"><option value="">Semua kategori</option></select></label>
+                    <label class="sp-history-search" for="pickup-history-search"><span>Cari penjemputan</span><input id="pickup-history-search" type="search" placeholder="Cari berdasarkan judul atau ID…"></label>
+                    <label for="pickup-history-status">Status<select id="pickup-history-status"><option value="">Semua status</option></select></label>
+                    <label for="pickup-history-sort">Urutkan<select id="pickup-history-sort"><option value="newest">Terbaru</option><option value="oldest">Terlama</option></select></label>
+                    <label for="pickup-history-category">Kategori<select id="pickup-history-category"><option value="">Semua kategori</option></select></label>
                 </div>
                 <ul class="sp-history-cards" id="payout-history-table-body" aria-label="Daftar penjemputan"><li>Memuat data riwayat…</li></ul>
                 <div class="sp-history-pagination">
-                    <p id="pickup-history-message" role="status"></p>
+                    <output id="pickup-history-message" aria-live="polite"></output>
                     <nav class="sp-history-page-controls" aria-label="Halaman riwayat penjemputan">
                         <button class="sp-button sp-button--quiet" type="button" id="pickup-history-prev" aria-label="Halaman sebelumnya" disabled><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
                         <span id="pickup-history-pages"></span>
@@ -436,13 +436,13 @@
                 <div class="sp-education-list-heading">
                     <h3>Daftar Artikel Edukasi</h3>
                     <form class="sp-workspace-filters">
-                        <label>Cari artikel<input name="q" type="search" maxlength="100" placeholder="Cari artikel edukasi…"></label>
+                        <label for="education-search-input">Cari artikel<input id="education-search-input" name="q" type="search" maxlength="100" placeholder="Cari artikel edukasi…"></label>
                         <button class="sp-button sp-button--quiet" type="submit">Cari</button>
                     </form>
                 </div>
                 <div class="sp-portal-articles"></div>
                 <div class="sp-history-pagination">
-                    <p role="status">Buka Pusat Edukasi untuk memuat artikel.</p>
+                    <output role="status" aria-live="polite">Buka Pusat Edukasi untuk memuat artikel.</output>
                     <nav class="sp-history-page-controls" aria-label="Halaman artikel">
                         <button class="sp-button sp-button--quiet" type="button" data-prev aria-label="Halaman sebelumnya" disabled><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
                         <span class="sp-education-page" aria-current="page">1</span>
@@ -466,9 +466,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="assets/js/portal-announcements.js?v=phase1-final"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
-    <script src="assets/js/user-map.js?v=user-estimate-1"></script>
+    <script src="assets/js/user-map.js?v=user-education-2"></script>
     <script src="assets/js/waste-categories.js?v=20261029-categories2"></script>
-    <script src="assets/js/dashboard.js?v=user-estimate-1"></script>
+    <script src="assets/js/dashboard.js?v=user-education-2"></script>
     <nav class="sp-user-mobile" aria-label="Navigasi pengguna">
         <button type="button" data-sp-user-tab="beranda"><i class="fas fa-house" aria-hidden="true"></i>Beranda</button>
         <button type="button" data-sp-user-tab="setor-sampah"><i class="fas fa-recycle" aria-hidden="true"></i>Setor</button>

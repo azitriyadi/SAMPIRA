@@ -42,7 +42,7 @@ function output(root) {
     return status;
 }
 
-function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false, kind = 'pickup', record, compact = false} = {}) {
+function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false, kind = 'pickup', record, compact = false, popup} = {}) {
     const frame = node('div', null, 'location-map');
     frame.setAttribute('role', 'region');
     frame.setAttribute('aria-label', 'Peta lokasi');
@@ -114,12 +114,17 @@ function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false, kind = '
             onPoint(lat, lng);
         });
         markers.set(label, marker);
+        if (label === 'B' && popup) {
+            const content = node('div', null, 'location-destination-popup');
+            content.append(node('strong', popup.title), node('p', popup.address));
+            marker.bindPopup(content).openPopup();
+        }
     }
 
     function fit() {
         if (!map) return;
         const positions = [...points.values()].filter(Boolean);
-        const options = {paddingTopLeft: [52, 38], paddingBottomRight: [36, 36], maxZoom: 16, animate: false};
+        const options = {paddingTopLeft: [52, popup ? 150 : 38], paddingBottomRight: [36, 36], maxZoom: 16, animate: false};
         if (routeLayer) {
             const bounds = routeLayer.getBounds();
             positions.forEach(point => bounds.extend(point));
@@ -351,7 +356,7 @@ export function mountLocationPicker(host, {title, prefix, digits, saved, include
     return {reset, fields, dispose, selectPoint: (latitude, longitude) => pick(locationPoint(latitude, longitude))};
 }
 
-export function mountLocationDetail(host, {title, point, address, reported = false, navigation, external = false, autoTiles = false, kind = 'pickup'}) {
+export function mountLocationDetail(host, {title, point, address, reported = false, navigation, external = false, autoTiles = false, kind = 'pickup', popup}) {
     const root = panel(host, title);
     const destination = locationPoint(point?.latitude, point?.longitude);
     const label = typeof address === 'string' ? address.trim() : '';
@@ -370,11 +375,16 @@ export function mountLocationDetail(host, {title, point, address, reported = fal
         }
     }
     const map = destination ? mapPanel(root, navigation ? (lat, lon) => navigationUI?.select(lat, lon) : undefined, {
-        onHide: () => navigationUI?.clear(), authorize: navigation?.authorize, autoTiles, kind, record:point
+        onHide: () => navigationUI?.clear(), authorize: navigation?.authorize, autoTiles, kind, record:point, popup
     }) : null;
     map?.marker('B', destination, true);
     if (destination && autoTiles) root.append(node('p', 'Peta dasar OpenStreetMap memuat area yang terlihat.', 'location-privacy'));
     const navigationUI = navigation ? mountNavigation(root, map, destination, label, navigation) : null;
+    if (navigation?.compact) {
+        root.classList.add('location-detail-compact');
+        for (const item of [...root.children].slice(0,3)) item.hidden = true;
+        root.querySelector('.location-route-options')?.append(...root.querySelectorAll(':scope>.location-privacy'));
+    }
     function dispose() {
         activePanels.delete(dispose);
         navigationUI?.dispose();
@@ -385,7 +395,7 @@ export function mountLocationDetail(host, {title, point, address, reported = fal
     return dispose;
 }
 
-function mountNavigation(root, map, destination, address, {authorize, recheck = false, origin: initialOrigin, action: initialAction}) {
+function mountNavigation(root, map, destination, address, {authorize, recheck = false, origin: initialOrigin, action: initialAction, compact = false, gpsHost, externalHost}) {
     let origin;
     let controller;
     let gpsSequence = 0;
@@ -394,29 +404,44 @@ function mountNavigation(root, map, destination, address, {authorize, recheck = 
     let checkPending = false;
     let routeButton;
     let inputs;
+    let gpsButton;
+    let instruction;
     const url = navigationURL(destination, address);
     const controls = node('div', null, 'location-actions');
     const status = output(root);
     const config = routingConfig();
     if (destination) {
-        root.append(node('p', 'Tentukan titik awal A lewat peta, isian manual, atau lokasi perangkat. Lihat Rute mengirim titik A dan B ke layanan rute yang dikonfigurasi.'));
+        instruction = node('p', 'Tentukan titik awal A lewat peta, isian manual, atau lokasi perangkat. Lihat Rute mengirim titik A dan B ke layanan rute yang dikonfigurasi.');
+        root.append(instruction);
         inputs = coordinateInputs(root, 'origin-' + (recheck ? 'facility' : 'pickup'));
         for (const input of inputs) input.addEventListener('input', () => {
             ++gpsSequence;
             updateOrigin(enteredPoint(inputs, 7), true);
         });
         routeButton = action('Lihat Rute', calculate, true);
-        controls.append(action('Gunakan Lokasi Saya', () => {
+        gpsButton = action(compact ? 'Lokasi Saya' : 'Gunakan Lokasi Saya', () => {
             const id = ++gpsSequence;
             locate(status, () => !disposed && id === gpsSequence, point => select(...point));
-        }), routeButton);
-        if (!config) status.textContent = 'Layanan rute belum dikonfigurasi. Gunakan navigasi eksternal.';
+        });
+        controls.append(gpsButton, routeButton);
+        if (!config && !compact) status.textContent = 'Layanan rute belum dikonfigurasi. Gunakan navigasi eksternal.';
     }
-    controls.append(action('Buka di Google Maps', openExternal));
-    controls.lastChild.disabled = !url;
+    const externalButton = action(compact ? 'Petunjuk Rute (Buka Google Maps)' : 'Buka di Google Maps', openExternal);
+    controls.append(externalButton);
+    externalButton.disabled = !url;
     root.append(controls, node('p', url
         ? (destination ? '' : 'Alamat digunakan karena titik presisi belum tersedia. ') + 'Google Maps akan menerima tujuan saat dibuka.'
         : 'Navigasi tidak tersedia karena tujuan dan alamat belum tersedia.', 'location-privacy'));
+    if (compact) {
+        const advanced = node('details', null, 'location-route-options');
+        advanced.append(node('summary', 'Opsi rute lainnya'));
+        if (initialAction === 'route') advanced.open = true;
+        if (instruction) advanced.append(instruction, inputs[0].parentElement.parentElement);
+        if (gpsHost && gpsButton) gpsHost.replaceChildren(gpsButton);
+        if (externalHost) externalHost.replaceChildren(externalButton);
+        advanced.append(controls);
+        root.append(advanced);
+    }
 
     function cancelRoute() {
         controller?.abort();
@@ -484,7 +509,7 @@ function mountNavigation(root, map, destination, address, {authorize, recheck = 
     async function openExternal() {
         if (!url || linkPending) return;
         linkPending = true;
-        const button = controls.lastChild;
+        const button = externalButton;
         button.disabled = true;
         try {
             if (!await authorize() || disposed) return;
@@ -527,11 +552,13 @@ function mountNavigation(root, map, destination, address, {authorize, recheck = 
         routeButton?.focus();
         if (initialOrigin && destination) void calculate();
     } else if (initialAction === 'external') {
-        controls.lastChild.focus();
+        externalButton.focus();
     }
 
     return {select, clear, dispose() {
         disposed = true;
+        gpsButton?.remove();
+        externalButton.remove();
         clear();
         clearInterval(interval);
         window.removeEventListener('focus', checkAccess);

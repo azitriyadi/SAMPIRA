@@ -27,7 +27,7 @@ if (root) {
     const admin = root.dataset.operationMap === "admin";
     const form = root.querySelector("[data-operation-filter]");
     const list = root.querySelector("ul");
-    const status = root.querySelector("[role=status]");
+    const status = root.querySelector("[role=status], .sp-map-layout output");
     const more = root.querySelector("[data-more]");
     const canvas = root.querySelector("[data-map-canvas]");
     const retry = root.querySelector("[data-map-retry]");

@@ -27,19 +27,21 @@
     <script src="/assets/js/portal-session.js?v=phase5b"></script>
     <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase4b">
     <link rel="stylesheet" href="/assets/css/facility-handling.css?v=phase4b">
-    <script type="module" src="/assets/js/facility-handling.js?v=handling-photo-fix"></script>
+    <script type="module" src="/assets/js/facility-handling.js?v=collector-tasks-2"></script>
     <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/sampira.css?v=phase6b-live">
-    <script type="module" src="/assets/js/operations.js?v=phase8"></script>
+    <script type="module" src="/assets/js/operations.js?v=collector-overview-1"></script>
 <link rel="stylesheet" href="/assets/css/portal-design.css?v=roles-1">
 <link rel="stylesheet" href="/assets/css/contributions.css?v=phase9b">
-<script type="module" src="/assets/js/contributions.js?v=phase9b"></script>
+<script type="module" src="/assets/js/contributions.js?v=collector-overview-1"></script>
+<link rel="stylesheet" href="/assets/css/collector-overview.css?v=overview-1">
+<link rel="stylesheet" href="/assets/css/collector-tasks.css?v=tasks-2">
 </head>
 
 <body class="sp-portal portal-page role-collector">
 
     <!-- Sidebar (Desktop) -->
-    <aside class="sidebar">
+    <aside class="sidebar" aria-label="Navigasi Petugas">
         <a href="home" class="sidebar-logo">
             <img src="/assets/img/sampira-mark.svg" width="34" height="34" alt="">
             <span>SAMPIRA<small>Operasional Petugas</small></span>
@@ -84,9 +86,13 @@
                     <button type="button" class="sp-button sp-button--quiet" onclick="switchView('profile')">Profil</button>
                 </div>
             </header>
-            <section class="p9" data-p9-analytics="petugas"></section>
+            <section class="collector-welcome" aria-labelledby="collector-welcome-title">
+                <div><span class="collector-welcome-label">Tim Lapangan Bandung</span><h2 id="collector-welcome-title">Tugas lapangan, lebih terarah.</h2><p>Tinjau antrean penjemputan warga dan kelola penanganan fasilitas dari satu tempat.</p></div>
+                <button type="button" class="sp-button sp-button--quiet" id="collector-refresh"><i class="fas fa-rotate" aria-hidden="true"></i> Perbarui Data</button>
+            </section>
+            <section class="p9 collector-summary" data-p9-analytics="petugas" data-collector-summary></section>
             <div class="sp-dashboard-state" id="collector-data-state" hidden>
-                <p id="collector-load-status" role="status"></p>
+                <output id="collector-load-status" aria-live="polite"></output>
                 <button class="sp-button sp-button--quiet" id="collector-retry" type="button" hidden>Coba lagi</button>
             </div>
 
@@ -96,21 +102,21 @@
                     <div class="kpi-icon "><i class="fas fa-weight-hanging"></i></div>
                     <div>
                         <span >Sampah Terkumpul</span>
-                        <h3 id="stat-packages" >0 KG</h3>
+                        <h3 id="stat-packages" >—</h3><small>Berat akhir penjemputan selesai</small>
                     </div>
                 </div>
                 <div class="kpi-card ">
                     <div class="kpi-icon "><i class="fas fa-sack-dollar"></i></div>
                     <div>
                         <span >Estimasi Komisi</span>
-                        <h3 id="stat-profit" >Rp 0</h3>
+                        <h3 id="stat-profit" >—</h3><small>Nominal komisi belum tersedia</small>
                     </div>
                 </div>
                 <div class="kpi-card ">
                     <div class="kpi-icon "><i class="fas fa-star"></i></div>
                     <div>
                         <span >Penjemputan Aktif</span>
-                        <h3 id="stat-active-tasks" >—</h3>
+                        <h3 id="stat-active-tasks" >—</h3><small>Pickup, transit, atau menunggu hub</small>
                     </div>
                 </div>
             </div>
@@ -122,17 +128,16 @@
 
                 <!-- Available open pickups list -->
                 <div class="queue-panel ">
-                    <h3 >Antrean Penjemputan Bandung</h3>
-                    <p >Ambil tugas penjemputan sampah di daerah Bandung.</p>
+                    <div class="collector-queue-heading"><div><h3>Antrean Penjemputan Bandung</h3><p>Kelola tugas Anda dan ambil penjemputan yang tersedia.</p></div><span id="collector-queue-count" aria-live="polite">—</span></div>
                     <div class="task-list " id="upcoming-task-list">
                         <div >Memuat daftar pickup...</div>
                     </div>
                 </div>
-<aside class="sp-field-support"><section class="sp-panel sp-field-shortcut">
+<aside class="sp-field-support" aria-label="Dukungan lapangan"><section class="sp-panel sp-field-shortcut">
                     <p class="sp-kicker">Peta dan rute</p>
                     <h2>Tujuan tugas lapangan</h2>
                     <p>Tinjau titik penjemputan dan fasilitas yang ditugaskan. Detail misi memuat alamat dan opsi navigasi.</p>
-                    <div class="sp-pager"><button class="sp-button" type="button" onclick="switchView('operations')">Buka Peta Operasional</button>
+                    <div class="sp-pager"><button class="sp-button" type="button" onclick="switchView('operations')"><i class="fas fa-map" aria-hidden="true"></i> Buka Peta Operasional</button>
                     <button class="sp-button sp-button--quiet" type="button" onclick="openActiveMission()">Buka Detail Lokasi Penjemputan</button></div>
                 </section><section class="portal-announcement-section collector-announcement-section " id="collector-announcement-section">
                 <div class="portal-section-heading">
@@ -165,7 +170,8 @@
                             <i class="fas fa-truck-pickup"></i>
                         </div>
                         <div>
-                            <div class="mission-label">Nomor tracking</div>
+                            <div class="mission-label">Misi penjemputan</div>
+                            <h3 id="mission-title">Memuat rincian tugas…</h3>
                             <div class="mission-tracking" id="mission-resi">-</div>
                         </div>
                     </div>
@@ -175,10 +181,11 @@
                     </div>
                 </div>
 
+                <section class="mission-progress-panel" aria-label="Alur langkah petugas"><p class="mission-label">Alur penjemputan</p>
                 <div class="mission-progress" id="mission-progress" aria-label="Progres penjemputan">
                     <div class="mission-progress-step" data-status="pickup">
                         <span><i class="fas fa-box"></i></span>
-                        <strong>Diambil</strong>
+                        <strong>Siap dijemput</strong>
                     </div>
                     <div class="mission-progress-step" data-status="transit">
                         <span><i class="fas fa-truck-fast"></i></span>
@@ -188,27 +195,29 @@
                         <span><i class="fas fa-warehouse"></i></span>
                         <strong>Tiba di hub</strong>
                     </div>
-                </div>
+                </div></section>
 
                 <div class="mission-information-grid">
                     <section class="mission-information-block mission-address-block">
-                        <div class="mission-block-icon"><i class="fas fa-location-dot"></i></div>
-                        <div>
-                            <span class="mission-label">Alamat penjemputan</span>
-                            <div class="mission-destination" id="mission-dest">Pilih tugas penjemputan dari Dashboard</div>
+                        <div class="mission-address-content">
+                            <div class="mission-address-heading"><div class="mission-block-icon"><i class="fas fa-location-dot" aria-hidden="true"></i></div><h3 class="mission-section-title">Alamat penjemputan warga</h3></div>
+                            <div class="mission-address-data"><div class="mission-destination" id="mission-dest">Pilih tugas penjemputan dari Dashboard</div><p id="mission-coordinates"></p></div>
+                            <div id="mission-route-action"></div>
                         </div>
                     </section>
                     <section class="mission-information-block">
                         <div class="mission-block-icon"><i class="fas fa-box-open"></i></div>
                         <div class="mission-detail-content">
-                            <span class="mission-label">Barang dan kontak donor</span>
+                            <h3 class="mission-section-title">Detail barang &amp; donor</h3>
                             <div id="mission-details">-</div>
+                            <a class="collector-contact-link sp-button sp-button--quiet" id="mission-contact" target="_blank" rel="noopener noreferrer" hidden><i class="fab fa-whatsapp" aria-hidden="true"></i> Hubungi Warga via WhatsApp</a>
                         </div>
                     </section>
                 </div>
 
-                <div id="mission-location" aria-live="polite"></div>
+                <section class="mission-map-panel" aria-label="Peta lokasi penjemputan"><div class="mission-map-heading"><div><h3><i class="far fa-map" aria-hidden="true"></i> Peta Rute Lokasi Penjemputan</h3><p id="mission-map-destination"></p></div><div id="mission-map-gps"></div></div><div id="mission-location" aria-live="polite"></div></section>
                 <div class="mission-actions">
+                    <div class="mission-action-copy"><i class="fas fa-circle-info" aria-hidden="true"></i><div><span class="mission-label">Langkah selanjutnya</span><p id="mission-instruction">Pilih tugas untuk melihat tindakan berikutnya.</p></div></div>
                     <button type="button" class="collector-action-btn primary" id="mission-btn">
                         <i class="fas fa-circle-check"></i>
                         <span>Perbarui status misi</span>
@@ -277,12 +286,12 @@
 
         <section id="view-facility" class="view-section" data-facility-handling="petugas" aria-label="Tugas fasilitas"></section>
     <section id="view-operations" class="view-section sp-panel" data-operation-map="petugas"><p class="sp-kicker">Operasional lapangan</p>
-<h2 data-map-heading></h2>
+<h2 data-map-heading>Operasional Lapangan</h2>
 <p data-map-intro></p>
 <details class="sp-map-origin"><summary>Atur titik awal Petugas</summary>
 <form class="sp-filter" data-map-origin aria-label="Titik awal Petugas">
-    <label>Latitude awal<input name="lat" type="number" step="any" min="-90" max="90" required></label>
-    <label>Longitude awal<input name="lon" type="number" step="any" min="-180" max="180" required></label>
+    <label for="collector-origin-lat">Latitude awal</label><input id="collector-origin-lat" name="lat" type="number" step="any" min="-90" max="90" required>
+    <label for="collector-origin-lon">Longitude awal</label><input id="collector-origin-lon" name="lon" type="number" step="any" min="-180" max="180" required>
     <button class="sp-button" type="submit">Simpan titik awal</button>
     <button class="sp-button sp-button--quiet" type="button" data-use-gps>Gunakan Lokasi Saya</button>
     <button class="sp-button sp-button--quiet" type="button" data-clear-origin>Hapus titik awal</button>
@@ -290,8 +299,8 @@
 </form>
 </details>
 <form class="sp-filter" data-operation-filter aria-label="Filter titik">
-    <label>Jenis atau kategori<select name="category"></select></label>
-    <label>Status<select name="status"></select></label>
+    <label for="collector-filter-cat">Jenis atau kategori</label><select id="collector-filter-cat" name="category"></select>
+    <label for="collector-filter-status">Status</label><select id="collector-filter-status" name="status"></select>
     <button class="sp-button" type="submit">Terapkan</button>
     <button class="sp-button sp-button--quiet" type="reset">Reset filter</button>
 </form>
@@ -299,7 +308,7 @@
 <div class="sp-map-layout">
     <div class="sp-map-canvas" data-map-canvas aria-label="Peta lokasi tugas"></div>
     <div>
-        <p role="status"></p>
+        <output aria-live="polite"></output>
         <ul class="sp-map-list"></ul>
         <button class="sp-button sp-button--quiet" type="button" data-more hidden>Muat lagi</button>
     </div>
@@ -318,7 +327,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="assets/js/portal-announcements.js?v=phase1-final"></script>
-    <script src="assets/js/collector.js?v=phase8"></script>
+    <script src="assets/js/collector.js?v=collector-tasks-2"></script>
 </body>
 
 </html>

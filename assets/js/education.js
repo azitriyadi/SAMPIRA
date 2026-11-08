@@ -64,7 +64,7 @@ if (portalEducation) {
         "sampah-elektronik":"fa-plug", "panduan-sampira":"fa-book-open"};
     const categoryArtwork = {pengomposan:"waste-organic.svg", "sampah-elektronik":"waste-electronics.svg"};
     const form = portalEducation.querySelector("form");
-    const message = portalEducation.querySelector("[role=status]");
+    const message = portalEducation.querySelector("[role=status], output[aria-live]");
     const list = portalEducation.querySelector(".sp-portal-articles");
     const feature = portalEducation.querySelector(".sp-education-feature");
     const categoryGrid = portalEducation.querySelector(".sp-education-category-grid");
@@ -114,6 +114,7 @@ if (portalEducation) {
         const run = ++sequence;
         prev.disabled = next.disabled = true;
         list.replaceChildren();
+        feature.hidden = true;
         message.textContent = "Memuat artikel…";
         const query = new URLSearchParams({...filters, page: String(page), limit: "6"});
         try {
@@ -160,6 +161,7 @@ if (portalEducation) {
     window.addEventListener("sampira:user-view", event => {
         if (event.detail === "edukasi") load();
     });
+    if (portalEducation.classList.contains('active')) load();
 }
 
 const reader = document.querySelector("#education-reader");

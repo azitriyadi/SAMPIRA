@@ -2,7 +2,7 @@ let globalActiveMission = null;
 let missionSequence = 0;
 let disposeMissionLocation;
 const missionLocation = document.getElementById('mission-location');
-const missionMaps = import('/assets/js/location-map.js?v=phase8');
+const missionMaps = import('/assets/js/location-map.js?v=collector-tasks-2');
 
 function clearMissionLocation() {
     ++missionSequence;
@@ -11,6 +11,15 @@ function clearMissionLocation() {
     missionLocation.replaceChildren();
     document.getElementById('mission-dest').textContent = '—';
     document.getElementById('mission-details').replaceChildren();
+    document.getElementById('mission-title').textContent = 'Memuat rincian tugas…';
+    document.getElementById('mission-instruction').textContent = 'Tinjau lokasi dan status terbaru sebelum melanjutkan.';
+    const contact = document.getElementById('mission-contact');
+    contact.hidden = true;
+    contact.removeAttribute('href');
+    document.getElementById('mission-coordinates').textContent = '';
+    document.getElementById('mission-map-destination').textContent = '';
+    document.getElementById('mission-route-action').replaceChildren();
+    document.getElementById('mission-map-gps').replaceChildren();
     const button = document.getElementById('mission-btn');
     button.disabled = true;
     button.onclick = null;
@@ -64,6 +73,7 @@ function switchView(viewId, element) {
         target.classList.add('active');
     }
     window.dispatchEvent(new Event('sampira:collector-view'));
+    if (viewId === 'dashboard') document.querySelector('[data-collector-summary]')?.dispatchEvent(new Event('sampira:open'));
 
     document.querySelectorAll('.sidebar-item, .nav-item').forEach(item => item.classList.remove('active'));
     if (viewId === 'operations') {
@@ -126,7 +136,8 @@ async function viewActiveMission(tracking, navigation) {
             if (sequence !== missionSequence) return;
             disposeMissionLocation = mountLocationDetail(missionLocation, {
                 title: 'Titik tujuan penjemputan', point: item, address: item.pickup_address, autoTiles: true,
-                navigation: {...navigation, authorize}
+                popup: {title: 'Lokasi donor: ' + (item.donor_name || 'Warga'), address: item.pickup_address || 'Alamat belum tersedia.'},
+                navigation: {...navigation, authorize, compact: true, gpsHost: document.getElementById('mission-map-gps'), externalHost: document.getElementById('mission-route-action')}
             });
         } catch {
             missionLocation.textContent = 'Peta belum tersedia. Gunakan alamat penjemputan.';
@@ -157,6 +168,8 @@ function renderMission(item) {
     globalActiveMission = item;
     const statusMeta = getCollectorStatusMeta(item.status);
     
+    document.getElementById('mission-title').textContent = 'Penjemputan ' + (item.category_name || 'sampah');
+    document.getElementById('mission-instruction').textContent = statusMeta.nextAction;
     document.getElementById('mission-resi').innerText = item.tracking_number;
     document.getElementById('mission-status').innerText = statusMeta.label;
     document.getElementById('mission-status').dataset.status = item.status;
@@ -168,16 +181,28 @@ function renderMission(item) {
         step.classList.toggle('current', index === currentStatusIndex);
     });
 
-    document.getElementById('mission-dest').innerText = item.pickup_address;
+    document.getElementById('mission-dest').innerText = item.pickup_address || 'Alamat penjemputan belum tersedia.';
+    document.getElementById('mission-map-destination').textContent = 'Tujuan: ' + (item.pickup_address || 'Alamat belum tersedia.');
+    const hasPoint = item.latitude != null && item.longitude != null && Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude));
+    document.getElementById('mission-coordinates').textContent = hasPoint ? 'Titik tersimpan: ' + item.latitude + ', ' + item.longitude : 'Titik presisi belum tersedia. Alamat digunakan untuk navigasi.';
     document.getElementById('mission-details').innerHTML = `
         <dl class="mission-detail-list">
             <div><dt>Kategori</dt><dd>${escapePortalHTML(item.category_name)}</dd></div>
             <div><dt>Deskripsi</dt><dd>${escapePortalHTML(item.item_description)}</dd></div>
             <div><dt>Estimasi berat</dt><dd>${item.weight_kg} KG</dd></div>
-            <div><dt>Donor</dt><dd>${escapePortalHTML(item.donor_name)} &middot; ${escapePortalHTML(item.contact_phone)}</dd></div>
-            <div class="mission-next-action"><dt>Arahan berikutnya</dt><dd>${statusMeta.nextAction}</dd></div>
+            <div><dt>Donor</dt><dd>${escapePortalHTML(item.donor_name || 'Belum tersedia')}</dd></div>
+            <div><dt>Kontak</dt><dd>${escapePortalHTML(item.contact_phone || 'Belum tersedia')}</dd></div>
         </dl>
     `;
+    const contact = document.getElementById('mission-contact');
+    const phone = String(item.contact_phone || '').replace(/[\s-]/g, '');
+    if (/^(\+62|62|0)8\d{8,13}$/.test(phone)) {
+        contact.href = 'https://wa.me/' + phone.replace(/^\+/, '').replace(/^0/, '62');
+        contact.hidden = false;
+    } else {
+        contact.hidden = true;
+        contact.removeAttribute('href');
+    }
 
     const btn = document.getElementById('mission-btn');
     if (btn) {
@@ -307,7 +332,7 @@ function renderOpenCollectorTask(item) {
 }
 
 function summarizeCollectorPickups(list, userId) {
-    const result = {weight: 0, historyHtml: '', tasksHtml: '', activeMission: null, activeCount: 0};
+    const result = {weight: 0, historyHtml: '', tasksHtml: '', activeMission: null, activeCount: 0, queueCount: 0};
     for (const item of list) {
         if (item.status === 'completed') {
             result.weight += Number(item.final_weight_kg ?? 0);
@@ -316,8 +341,10 @@ function summarizeCollectorPickups(list, userId) {
             if (['pickup', 'transit', 'arrived'].includes(item.status)) result.activeCount++;
             if (['pickup', 'transit'].includes(item.status)) result.activeMission = item;
             result.tasksHtml += renderAssignedCollectorTask(item);
+            result.queueCount++;
         } else if (item.status === 'pending') {
             result.tasksHtml += renderOpenCollectorTask(item);
+            result.queueCount++;
         }
     }
     return result;
@@ -330,7 +357,8 @@ function renderCollectorDashboard(list, userId) {
     document.getElementById('stat-active-tasks').textContent = result.activeCount;
     document.getElementById('stat-profit').innerText = '—';
     document.getElementById('earnings-total').innerText = '—';
-    if (upcomingList) upcomingList.innerHTML = result.tasksHtml || '<div style="text-align:center; padding:20px; color:#64748b;">Tidak ada antrean pickup tersedia.</div>';
+    document.getElementById('collector-queue-count').textContent = result.queueCount + ' tugas';
+    if (upcomingList) upcomingList.innerHTML = result.tasksHtml || '<div class="collector-queue-empty"><i class="fas fa-inbox" aria-hidden="true"></i><strong>Tidak ada antrean pickup tersedia</strong><p>Tugas baru akan tampil di sini saat tersedia. Anda juga dapat meninjau tugas fasilitas.</p><button type="button" class="sp-button sp-button--quiet" onclick="switchView(\'facility\')">Lihat Tugas Fasilitas</button></div>';
     if (historyBody) historyBody.innerHTML = result.historyHtml || '<tr><td colspan="4" style="text-align:center; padding:16px; color:#64748b;">Belum ada riwayat misi penjemputan selesai.</td></tr>';
 }
 
@@ -347,6 +375,7 @@ async function loadCollectorData() {
         if (run !== collectorLoadSequence) return;
         if (!user) throw new Error('Profile unavailable');
         document.getElementById('desktop-greeting').innerText=`Halo, ${user.name}. Tinjau penjemputan dan tugas fasilitasmu.`;
+        document.getElementById('collector-welcome-title').textContent=`Halo, ${user.name}.`;
         document.getElementById('mobile-name').innerText=user.name;
         document.getElementById('profile-name').innerText=user.name;
         document.getElementById('collector-profile-email').textContent=user.email;
@@ -369,9 +398,17 @@ async function loadCollectorData() {
         historyBody.replaceChildren();
         document.getElementById('stat-active-tasks').textContent='—';
         document.getElementById('stat-packages').textContent='—';
+        document.getElementById('collector-queue-count').textContent='—';
     }
 }
 collectorRetry.addEventListener('click',loadCollectorData);
+document.getElementById('collector-refresh').addEventListener('click', async event => {
+    const button=event.currentTarget;
+    if(button.disabled)return;
+    button.disabled=true;
+    document.querySelector('[data-collector-summary]').dispatchEvent(new Event('sampira:open'));
+    try { await loadCollectorData(); } finally { button.disabled=false; }
+});
 window.addEventListener('sampira:session-ended',() => {collectorLoadSequence++;clearMissionLocation();});
 window.addEventListener('focus',() => {
     if (document.hidden) return;

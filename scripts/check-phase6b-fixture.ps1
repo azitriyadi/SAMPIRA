@@ -25,8 +25,16 @@ Set-Location (Join-Path $PSScriptRoot '..')
 if ((git branch --show-current) -ne 'main') { throw 'Run this fixture from the integrated main working tree.' }
 if (!$SkipBrowser -and !(Test-Path -LiteralPath $Chrome)) { throw 'Pass the installed Chrome executable with -Chrome.' }
 if ($Screenshots) { $env:SAMPIRA_TEST_PHASE6_SCREENSHOTS = [IO.Path]::GetFullPath($Screenshots) }
-$t=Join-Path $env:TEMP ('sampira-6b-fe-'+[guid]::NewGuid().ToString('N'))
+$previousTemp=$env:TEMP
+$previousTmp=$env:TMP
+$t=[IO.Path]::GetFullPath((Join-Path $previousTemp ('sampira-6b-fe-'+[guid]::NewGuid().ToString('N'))))
 New-Item -ItemType Directory $t | Out-Null
+Set-Content -LiteralPath (Join-Path $t '.sampira-test-fixture') -Value 'Disposable isolated SAMPIRA test run'
+$db=$null
+try {
+# All child HTTP copies, Chrome profiles and Go temporary files belong to this run.
+$env:TEMP=$t
+$env:TMP=$t
 foreach($fixturePort in $DatabasePort,$ServerPort) {
  $occupied=@(netstat -ano | Select-String ":$fixturePort\s+.*LISTENING")
  if($occupied.Count){throw "Fixture port occupied: $fixturePort ($occupied)"}
@@ -94,7 +102,6 @@ $dbArguments=@('--no-defaults','--bind-address=127.0.0.1',"--port=$DatabasePort"
 if($HandlingPhotoOnly -or $RewardPaymentOnly -or $Integration10 -or $Security10BOnly){$dbArguments+='--max-allowed-packet=1048576'}
 if($Security10BOnly -or $Integration10){$dbArguments+='--default-time-zone=+07:00'}
 $db=Start-Process (Join-Path $MySqlBin 'mysqld.exe') -ArgumentList $dbArguments -WindowStyle Hidden -PassThru -RedirectStandardOutput "$t/db.out" -RedirectStandardError "$t/db.err"
-try {
  for($i=0;$i -lt 40;$i++){
   if($db.HasExited){Get-Content "$t/db.err";throw 'MariaDB exited'}
   if(netstat -ano | Select-String (":"+$DatabasePort+"\s+.*LISTENING\s+"+$db.Id+"$")){break}
@@ -111,6 +118,7 @@ try {
  $scripts += 'check-education-content.mjs','import-education-content.mjs'
  $scripts += 'check-user-reference.mjs'
  $scripts += 'check-user-form-steps.mjs'
+ $scripts += 'check-collector-tasks.mjs'
  foreach($file in $scripts){
   $source = "scripts/$file"
   $content=(Get-Content -Raw -Encoding utf8 $source).Replace('13316', [string]$DatabasePort).Replace('18081', [string]$ServerPort)
@@ -130,6 +138,20 @@ try {
  node "$t/scripts/check-phase1-migration.mjs"
  if($LASTEXITCODE){throw 'Fixture failed'}
 } finally {
- if(!$db.HasExited){& (Join-Path $MySqlBin 'mysqladmin.exe') --no-defaults --protocol=tcp -h 127.0.0.1 -P $DatabasePort -u root shutdown; if(!$db.WaitForExit(5000)){Stop-Process -Id $db.Id}}
- Write-Output "Fixture: $t"
+ try {
+  if($db -and !$db.HasExited){& (Join-Path $MySqlBin 'mysqladmin.exe') --no-defaults --protocol=tcp -h 127.0.0.1 -P $DatabasePort -u root shutdown; if(!$db.WaitForExit(5000)){Stop-Process -Id $db.Id; $null=$db.WaitForExit(5000)}}
+ } finally {
+  $env:TEMP=$previousTemp
+  $env:TMP=$previousTmp
+  $safeParent=[IO.Path]::GetFullPath($previousTemp).TrimEnd('\')
+  if([IO.Path]::GetDirectoryName($t) -ne $safeParent -or [IO.Path]::GetFileName($t) -notmatch '^sampira-6b-fe-[a-f0-9]{32}$' -or !(Test-Path -LiteralPath (Join-Path $t '.sampira-test-fixture'))){throw 'Unsafe fixture cleanup target.'}
+  if($db -and !$db.HasExited){Write-Warning "Fixture process still active; kept $t"}
+  else {
+   for($attempt=0;$attempt -lt 4;$attempt++){
+    try {Remove-Item -LiteralPath $t -Recurse -Force -ErrorAction Stop;break}
+    catch {if($attempt -eq 3){Write-Warning "Fixture cleanup incomplete: $t"}else{Start-Sleep -Milliseconds 400}}
+   }
+   if(!(Test-Path -LiteralPath $t)){Write-Output 'Fixture and nested browser/build artifacts removed.'}
+  }
+ }
 }

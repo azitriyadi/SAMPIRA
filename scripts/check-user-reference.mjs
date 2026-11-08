@@ -9,6 +9,97 @@ export async function checkUserReference(ctx) {
     await mkdir(out,{recursive:true});
     await nav('/login');
     assert.equal(await js('location.origin'),'http://127.0.0.1:18081','Fixture only.');
+    if(process.env.SAMPIRA_TEST_COLLECTOR_TASKS_ONLY==='1') {
+        const {checkCollectorTasks}=await import('./check-collector-tasks.mjs');await checkCollectorTasks(ctx);return;
+    }
+    if(process.env.SAMPIRA_TEST_COLLECTOR_OVERVIEW_ONLY==='1') {
+        await login('owner@phase1.invalid','/dashboard');
+        const pickup=await js(`portalFetch('/api/ecorecycle/request_pickup',{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()},body:JSON.stringify({item_description:'Pickup pengujian dashboard Petugas',category:'Computers',weight_kg:2,pickup_address:'Jalan Fixture Bandung Nomor 12',contact_phone:'081234567890',latitude:-6.91,longitude:107.61})}).then(async r=>{if(r.status!==201)throw Error('Pickup fixture failed');return (await r.json()).data;})`);
+        await login('collector@phase1.invalid','/petugas');
+        await text('[data-collector-summary] [data-analytics-state]','Diperbarui');
+        await waitFor(()=>js('document.getElementById("collector-queue-count").textContent.includes("tugas")'),'Pickup queue failed');
+        const analytics=await js('portalFetch("/api/analytics").then(r=>r.json()).then(r=>r.data)');
+        for(const key of ['completed_pickups','active_facility_tasks','in_progress_pickups','completed_facility_tasks'])assert.equal(await js(`Number(document.querySelector('[data-collector-metric="${key}"]').textContent.replace(/\D/g,''))`),analytics[key]);
+        assert.equal(await js('document.getElementById("stat-profit").textContent'),'—','Fabricated commission');
+        await captureCollector('dashboard');
+        await js(`document.querySelector('[data-tracking="${pickup.tracking_number}"]').click();void 0`);
+        await text('.swal2-title','Ambil Tugas Penjemputan');await click('.swal2-confirm');
+        await text('.swal2-title','Tugas Diambil!');await click('.swal2-confirm');
+        await waitFor(()=>js(`Boolean(document.querySelector('[data-mission="${pickup.tracking_number}"]'))`),'Claim did not create assigned task');
+        await js('switchView("dashboard");void 0');
+        await click('#collector-refresh');
+        await waitFor(()=>js('!document.getElementById("collector-refresh").disabled'),'Refresh remained disabled');
+        await text('[data-collector-summary] [data-analytics-state]','Diperbarui');
+        const active=await js('portalFetch("/api/analytics").then(r=>r.json()).then(r=>r.data.in_progress_pickups)');
+        assert.equal(await js('Number(document.querySelector("[data-collector-metric=in_progress_pickups]").textContent)'),active);
+        // Select the newly claimed fixture, whose address is known; legacy seed rows may have no address.
+        await js('viewActiveMission('+JSON.stringify(pickup.tracking_number)+')');
+        await js('switchView("dashboard");void 0');
+        await js('openActiveMission();void 0');
+        await waitFor(()=>js('document.getElementById("view-active-mission").classList.contains("active")'),'Detail shortcut failed');
+        await text('#mission-dest','Jalan Fixture Bandung Nomor 12');
+        await js('switchView("dashboard");void 0');
+        await click('#view-dashboard .sp-field-shortcut button');
+        assert(await js('document.getElementById("view-operations").classList.contains("active")'));
+        await waitFor(()=>js('document.querySelector("#view-operations .sp-map-layout output").textContent.includes("lokasi dimuat")'),'Operational map did not load');
+        await js('switchView("dashboard");window.collectorRealFetch=window.fetch;window.fetch=(url,options)=>String(url).includes("list_pickups?type=petugas")?Promise.resolve(new Response(JSON.stringify({status:"success",data:[]}),{status:200,headers:{"Content-Type":"application/json"}})):collectorRealFetch(url,options);void 0');
+        await click('#collector-refresh');await text('#upcoming-task-list','Tidak ada antrean pickup tersedia');
+        assert.equal(await js('document.getElementById("collector-queue-count").textContent'),'0 tugas');
+        await captureCollector('empty');
+        await click('.collector-queue-empty button');assert(await js('document.getElementById("view-facility").classList.contains("active")'));
+        await js('switchView("dashboard");window.fetch=(url,options)=>String(url).includes("list_pickups?type=petugas")?Promise.resolve(new Response(JSON.stringify({status:"error"}),{status:503,headers:{"Content-Type":"application/json"}})):collectorRealFetch(url,options);void 0');
+        await click('#collector-refresh');await text('#collector-load-status','belum dapat dimuat');
+        assert.equal(await js('document.getElementById("stat-packages").textContent'),'—');
+        await js('window.fetch=collectorRealFetch;void 0');await click('#collector-retry');
+        await waitFor(()=>js('document.getElementById("collector-data-state").hidden'),'Retry failed');
+        await writeFile(join(out,'collector-results.json'),JSON.stringify({real_statistics:true,claim:true,refresh:true,mission_detail:true,map_navigation:true,empty_state:true,error_retry:true,no_fabricated_commission:true,viewports:[1440,1280,390]},null,2));
+        console.log('PASS Petugas overview: scoped API metrics, real claim, refresh, mission/map shortcuts, empty/error recovery and responsive screenshots.');return;
+        async function captureCollector(name) {
+            for(const width of [1440,1280,390]) {
+                await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<600});
+                await js('window.scrollTo({top:0,behavior:"instant"});void 0');await sleep(150);
+                if(name==='empty') {await js('document.querySelector("#view-dashboard .layout-grid").scrollIntoView({block:"start",behavior:"instant"});void 0');await sleep(100);}
+                assert(await js('document.documentElement.scrollWidth<=innerWidth+2'),'Petugas overflow '+width);
+                const shot=await send('Page.captureScreenshot',{format:'png'});await writeFile(join(out,'collector-'+name+'-'+width+'.png'),Buffer.from(shot.data,'base64'));
+            }
+            await send('Emulation.setDeviceMetricsOverride',{width:1280,height:1000,deviceScaleFactor:1,mobile:false});
+        }
+    }
+    if(process.env.SAMPIRA_TEST_USER_EDUCATION_ONLY==='1') {
+        await login('admin@phase1.invalid','/admin');
+        await js(`(async()=>{const path='/api/ecorecycle/education/manage/articles';for(let i=0;i<8;i++){const r=await portalFetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:'education-ui-fixture-'+i,title:'Panduan lingkungan fixture '+i,summary:'Panduan sintetis untuk pengujian halaman Edukasi SAMPIRA.',body:'Pisahkan sampah dari sumbernya. Konten ini hanya digunakan pada database fixture pengujian.',category:i%2?'pengomposan':'pemilahan-sampah',sources:['https://www.epa.gov/recycle']})});if(r.status!==201)throw Error('Fixture article creation failed');const row=(await r.json()).data;const p=await portalFetch(path+'/'+row.id+'/publication',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:row.version,status:'published'})});if(!p.ok)throw Error('Fixture publication failed');}})()`);
+        await login('owner@phase1.invalid','/dashboard');
+        await click('.hub-tab[data-target="edukasi"]');
+        await waitFor(()=>js('document.querySelectorAll("#edukasi .sp-article-card").length===6'),'Education articles failed to load on navigation');
+        assert(await js('!document.querySelector("#edukasi .sp-education-feature").hidden'));
+        await click('#edukasi [data-next]');await text('#edukasi [role=status]','Menampilkan 7–8');
+        assert.equal(await js('document.querySelectorAll("#edukasi .sp-article-card").length'),2);
+        await click('#edukasi [data-prev]');await text('#edukasi [role=status]','Menampilkan 1–6');
+        await click('#edukasi [data-category="pengomposan"]');await text('#edukasi [role=status]','Menampilkan 1–4');
+        assert(await js('document.querySelector("#edukasi .sp-education-feature").hidden'),'Filtered results kept stale feature');
+        await click('#edukasi [data-category=""]');await text('#edukasi [role=status]','Menampilkan 1–6');
+        await js('document.getElementById("education-search-input").value="notfoundxyz";document.querySelector("#edukasi form").requestSubmit();void 0');
+        await text('#edukasi [role=status]','Tidak ada artikel');
+        assert.equal(await js('document.querySelectorAll("#edukasi .sp-article-card").length'),0);
+        await js('document.getElementById("education-search-input").value="";window.eduFetch=window.fetch;window.fetch=(url,options)=>String(url).includes("/education/articles?")?Promise.resolve(new Response(JSON.stringify({message:"Layanan edukasi sementara gagal."}),{status:503,headers:{"Content-Type":"application/json"}})):eduFetch(url,options);document.querySelector("#edukasi form").requestSubmit();void 0');
+        await text('#edukasi [role=status]','Layanan edukasi sementara gagal.');
+        await js('window.fetch=eduFetch;document.querySelector("#edukasi form").requestSubmit();void 0');
+        await text('#edukasi [role=status]','Menampilkan 1–6');
+        await click('#edukasi .sp-article-card a');
+        await waitFor(()=>js('Boolean(document.querySelector("[data-reference-reader] h2"))'),'Article reader did not open');
+        await click('[data-reference-reader] button');
+        for(const width of [1280,390]) {
+            await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<600});
+            for(const [name,selector] of [['top','#edukasi'],['articles','#edukasi .sp-education-list-heading']]) {
+                await js(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'start',behavior:'instant'});void 0`);await sleep(180);
+                assert(await js('document.documentElement.scrollWidth<=innerWidth+2'),'Education overflow '+width);
+                const shot=await send('Page.captureScreenshot',{format:'png'});await writeFile(join(out,'education-'+name+'-'+width+'.png'),Buffer.from(shot.data,'base64'));
+            }
+        }
+        await writeFile(join(out,'education-results.json'),JSON.stringify({navigation_load:true,published_fixture_articles:8,pagination:true,category_filter:true,search_empty:true,error_recovery:true,reader:true,viewports:[1280,390]},null,2));
+        console.log('PASS User education: actual CMS publications, automatic load, categories, pagination, empty/error recovery, article reader and 1280/390px.');
+        return;
+    }
     if(process.env.SAMPIRA_TEST_USER_WIZARD_ONLY==='1' || process.env.SAMPIRA_TEST_USER_CAMERA_ONLY==='1' || process.env.SAMPIRA_TEST_USER_ESTIMATE_ONLY==='1') {
         const {checkUserFormSteps}=await import('./check-user-form-steps.mjs');
         await checkUserFormSteps(ctx);return;

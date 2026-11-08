@@ -112,6 +112,8 @@ function init(root) {
         if (!admin) {
             const heroLabel = root.querySelector('.ref-hero-label');
             const heroTitle = root.querySelector('#facility-heading');
+            const pageHero = heroTitle?.closest('.ref-form-hero');
+            if (pageHero) pageHero.hidden = view === 'form';
             const heroDesc = root.querySelector('.ref-form-hero p');
             const heroNote = root.querySelector('.ref-hero-note');
             if (heroTitle) {

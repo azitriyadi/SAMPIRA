@@ -61,15 +61,15 @@
                 <div><span aria-hidden="true" class="sp-admin-metric-mark"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></span><dt>Menunggu validasi</dt><dd data-overview-status="resolution_submitted">—</dd></div>
             </dl>
             <div class="sp-admin-overview-meta">
-                <p role="status" class="sp-admin-overview-status">Memuat cuplikan antrean…</p>
+                <output class="sp-admin-overview-status" aria-live="polite">Memuat cuplikan antrean…</output>
                 <button class="sp-button sp-button--quiet" type="button" data-overview-retry hidden>Coba lagi</button>
             </div>
             <div class="sp-admin-overview-layout">
                 <section class="sp-panel sp-admin-recent" aria-labelledby="admin-recent-title">
                     <div class="sp-section-heading"><h2 id="admin-recent-title">Laporan terbaru</h2><button type="button" class="sp-button sp-button--quiet" data-admin-go="admin-report-verification">Buka antrean</button></div>
-                    <div class="sp-table-wrap" role="region" aria-label="Tabel laporan terbaru" tabindex="0" hidden>
+                    <section class="sp-table-wrap" aria-label="Tabel laporan terbaru" hidden>
                         <table><thead><tr><th scope="col">Laporan</th><th scope="col">Verifikasi</th><th scope="col">Aksi</th></tr></thead><tbody id="admin-recent-reports"></tbody></table>
-                    </div>
+                    </section>
                     <p id="admin-recent-state" class="sp-admin-state">Memuat laporan terbaru…</p>
                 </section>
 
@@ -81,11 +81,11 @@
         <section id="admin-facility-handling" data-facility-handling="admin" hidden></section>
         <section id="admin-operation-map" data-operation-map="admin" aria-labelledby="admin-map-title" hidden>
 <header class="sp-admin-heading"><p class="sp-kicker">Operasional fasilitas</p>
-<h2 id="admin-map-title" data-map-heading></h2>
+<h2 id="admin-map-title" data-map-heading>Monitoring Peta</h2>
 <p data-map-intro></p></header>
 <form class="sp-filter" id="admin-map-filters" data-operation-filter aria-label="Filter lokasi">
-    <label>Kategori fasilitas<select name="category"></select></label>
-    <label>Status<select name="status"></select></label>
+    <label for="admin-map-category">Kategori fasilitas</label><select id="admin-map-category" name="category"></select>
+    <label for="admin-map-status">Status</label><select id="admin-map-status" name="status"></select>
     <button class="sp-button" type="submit">Terapkan</button>
     <button class="sp-button sp-button--quiet" type="reset">Reset filter</button>
 </form>
@@ -96,7 +96,7 @@
     </div>
     <div class="sp-admin-map-results">
         <h3>Daftar lokasi</h3>
-        <p role="status" data-state="loading">Memuat lokasi…</p>
+        <output data-state="loading" aria-live="polite">Memuat lokasi…</output>
         <ul class="sp-map-list"></ul>
         <button class="sp-button sp-button--quiet" type="submit" form="admin-map-filters" data-map-retry hidden>Coba lagi</button>
         <button class="sp-button sp-button--quiet" type="button" data-more hidden>Muat lagi</button>
@@ -107,13 +107,13 @@
     <div class="sp-section-heading"><h2 id="education-cms-title">Kelola Artikel Edukasi</h2><button class="sp-button" id="education-add" type="button" disabled>Buat artikel</button></div>
     <p>Siapkan draf, tinjau sumber, lalu terbitkan untuk publik.</p>
     <form id="education-filters" class="sp-filter">
-        <label>Cari artikel<input type="search" name="q" maxlength="100"></label>
-        <label>Kategori<select name="category"><option value="">Semua kategori</option></select></label>
-        <label>Status<select name="status"><option value="">Semua status</option><option value="draft">Draf</option><option value="published">Terbit</option><option value="archived">Arsip</option></select></label>
+        <label for="admin-edu-q">Cari artikel</label><input id="admin-edu-q" type="search" name="q" maxlength="100">
+        <label for="admin-edu-category">Kategori</label><select id="admin-edu-category" name="category"><option value="">Semua kategori</option></select>
+        <label for="admin-edu-status">Status</label><select id="admin-edu-status" name="status"><option value="">Semua status</option><option value="draft">Draf</option><option value="published">Terbit</option><option value="archived">Arsip</option></select>
         <button class="sp-button" type="submit">Terapkan</button>
     </form>
-    <p role="status"></p>
-    <div class="sp-table-wrap" tabindex="0" role="region" aria-label="Daftar artikel edukasi"><table><thead><tr><th scope="col">Judul</th><th scope="col">Kategori</th><th scope="col">Status</th><th scope="col">Diperbarui</th><th scope="col">Aksi</th></tr></thead><tbody></tbody></table></div>
+    <output aria-live="polite"></output>
+    <section class="sp-table-wrap" aria-label="Daftar artikel edukasi"><table><thead><tr><th scope="col">Judul</th><th scope="col">Kategori</th><th scope="col">Status</th><th scope="col">Diperbarui</th><th scope="col">Aksi</th></tr></thead><tbody></tbody></table></section>
     <div class="sp-pager">
         <button class="sp-button sp-button--quiet" data-education-page="-1" type="button" disabled>Sebelumnya</button>
         <button class="sp-button sp-button--quiet" data-education-page="1" type="button" disabled>Berikutnya</button>
@@ -122,14 +122,14 @@
     <dialog aria-labelledby="education-editor-title">
         <div class="sp-section-heading"><h3 id="education-editor-title">Buat draf</h3><button class="sp-button sp-button--quiet" type="button" id="education-close">Tutup</button></div>
         <form id="education-editor" class="sp-editor">
-            <label>Judul<input name="title" minlength="3" maxlength="120" required></label>
-            <label>Slug<input name="slug" minlength="3" maxlength="120" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" aria-describedby="slug-hint" required><small id="slug-hint">Gunakan huruf kecil, angka, dan tanda hubung. Contoh: panduan-pilah</small></label>
-            <label>Kategori<select name="category" required><option value="">Pilih kategori</option></select></label>
-            <label>Ringkasan<textarea name="summary" rows="2" minlength="10" maxlength="320" required></textarea></label>
-            <label>Isi artikel<textarea name="body" rows="7" minlength="20" maxlength="12000" required></textarea></label>
-            <label>Sumber (opsional)<textarea name="sources" rows="2" aria-describedby="source-hint"></textarea><small id="source-hint">Satu URL HTTPS per baris. Maksimal delapan sumber.</small></label>
-            <details class="sp-admin-article-preview"><summary>Pratinjau teks artikel</summary><h4 data-preview-title></h4><p data-preview-summary></p><p data-preview-body></p></details>
-            <p role="status"></p>
+            <label for="admin-edit-title">Judul</label><input id="admin-edit-title" name="title" minlength="3" maxlength="120" required>
+            <label for="admin-edit-slug">Slug</label><input id="admin-edit-slug" name="slug" minlength="3" maxlength="120" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" aria-describedby="slug-hint" required><small id="slug-hint">Gunakan huruf kecil, angka, dan tanda hubung. Contoh: panduan-pilah</small>
+            <label for="admin-edit-cat">Kategori</label><select id="admin-edit-cat" name="category" required><option value="">Pilih kategori</option></select>
+            <label for="admin-edit-summary">Ringkasan</label><textarea id="admin-edit-summary" name="summary" rows="2" minlength="10" maxlength="320" required></textarea>
+            <label for="admin-edit-body">Isi artikel</label><textarea id="admin-edit-body" name="body" rows="7" minlength="20" maxlength="12000" required></textarea>
+            <label for="admin-edit-sources">Sumber (opsional)</label><textarea id="admin-edit-sources" name="sources" rows="2" aria-describedby="source-hint"></textarea><small id="source-hint">Satu URL HTTPS per baris. Maksimal delapan sumber.</small>
+            <details class="sp-admin-article-preview"><summary>Pratinjau teks artikel</summary><h4 data-preview-title>Pratinjau Judul</h4><p data-preview-summary></p><p data-preview-body></p></details>
+            <output aria-live="polite"></output>
             <div class="sp-pager">
                 <button class="sp-button" type="submit">Simpan draf</button>
                 <button class="sp-button" type="button" data-publication="published" hidden>Terbitkan</button>
