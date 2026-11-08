@@ -317,14 +317,20 @@ if (metrics) {
     const message = metrics.querySelector("[role=status]");
     const number = new Intl.NumberFormat("id-ID");
     const rupiah = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
-    window.portalFetch("/api/ecorecycle/pickup_status?type=stats")
-        .then(async response => {
-            if (!response.ok) throw new Error("Ringkasan sistem gagal dimuat.");
-            const result = await response.json();
-            for (const field of metrics.querySelectorAll("[data-metric]")) {
-                const value = result.data?.[field.dataset.metric];
-                if (typeof value === "number") field.textContent = (field.hasAttribute("data-currency") ? rupiah : number).format(value);
-            }
-            message.textContent = "";
-        }).catch(error => { message.textContent = error.message; });
+    function refreshSystemMetrics() {
+        for (const field of metrics.querySelectorAll('[data-metric]')) field.textContent = '—';
+        message.textContent = 'Memuat ringkasan…';
+        window.portalFetch("/api/ecorecycle/pickup_status?type=stats")
+            .then(async response => {
+                if (!response.ok) throw new Error("Ringkasan sistem gagal dimuat.");
+                const result = await response.json();
+                for (const field of metrics.querySelectorAll("[data-metric]")) {
+                    const value = result.data?.[field.dataset.metric];
+                    if (typeof value === "number") field.textContent = (field.hasAttribute("data-currency") ? rupiah : number).format(value);
+                }
+                message.textContent = "";
+            }).catch(error => { message.textContent = error.message; });
+    }
+    window.addEventListener('sampira:cash-updated', refreshSystemMetrics);
+    refreshSystemMetrics();
 }

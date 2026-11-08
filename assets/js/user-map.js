@@ -1,4 +1,4 @@
-const locationMaps = import('/assets/js/location-map.js?v=phase8');
+const locationMaps = import('/assets/js/location-map.js?v=user-estimate-1');
 let userLocationSequence = 0;
 let disposeUserLocation;
 

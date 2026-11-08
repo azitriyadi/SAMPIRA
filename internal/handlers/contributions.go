@@ -189,7 +189,7 @@ func (a *App) pointHistory(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	rows, err := a.DB.QueryContext(r.Context(), "SELECT id,amount,balance_after,description,created_at FROM point_entries WHERE user_id=? AND (?=0 OR id<?) ORDER BY id DESC LIMIT ?", actor.ID, before, before, limit)
+	rows, err := a.DB.QueryContext(r.Context(), "SELECT id,amount,balance_after,description,UNIX_TIMESTAMP(created_at) FROM point_entries WHERE user_id=? AND (?=0 OR id<?) ORDER BY id DESC LIMIT ?", actor.ID, before, before, limit)
 	if err != nil {
 		phase9Error(w)
 		return
@@ -199,12 +199,12 @@ func (a *App) pointHistory(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var id, amount, balance int64
 		var description string
-		var at time.Time
-		if rows.Scan(&id, &amount, &balance, &description, &at) != nil {
+		var epoch int64
+		if rows.Scan(&id, &amount, &balance, &description, &epoch) != nil {
 			phase9Error(w)
 			return
 		}
-		items = append(items, map[string]any{"id": id, "amount": amount, "balance_after": balance, "description": description, "created_at": at})
+		items = append(items, map[string]any{"id": id, "amount": amount, "balance_after": balance, "description": description, "created_at": time.Unix(epoch, 0).UTC()})
 	}
 	if rows.Err() != nil {
 		phase9Error(w)
@@ -399,6 +399,16 @@ func (a *App) redeemVoucher(w http.ResponseWriter, r *http.Request) {
 		(&apiProblem{"ID dan Idempotency-Key UUID v4 wajib valid.", 400}).write(w)
 		return
 	}
+	// New UI confirms the displayed price. Optional for Phase 9A clients.
+	var expectedCost int64
+	if values := r.Header.Values("X-Expected-Point-Cost"); len(values) > 0 {
+		var err error
+		expectedCost, err = strconv.ParseInt(values[0], 10, 64)
+		if len(values) != 1 || err != nil || expectedCost < 1 || expectedCost > 1000000000 {
+			(&apiProblem{"Biaya poin yang dikonfirmasi tidak valid.", 400}).write(w)
+			return
+		}
+	}
 	tx, err := a.DB.BeginTx(r.Context(), nil)
 	if err != nil {
 		phase9Error(w)
@@ -443,6 +453,10 @@ func (a *App) redeemVoucher(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		phase9Error(w)
+		return
+	}
+	if expectedCost != 0 && expectedCost != cost {
+		(&apiProblem{"Biaya poin berubah. Muat ulang katalog dan konfirmasikan biaya terbaru.", 409}).write(w)
 		return
 	}
 	if !available || stock < 1 || balance < cost {
@@ -496,7 +510,7 @@ func (a *App) myVouchers(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	rows, err := a.DB.QueryContext(r.Context(), "SELECT id,voucher_id,code,point_cost,name,description,valid_until,created_at,valid_until<=UTC_TIMESTAMP() FROM voucher_redemptions WHERE user_id=? AND (?=0 OR id<?) ORDER BY id DESC LIMIT ?", actor.ID, before, before, limit)
+	rows, err := a.DB.QueryContext(r.Context(), "SELECT id,voucher_id,code,point_cost,name,description,valid_until,UNIX_TIMESTAMP(created_at),valid_until<=UTC_TIMESTAMP() FROM voucher_redemptions WHERE user_id=? AND (?=0 OR id<?) ORDER BY id DESC LIMIT ?", actor.ID, before, before, limit)
 	if err != nil {
 		phase9Error(w)
 		return
@@ -506,9 +520,10 @@ func (a *App) myVouchers(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var id, vid, cost int64
 		var code, name, description string
-		var until, at time.Time
+		var until time.Time
+		var epoch int64
 		var expired bool
-		if rows.Scan(&id, &vid, &code, &cost, &name, &description, &until, &at, &expired) != nil {
+		if rows.Scan(&id, &vid, &code, &cost, &name, &description, &until, &epoch, &expired) != nil {
 			phase9Error(w)
 			return
 		}
@@ -516,7 +531,7 @@ func (a *App) myVouchers(w http.ResponseWriter, r *http.Request) {
 		if expired {
 			status = "expired"
 		}
-		items = append(items, map[string]any{"id": id, "voucher_id": vid, "code": code, "point_cost": cost, "name": name, "description": description, "valid_until": until, "created_at": at, "status": status, "simulation": true, "notice": "Tidak berlaku di merchant nyata."})
+		items = append(items, map[string]any{"id": id, "voucher_id": vid, "code": code, "point_cost": cost, "name": name, "description": description, "valid_until": until, "created_at": time.Unix(epoch, 0).UTC(), "status": status, "simulation": true, "notice": "Tidak berlaku di merchant nyata."})
 	}
 	if rows.Err() != nil {
 		phase9Error(w)

@@ -5,6 +5,13 @@ export const categories = {
     other: 'Fasilitas Lainnya'
 };
 
+export const categoryIcons = {
+    tps: 'fa-trash-can',
+    collection_site: 'fa-truck',
+    waste_bank: 'fa-recycle',
+    other: 'fa-layer-group'
+};
+
 export const statuses = {
     pending: 'Menunggu Verifikasi',
     revision_required: 'Perlu Revisi',
@@ -32,6 +39,32 @@ export function element(tag, text, className) {
     const node = document.createElement(tag);
     if (text !== undefined) node.textContent = text;
     if (className) node.className = className;
+    return node;
+}
+
+export function userStatusBadge(status) {
+    const meta = {
+        pending: { label: 'Menunggu Verifikasi', icon: 'fa-clock', className: 'pending' },
+        revision_required: { label: 'Perlu Revisi', icon: 'fa-triangle-exclamation', className: 'cancelled' },
+        approved: { label: 'Disetujui', icon: 'fa-circle-check', className: 'completed' },
+        rejected: { label: 'Ditolak', icon: 'fa-circle-xmark', className: 'cancelled' },
+        assigned: { label: 'Ditugaskan', icon: 'fa-user-check', className: 'pickup' },
+        assessment_in_progress: { label: 'Asesmen Lapangan', icon: 'fa-magnifying-glass', className: 'transit' },
+        handling_in_progress: { label: 'Dalam Penanganan', icon: 'fa-wrench', className: 'transit' },
+        resolution_submitted: { label: 'Menunggu Validasi', icon: 'fa-hourglass-half', className: 'arrived' },
+        resolution_revision_required: { label: 'Perlu Perbaikan', icon: 'fa-rotate-left', className: 'cancelled' },
+        completed: { label: 'Selesai', icon: 'fa-circle-check', className: 'completed' }
+    };
+    const item = meta[status] || {
+        label: statuses[status] || 'Status belum dikenal',
+        icon: 'fa-info-circle',
+        className: 'pending'
+    };
+    const node = element('span', undefined, `status-badge ${item.className}`);
+    node.dataset.status = status;
+    const icon = element('i', undefined, `fas ${item.icon}`);
+    icon.setAttribute('aria-hidden', 'true');
+    node.append(icon, document.createTextNode(' ' + item.label));
     return node;
 }
 
@@ -66,16 +99,14 @@ export function adminTable(label, columns, body) {
 
 export function reportCard(report, admin, openDetail, base) {
     const item = element('li', undefined, 'facility-card');
-    const action = element('button', admin && report.status === 'pending' ? 'Tinjau laporan' : 'Lihat detail', 'facility-button');
-    action.type = 'button';
-    action.setAttribute('aria-label', action.textContent + ' ' + report.tracking_number);
-    action.addEventListener('click', () => openDetail(report.id));
     const category = Object.hasOwn(categories, report.category) ? categories[report.category] : 'Kategori belum dikenal';
+    const catIconClass = categoryIcons[report.category] || 'fa-tag';
+
     if (!admin) {
         item.className = 'sp-history-card';
         const thumb = element('span', undefined, 'sp-history-thumb');
         thumb.setAttribute('aria-hidden', 'true');
-        thumb.append(element('i', undefined, 'fas fa-triangle-exclamation'));
+        thumb.append(element('i', undefined, 'fas ' + catIconClass));
         const photoPath = base + '/' + report.id + '/photo';
         if (report.photo_url === photoPath) {
             const photo = element('img');
@@ -85,15 +116,64 @@ export function reportCard(report, admin, openDetail, base) {
             photo.src = photoPath;
             thumb.append(photo);
         }
+
         const copy = element('div', undefined, 'sp-history-card-copy');
+        const titleHeading = element('h4', report.title);
+        const refPara = element('p', report.tracking_number, 'sp-history-reference');
+
         const meta = element('p', undefined, 'sp-history-meta');
-        meta.append(time(report.created_at), element('span', category));
-        copy.append(element('h4', report.title), element('p', report.tracking_number, 'sp-history-reference'), meta);
+        const dateSpan = element('span');
+        const calIcon = element('i', undefined, 'far fa-calendar');
+        calIcon.setAttribute('aria-hidden', 'true');
+        dateSpan.append(calIcon, document.createTextNode(' ' + dateLabel(report.created_at)));
+        meta.append(dateSpan);
+
+        if (report.address) {
+            const addrSpan = element('span');
+            const pinIcon = element('i', undefined, 'fas fa-map-pin');
+            pinIcon.setAttribute('aria-hidden', 'true');
+            addrSpan.append(pinIcon, document.createTextNode(' ' + report.address));
+            meta.append(addrSpan);
+        }
+
+        const catSpan = element('span');
+        const catIcon = element('i', undefined, 'fas ' + catIconClass);
+        catIcon.setAttribute('aria-hidden', 'true');
+        catSpan.append(catIcon, document.createTextNode(' ' + category));
+        meta.append(catSpan);
+
+        const rewardLine = element('p', undefined, 'sp-history-reward');
+        if (report.public_result) {
+            rewardLine.textContent = 'Hasil: ' + report.public_result;
+        } else if (report.verification_note) {
+            rewardLine.textContent = 'Catatan: ' + report.verification_note;
+        } else if (report.description) {
+            rewardLine.textContent = report.description;
+        }
+
+        copy.append(titleHeading, refPara, meta, rewardLine);
+
         const actions = element('div', undefined, 'sp-history-card-actions');
-        actions.append(badge(report.status), action);
+        const badgeNode = userStatusBadge(report.status);
+
+        const action = element('button', undefined, 'sp-button sp-button--quiet');
+        action.type = 'button';
+        action.setAttribute('aria-label', 'Detail ' + report.tracking_number);
+        const arrowIcon = element('i', undefined, 'fas fa-arrow-right');
+        arrowIcon.setAttribute('aria-hidden', 'true');
+        action.append(document.createTextNode('Detail '), arrowIcon);
+        action.addEventListener('click', () => openDetail(report.id));
+
+        actions.append(badgeNode, action);
         item.append(thumb, copy, actions);
         return item;
     }
+
+    const action = element('button', report.status === 'pending' ? 'Tinjau laporan' : 'Lihat detail', 'facility-button');
+    action.type = 'button';
+    action.setAttribute('aria-label', action.textContent + ' ' + report.tracking_number);
+    action.addEventListener('click', () => openDetail(report.id));
+
     const row = element('tr');
     row.insertCell().append(element('h4', report.title), element('small', report.tracking_number));
     row.insertCell().append(element('span', category), element('small', 'Pelapor #' + report.reporter_id));
@@ -165,31 +245,93 @@ export function historyEntry(event, admin) {
 
 // Static markup shared by the two portal mounts. API content is rendered with DOM nodes.
 export function mountReports(root, admin) {
+    if (admin) {
+        root.innerHTML = `
+            <header class="facility-header">
+                <div>
+                    <p class="facility-kicker">Ruang verifikasi</p>
+                    <h2 id="facility-heading" tabindex="-1">Verifikasi laporan fasilitas</h2>
+                    <p>Tinjau kondisi, foto, dan histori laporan fasilitas yang masuk.</p>
+                </div>
+            </header>
+            <output id="facility-success" class="facility-notice" aria-live="polite"></output>
+            <p id="facility-error" class="facility-notice error" role="alert" tabindex="-1"></p>
+            <section id="facility-list-view" class="facility-panel" aria-labelledby="facility-list-heading">
+                <h3 id="facility-list-heading" tabindex="-1">Antrean laporan</h3>
+                <div class="facility-toolbar">
+                    <div class="facility-filters">
+                        <label class="facility-field" for="facility-status">Status <select id="facility-status"></select></label>
+                        <label class="facility-field" for="facility-category">Kategori <select id="facility-category"></select></label>
+                    </div>
+                </div>
+                <p id="facility-list-message" class="facility-muted" aria-live="polite"></p>
+                <ul id="facility-list" class="facility-cards"></ul>
+                <div class="facility-actions">
+                    <button type="button" id="facility-list-retry" class="facility-button" hidden>Coba lagi</button>
+                    <button type="button" id="facility-list-more" class="facility-button" hidden>Muat laporan berikutnya</button>
+                </div>
+            </section>
+            <section id="facility-detail-view" class="facility-panel facility-stack" aria-labelledby="facility-detail-heading" hidden>
+                <div class="facility-actions">
+                    <h3 id="facility-detail-heading" tabindex="-1">Detail laporan</h3>
+                    <button type="button" class="facility-button" data-facility-back>Kembali ke daftar</button>
+                </div>
+                <p id="facility-detail-message" class="facility-muted" aria-live="polite" hidden></p>
+                <button type="button" id="facility-detail-retry" class="facility-button" hidden>Muat ulang detail</button>
+                <div id="facility-detail"></div>
+                ${verificationMarkup}
+                <section id="facility-history-section" aria-labelledby="facility-history-heading" hidden>
+                    <h4 id="facility-history-heading">Histori status</h4>
+                    <p id="facility-history-message" class="facility-muted" aria-live="polite"></p>
+                    <ol id="facility-history" class="facility-timeline"></ol>
+                    <button type="button" id="facility-history-more" class="facility-button" hidden>Muat histori sebelumnya</button>
+                </section>
+            </section>
+        `;
+        root.querySelector('#facility-status').append(options(statuses, 'Semua status'));
+        root.querySelector('#facility-category').append(options(categories, 'Semua kategori'));
+        const body = element('tbody');
+        body.id = 'facility-list';
+        root.querySelector('#facility-list').replaceWith(adminTable('Tabel verifikasi laporan', ['Laporan', 'Kategori', 'Verifikasi', 'Tanggal', 'Aksi'], body));
+        return;
+    }
+
+    // User portal mount: matches the layout of Riwayat Penjemputan exactly!
     root.innerHTML = `
-        <header class="facility-header">
+        <header class="sp-history-intro ref-form-hero">
             <div>
-                <p class="facility-kicker">${admin ? 'Ruang verifikasi' : 'Ruang pengguna'}</p>
-                <h2 id="facility-heading" tabindex="-1">${admin ? 'Verifikasi laporan fasilitas' : 'Lapor Fasilitas'}</h2>
-                <p>${admin ? 'Tinjau kondisi, foto, dan histori laporan fasilitas yang masuk.' : 'Laporkan masalah pada fasilitas sampah dan pantau hasil verifikasinya.'}</p>
+                <span class="ref-hero-label">Pusat Monitoring Laporan</span>
+                <h2 id="facility-heading" tabindex="-1">Riwayat &amp; Pelacakan</h2>
+                <p>Lihat riwayat penjemputan sampah dan laporan fasilitas yang Anda ajukan.</p>
+            </div>
+            <div class="ref-hero-note">
+                <i class="fas fa-clock" aria-hidden="true"></i>
+                <span>AKTIVITAS ANDA<strong>Status dari catatan terbaru</strong></span>
             </div>
         </header>
         <output id="facility-success" class="facility-notice" aria-live="polite"></output>
         <p id="facility-error" class="facility-notice error" role="alert" tabindex="-1"></p>
-        <section id="facility-list-view" class="facility-panel" aria-labelledby="facility-list-heading">
-            <h3 id="facility-list-heading" tabindex="-1">${admin ? 'Antrean laporan' : 'Laporan saya'}</h3>
-            <div class="facility-toolbar">
-                <div class="facility-filters">
-                    <label class="facility-field" for="facility-status">Status <select id="facility-status"></select></label>
-                    <label class="facility-field" for="facility-category">Kategori <select id="facility-category"></select></label>
-                </div>
-                ${admin ? '' : '<button type="button" id="facility-new" class="facility-button primary">Buat laporan</button>'}
+        <section id="facility-list-view" aria-labelledby="facility-list-heading">
+            <div class="sp-history-switch" aria-label="Jenis riwayat">
+                <button type="button" class="sp-button sp-button--quiet" data-sp-user-tab="riwayat-payout"><i class="fas fa-truck" aria-hidden="true"></i> Riwayat Penjemputan</button>
+                <button type="button" class="sp-button" aria-current="page"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Riwayat Lapor Fasilitas</button>
             </div>
-            <p id="facility-list-message" class="facility-muted" aria-live="polite"></p>
-            <ul id="facility-list" class="facility-cards"></ul>
-            <div class="facility-actions">
-                <button type="button" id="facility-list-retry" class="facility-button" hidden>Coba lagi</button>
-                <button type="button" id="facility-list-more" class="facility-button" hidden>Muat laporan berikutnya</button>
+            <h3 id="facility-list-heading" tabindex="-1" class="sr-only">Laporan saya</h3>
+            <div class="sp-workspace-filters sp-history-filters">
+                <label class="sp-history-search"><span>Cari penjemputan</span><input id="facility-search" type="search" placeholder="Cari berdasarkan judul atau ID…"></label>
+                <label>Status<select id="facility-status"></select></label>
+                <label>Urutkan<select id="facility-sort"><option value="newest">Terbaru</option><option value="oldest">Terlama</option></select></label>
+                <label>Kategori<select id="facility-category"></select></label>
             </div>
+            <ul id="facility-list" class="sp-history-cards" aria-label="Daftar laporan fasilitas"></ul>
+            <div class="sp-history-pagination">
+                <p id="facility-list-message" role="status" aria-live="polite"></p>
+                <nav class="sp-history-page-controls" aria-label="Halaman riwayat laporan fasilitas">
+                    <button type="button" id="facility-list-retry" class="sp-button sp-button--quiet" hidden>Coba lagi</button>
+                    <button type="button" id="facility-list-more" class="sp-button sp-button--quiet" hidden>Muat laporan berikutnya</button>
+                </nav>
+            </div>
+            <button type="button" id="facility-new" class="sp-button sp-button--quiet hub-tab sp-history-track">Buat laporan fasilitas baru</button>
         </section>
         <section id="facility-detail-view" class="facility-panel facility-stack" aria-labelledby="facility-detail-heading" hidden>
             <div class="facility-actions">
@@ -199,7 +341,7 @@ export function mountReports(root, admin) {
             <p id="facility-detail-message" class="facility-muted" aria-live="polite" hidden></p>
             <button type="button" id="facility-detail-retry" class="facility-button" hidden>Muat ulang detail</button>
             <div id="facility-detail"></div>
-            ${admin ? verificationMarkup : '<button type="button" id="facility-revise" class="facility-button primary" hidden>Perbaiki laporan</button>'}
+            <button type="button" id="facility-revise" class="facility-button primary" hidden>Perbaiki laporan</button>
             <section id="facility-history-section" aria-labelledby="facility-history-heading" hidden>
                 <h4 id="facility-history-heading">Histori status</h4>
                 <p id="facility-history-message" class="facility-muted" aria-live="polite"></p>

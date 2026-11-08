@@ -1,7 +1,7 @@
 import {base, request} from './facility-api.js?v=phase5b';
 import {adminTable, categories, element, options} from './facility-report-ui.js?v=admin-6b4';
 import {button, handlingCard, handlingEvent, handlingStatuses, handlingSummary} from './facility-handling-ui.js?v=admin-6b4';
-import {handlingActions, openHandlingForm} from './facility-handling-form.js?v=phase4b';
+import {handlingActions, openHandlingForm} from './facility-handling-form.js?v=handling-photo-fix';
 import {mountLocationDetail} from './location-map.js?v=phase8';
 
 const listPath = base + '/handling';
@@ -15,7 +15,7 @@ function message(error) {
     case 403: return 'Akun atau asal permintaan tidak diizinkan.';
     case 404: return 'Data penanganan tidak tersedia untuk akun ini.';
     case 409: return 'Versi atau status berubah. Tinjau detail terbaru sebelum mengirim lagi.';
-    case 413: return 'Ukuran kiriman terlalu besar.';
+    case 413: return error.message || 'Ukuran kiriman terlalu besar. Pilih foto yang lebih kecil.';
     case 415: return 'Format kiriman tidak didukung.';
     default: return 'Layanan penanganan gagal merespons. Periksa kondisi terbaru sebelum mencoba lagi.';
     }
@@ -140,7 +140,6 @@ function workspace(root) {
     }
     const statusFilter = filter('Status penanganan', handlingStatuses, 'Semua status');
     const categoryFilter = filter('Kategori', categories, 'Semua kategori');
-    if (admin) statusFilter.value = 'approved';
     const listStatus = element('output', '', 'facility-muted');
     const cards = element(admin ? 'tbody' : 'ul', undefined, 'facility-cards');
     const queue = admin ? adminTable('Tabel penanganan laporan', ['Laporan', 'Penanganan', 'Penugasan', 'Koordinasi', 'Diperbarui', 'Aksi'], cards) : cards;
@@ -283,6 +282,14 @@ function workspace(root) {
         } finally { if (sequence === detailSequence) refresh.disabled = false; }
     }
 
+    function refreshVisible() {
+        if (redirecting || document.hidden || !root.getClientRects().length || document.querySelector('.handling-dialog[open]')) return;
+        // Another role may have updated this report while this tab was inactive.
+        if (selected) void openDetail(selected);
+        else void loadList();
+    }
+    window.addEventListener('focus', refreshVisible);
+    document.addEventListener('visibilitychange', refreshVisible);
     window.addEventListener('sampira:handling-detail', event => {
         if (root.getClientRects().length) void openDetail(event.detail.id, event.detail.navigation);
     });

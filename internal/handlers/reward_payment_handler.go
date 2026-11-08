@@ -42,14 +42,38 @@ func (a *App) ProcessPayoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// Payment fields must come from the multipart body, never from query parameters.
 	if err := r.ParseMultipartForm(6 << 20); err != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			(&apiProblem{"Kiriman bukti terlalu besar. Gunakan gambar hingga 5 MB.", http.StatusRequestEntityTooLarge}).write(w)
+			return
+		}
 		(&apiProblem{"Pembayaran tetap pending. Sertakan bukti dan referensi transfer yang telah diverifikasi.", http.StatusConflict}).write(w)
 		return
+	}
+	if r.MultipartForm != nil {
+		defer r.MultipartForm.RemoveAll()
+		if files := r.MultipartForm.File["proof"]; len(files) > 0 && files[0].Size > maxPickupImage {
+			(&apiProblem{"Bukti pembayaran maksimal 5 MB.", http.StatusRequestEntityTooLarge}).write(w)
+			return
+		}
 	}
 	id, err := strconv.Atoi(r.PostForm.Get("pickup_id"))
 	ref := strings.TrimSpace(r.PostForm.Get("reference"))
 	amount := strings.TrimSpace(r.PostForm.Get("amount"))
-	if err != nil || id <= 0 || !transferReference.MatchString(ref) || !transferAmount.MatchString(amount) || r.PostForm.Get("confirm_payment") != "true" {
-		(&apiProblem{"ID, nominal, referensi transfer, dan konfirmasi verifikasi wajib valid.", http.StatusBadRequest}).write(w)
+	if err != nil || id <= 0 {
+		(&apiProblem{"Pilih penjemputan dengan ID yang valid.", http.StatusBadRequest}).write(w)
+		return
+	}
+	if !transferAmount.MatchString(amount) {
+		(&apiProblem{"Nominal harus berupa angka, maksimal 13 digit dan 2 angka desimal. Gunakan titik untuk desimal, tanpa pemisah ribuan.", http.StatusBadRequest}).write(w)
+		return
+	}
+	if !transferReference.MatchString(ref) {
+		(&apiProblem{"Referensi transfer harus 6–100 karakter, diawali huruf/angka, dan hanya berisi huruf, angka, titik (.), garis bawah (_), garis miring (/), atau tanda hubung (-). Spasi tidak diperbolehkan.", http.StatusBadRequest}).write(w)
+		return
+	}
+	if r.PostForm.Get("confirm_payment") != "true" {
+		(&apiProblem{"Centang konfirmasi bahwa nominal, penerima, dan bukti pembayaran sudah diverifikasi.", http.StatusBadRequest}).write(w)
 		return
 	}
 	proof, _, contentType, problem := readPickupImage(r, "proof")
@@ -62,8 +86,23 @@ func (a *App) ProcessPayoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	digest := sha256.Sum256(proof)
+	tx, err := a.DB.BeginTx(r.Context(), nil)
+	if err != nil {
+		(&apiProblem{"Pencatatan belum dapat dipastikan. Periksa riwayat pembayaran sebelum mencoba lagi.", http.StatusInternalServerError}).write(w)
+		return
+	}
+	defer tx.Rollback()
+	var packetLimit int64
+	if err = tx.QueryRowContext(r.Context(), "SELECT @@max_allowed_packet").Scan(&packetLimit); err != nil {
+		(&apiProblem{"Kapasitas unggahan belum dapat diperiksa. Coba lagi setelah memeriksa riwayat.", http.StatusInternalServerError}).write(w)
+		return
+	}
+	if int64(len(proof)) > packetLimit-(64<<10) {
+		(&apiProblem{"Bukti terlalu besar untuk penyimpanan server. Perkecil gambar atau gunakan optimasi pada form pembayaran.", http.StatusRequestEntityTooLarge}).write(w)
+		return
+	}
 	// The conditional update records proof and the actor with the paid state in a single write.
-	res, err := a.DB.ExecContext(r.Context(), `UPDATE pickup_rewards
+	res, err := tx.ExecContext(r.Context(), `UPDATE pickup_rewards
   SET status='paid', reference=?, proof=?, proof_type=?, proof_digest=?, paid_by=?, paid_at=CURRENT_TIMESTAMP
   WHERE pickup_id=? AND status='pending' AND amount=CAST(? AS DECIMAL(15,2))`,
 		ref, proof, contentType, digest[:], actor.ID, id, amount)
@@ -81,6 +120,10 @@ func (a *App) ProcessPayoutHandler(w http.ResponseWriter, r *http.Request) {
 		(&apiProblem{"Kewajiban pending tidak ditemukan, sudah dibayar, atau nominal berbeda.", http.StatusConflict}).write(w)
 		return
 	}
+	if err = tx.Commit(); err != nil {
+		(&apiProblem{"Pencatatan belum dapat dipastikan. Periksa riwayat pembayaran sebelum mencoba lagi.", http.StatusInternalServerError}).write(w)
+		return
+	}
 	httpx.SendResponse(w, "success", "Pembayaran eksternal tercatat.", map[string]interface{}{"pickup_id": id, "payment_status": "paid"}, http.StatusOK)
 }
 
@@ -88,7 +131,7 @@ func (a *App) PendingRewardsHandler(w http.ResponseWriter, r *http.Request) {
 	if a.rewardOperator(w, r) == nil {
 		return
 	}
-	rows, err := a.DB.QueryContext(r.Context(), `SELECT p.id,p.tracking_number,r.amount,r.status,r.reference,r.paid_at
+	rows, err := a.DB.QueryContext(r.Context(), `SELECT p.id,p.tracking_number,r.amount,r.status,r.reference,UNIX_TIMESTAMP(r.paid_at),r.paid_by
   FROM pickup_rewards r JOIN pickups p ON p.id=r.pickup_id
   WHERE r.status IN ('pending','paid') ORDER BY r.status='pending' DESC,r.created_at DESC,p.id DESC`)
 	if err != nil {
@@ -103,13 +146,19 @@ func (a *App) PendingRewardsHandler(w http.ResponseWriter, r *http.Request) {
 		Status    string     `json:"status"`
 		Reference *string    `json:"reference"`
 		PaidAt    *time.Time `json:"paid_at"`
+		PaidBy    *int       `json:"paid_by"`
 	}
 	list := make([]reward, 0)
 	for rows.Next() {
 		var row reward
-		if err := rows.Scan(&row.PickupID, &row.Tracking, &row.Amount, &row.Status, &row.Reference, &row.PaidAt); err != nil {
+		var paidEpoch sql.NullInt64
+		if err := rows.Scan(&row.PickupID, &row.Tracking, &row.Amount, &row.Status, &row.Reference, &paidEpoch, &row.PaidBy); err != nil {
 			(&apiProblem{"Gagal membaca kewajiban reward.", http.StatusInternalServerError}).write(w)
 			return
+		}
+		if paidEpoch.Valid {
+			paidAt := time.Unix(paidEpoch.Int64, 0).UTC()
+			row.PaidAt = &paidAt
 		}
 		list = append(list, row)
 	}

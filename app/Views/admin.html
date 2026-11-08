@@ -20,6 +20,8 @@
     <script type="module" src="/assets/js/admin-workspace.js?v=admin-6b4-refined3"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/portal-design.css?v=roles-1">
+<link rel="stylesheet" href="/assets/css/contributions.css?v=phase9b">
+<script type="module" src="/assets/js/contributions.js?v=phase9b"></script>
 </head>
 <body class="sp-portal facility-admin-page sp-console sp-admin">
     <a class="sp-admin-skip" href="#admin-content">Lewati ke isi</a>
@@ -35,6 +37,7 @@
                     <button type="button" class="facility-button" data-open-verification aria-controls="admin-report-verification" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z M9 12l2 2 4-4"/></svg>Verifikasi Laporan</button>
                     <button type="button" class="facility-button" data-open-handling aria-controls="admin-facility-handling" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v13H3z M8 7V4h8v3 M3 12h18"/></svg>Penanganan Laporan</button>
                     <button type="button" class="facility-button" aria-controls="admin-operation-map" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 0 1 16 0z M12 7v6 M9 10h6"/></svg>Monitoring Peta</button>
+                    <button type="button" class="facility-button" aria-controls="admin-analytics" aria-pressed="false">Statistik &amp; Sebaran</button>
                     <button type="button" class="facility-button" aria-controls="education-cms" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v15M3 4c4 0 7 0 9 2 2-2 5-2 9-2v15c-4 0-7 0-9 2-2-2-5-2-9-2z"/></svg>Artikel Edukasi</button>
                 </nav>
                 <div class="sp-admin-account">
@@ -44,6 +47,7 @@
         </aside>
         <div class="sp-console-content" id="admin-content" tabindex="-1">
         <div class="sp-admin-breadcrumb">Portal Admin <span aria-hidden="true">/</span> <strong id="admin-current-view">Ringkasan</strong></div>
+        <section id="admin-analytics" class="p9" hidden data-p9-analytics="admin"></section>
         <section id="admin-overview" aria-labelledby="admin-overview-title">
             <header class="sp-admin-heading"><p class="sp-kicker">Operasional fasilitas</p><h1 id="admin-overview-title">Ringkasan operasional</h1><p>Pantau antrean verifikasi dan tindak lanjut laporan warga.</p></header>
             <section class="sp-admin-shortcuts" aria-labelledby="admin-shortcuts-title">

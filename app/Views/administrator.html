@@ -11,16 +11,18 @@
     <script src="/assets/js/portal-session.js?v=phase1-final" defer></script>
     <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="/assets/js/admin.js?v=phase1-final" defer></script>
-    <script src="/assets/js/reward-payments.js?v=phase2" defer></script>
+    <script src="/assets/js/reward-payments.js?v=payment-reference-validation" defer></script>
     <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/sampira.css?v=phase6b-live">
     <script type="module" src="/assets/js/operations.js?v=phase6b"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/portal-design.css?v=roles-1">
+<link rel="stylesheet" href="/assets/css/contributions.css?v=phase9b">
+<script type="module" src="/assets/js/contributions.js?v=phase9b"></script>
 </head>
 <body class="sp-portal sp-console sp-system">
     <aside class="sp-system-sidebar"><a class="sp-brand" href="/home"><img src="/assets/img/sampira-mark.svg" width="36" height="36" alt=""><span>SAMPIRA<small>Administrator</small></span></a><nav class="sp-system-nav" aria-label="Navigasi Administrator">
-            <a href="#sp-system-metrics">Ringkasan</a><a href="#content-view">Pengumuman</a><a href="#reward-payments-title">Pembayaran Reward</a>
+            <a href="#sp-system-metrics">Ringkasan</a><a href="#p9-system">Statistik sistem</a><a href="#p9-accounts">Akun &amp; Role</a><a href="#p9-voucher-admin">Manajemen Voucher</a><a href="#p9-audit">Monitoring &amp; Audit</a><a href="#p9-system-grid">Sebaran Fasilitas</a><a href="#content-view">Pengumuman</a><a href="#reward-payments-title">Pembayaran Reward</a>
         </nav><p class="sp-system-scope">Administrasi operasional<br>Pengumuman dan pembayaran</p></aside>
 <main class="container sp-system-main" id="sp-system-main">
         <header class="sp-system-header"><div><p class="sp-kicker">Portal Administrator</p><h1>Kontrol operasional SAMPIRA</h1></div>
@@ -104,13 +106,21 @@
                 <label for="reward-payment-amount">Nominal yang dibayar (Rp)</label>
                 <input name="amount" id="reward-payment-amount" type="number" min="0.01" step="0.01" required>
                 <label for="reward-payment-reference">Referensi transfer</label>
-                <input name="reference" id="reward-payment-reference" minlength="6" maxlength="100" required>
+                <input name="reference" id="reward-payment-reference" minlength="6" maxlength="100" aria-describedby="reward-reference-help" required>
+                <small id="reward-reference-help">Gunakan nomor referensi transfer asli: 6–100 karakter, diawali huruf/angka. Hanya huruf, angka, . _ / -; tanpa spasi.</small>
                 <label for="reward-payment-proof">Bukti pembayaran (JPG, PNG, WEBP)</label>
                 <input name="proof" id="reward-payment-proof" type="file" accept="image/jpeg,image/png,image/webp" required>
+                <p>Gambar hingga 5 MB. Foto besar dioptimalkan untuk penyimpanan; periksa keterbacaan bukti. Ini pencatatan transfer eksternal, bukan pengiriman uang.</p>
+                <img id="reward-proof-preview" alt="Pratinjau bukti pembayaran yang akan disimpan" hidden style="max-width:240px;max-height:240px;object-fit:contain">
                 <label for="reward-payment-confirm"><input id="reward-payment-confirm" type="checkbox" required> Saya telah memeriksa nominal, penerima, dan bukti pembayaran eksternal.</label>
                 <button class="btn btn-primary" type="submit">Catat pembayaran</button>
             </form>
         </section>
+        <section class="p9 sp-panel" id="p9-system" data-p9-analytics="administrator"></section>
+        <section class="p9 sp-panel" id="p9-accounts" data-p9-accounts></section>
+        <section class="p9 sp-panel" id="p9-voucher-admin" data-p9-catalog-admin></section>
+        <section class="p9 sp-panel" id="p9-audit" data-p9-audit></section>
+        <section class="p9 sp-panel" id="p9-system-grid" data-p9-grid></section>
     </main>
 </body>
 </html>

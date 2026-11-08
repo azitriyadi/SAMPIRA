@@ -12,6 +12,7 @@ const base = 'http://127.0.0.1:18081';
 assert(chrome && password);
 const profile = mkdtempSync(join(tmpdir(), 'sampira-browser-'));
 const browser = spawn(chrome, ['--headless=new', '--no-first-run', '--disable-background-networking',
+    ...(process.env.SAMPIRA_TEST_USER_CAMERA_ONLY === '1' ? ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] : []),
     '--remote-debugging-port=0', '--remote-debugging-address=127.0.0.1', '--user-data-dir=' + profile, 'about:blank'],
 {stdio: 'ignore', windowsHide: true});
 
@@ -124,7 +125,79 @@ try {
         await waitPath('/login');
     }
 
-    if (process.env.SAMPIRA_TEST_PORTAL_DESIGN_ONLY === '1') {
+    if (process.env.SAMPIRA_TEST_USER_REFERENCE === '1') {
+        const {checkUserReference} = await import('./check-user-reference.mjs');
+        await checkUserReference({send,js,nav,login,click,text,waitFor,waitPath,profile,password});
+        assert.deepEqual(exceptions, [], 'User reference JavaScript exceptions');
+        assert.deepEqual(consoleErrors, [], 'User reference console errors');
+    } else if (process.env.SAMPIRA_TEST_EDUCATION_CONTENT === '1') {
+        const {checkEducationContent} = await import('./check-education-content.mjs');
+        await checkEducationContent({send,js,nav,login,click,text,waitFor,profile,password});
+        assert.deepEqual(exceptions, [], 'Education content JavaScript exceptions');
+        assert.deepEqual(consoleErrors, [], 'Education content console errors');
+    } else if (process.env.SAMPIRA_TEST_SECURITY10B === '1') {
+        await nav('/login');
+        const {checkPhase10BSecurity} = await import('./check-phase10b-security.mjs');
+        await checkPhase10BSecurity({send,js,nav,login,click,text,waitFor,profile,password,exceptions});
+        assert.deepEqual(exceptions, [], 'Phase 10B JavaScript exceptions');
+        assert.deepEqual(consoleErrors, [], 'Phase 10B console errors');
+    } else if (process.env.SAMPIRA_TEST_REWARD_PAYMENT === '1') {
+        await nav('/login');
+        const {checkRewardPayment} = await import('./check-reward-payment.mjs');
+        await checkRewardPayment({send,js,nav,login,click,text,waitFor,profile,password});
+        assert.deepEqual(exceptions, [], 'Reward payment JavaScript exceptions');
+        assert.deepEqual(consoleErrors, [], 'Reward payment console errors');
+    } else if (process.env.SAMPIRA_TEST_INTEGRATION10 === '1') {
+        await nav('/login');
+        if(process.env.SAMPIRA_TEST_FINAL10C==='1'){
+            const {checkFacilityBrowser}=await import('./check-phase3-frontend.mjs');
+            await checkFacilityBrowser({send,js,nav,login,click,text,waitFor,waitPath,profile,password});
+        }
+        const {checkIntegration10} = await import('./check-phase10-integration.mjs');
+        const {checkHandlingBrowser} = await import('./check-phase4-frontend.mjs');
+        await checkHandlingBrowser({send,js,login,click,text,waitFor,profile,password});
+        const {checkPhase9Frontend,checkPhase9Finalization} = await import('./check-phase9-frontend.mjs');
+        await checkPhase9Frontend({send,js,nav,login,click,text,waitFor,profile});
+        await checkPhase9Finalization({send,js,nav,login,click,text,waitFor,profile,password});
+        // Phase 6's map regression expects an assigned, unfinished pickup.
+        // Its original outer harness supplied that state; Phase 9 completes it.
+        await login('owner@phase1.invalid','/dashboard');
+        const mapPickup = await js(`portalFetch('/api/ecorecycle/request_pickup',{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()},body:JSON.stringify({item_description:'Phase 10 map regression',category:'Computers',weight_kg:2,pickup_address:'Jalan Fixture Peta Bandung',contact_phone:'081234567890',latitude:-6.91,longitude:107.61})}).then(async r=>{if(r.status!==201)throw Error('Map fixture creation failed');return (await r.json()).data.tracking_number;})`);
+        await login('collector@phase1.invalid','/petugas');
+        await js(`portalFetch('/api/ecorecycle/assign_collector',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tracking_number:${JSON.stringify(mapPickup)}})}).then(r=>{if(!r.ok)throw Error('Map fixture claim failed');})`);
+        const {checkPhase6Browser} = await import('./check-phase6-frontend.mjs');
+        await checkPhase6Browser({send,js,nav,login,click,text,waitFor,profile});
+        const {checkPhase8Browser} = await import('./check-phase8-frontend.mjs');
+        await checkPhase8Browser({send,js,nav,login,click,text,waitFor,profile});
+        // Legacy fixtures assert exact queue/officer counts. Populate the new
+        // pagination and dedicated-officer fixtures only after those suites.
+        await checkIntegration10({send,js,nav,login,click,text,waitFor,profile,password});
+        const {checkRewardPayment} = await import('./check-reward-payment.mjs');
+        await checkRewardPayment({send,js,nav,login,click,text,waitFor,profile,password});
+        if(process.env.SAMPIRA_TEST_FINAL10C==='1'){
+            const {checkPhase10CFinal}=await import('./check-phase10c-final.mjs');
+            await checkPhase10CFinal({send,js,nav,login,click,text,waitFor,waitPath,profile,password});
+        }
+        const {checkPhase10BSecurity} = await import('./check-phase10b-security.mjs');
+        await checkPhase10BSecurity({send,js,nav,login,click,text,waitFor,profile,password,exceptions});
+        assert.deepEqual(exceptions, [], 'Phase 10 JavaScript exceptions');
+        assert.deepEqual(consoleErrors, [], 'Phase 10 console errors');
+    } else if (process.env.SAMPIRA_TEST_HANDLING_PHOTO === '1') {
+        await nav('/login');
+        const {checkHandlingBrowser} = await import('./check-phase4-frontend.mjs');
+        await checkHandlingBrowser({send,js,login,click,text,waitFor,profile,password});
+        assert.deepEqual(exceptions, [], 'Handling photo JavaScript exceptions');
+        assert.deepEqual(consoleErrors, [], 'Handling photo console errors');
+    } else if (process.env.SAMPIRA_TEST_PHASE9_ONLY === '1') {
+        const {checkPhase9Frontend} = await import('./check-phase9-frontend.mjs');
+        await checkPhase9Frontend({send,js,nav,login,click,text,waitFor,profile});
+        const {checkHandlingBrowser} = await import('./check-phase4-frontend.mjs');
+        await checkHandlingBrowser({send,js,login,click,text,waitFor,profile,password});
+        const {checkPhase8Browser} = await import('./check-phase8-frontend.mjs');
+        await checkPhase8Browser({send,js,login,click,text,waitFor,profile});
+        assert.deepEqual(exceptions, [], 'Phase 9 frontend JavaScript exceptions');
+        assert.deepEqual(consoleErrors, [], 'Phase 9 frontend console errors');
+    } else if (process.env.SAMPIRA_TEST_PORTAL_DESIGN_ONLY === '1') {
         const {checkPortalDesign} = await import('./check-portal-design.mjs');
         await checkPortalDesign({send, js, nav, login, click, text, waitFor, profile});
         assert.deepEqual(exceptions, [], 'Four-role JavaScript exceptions');
@@ -153,7 +226,9 @@ try {
     await login('owner@phase1.invalid', '/dashboard');
     await text('#metric-total-weight', '5.5');
     await click('[data-target="riwayat-payout"]');
+    await js('document.querySelector("#pickup-history-search").value="PHASE1-LEGACY";document.querySelector("#pickup-history-search").dispatchEvent(new Event("input"));void 0');
     await text('#payout-history-table-body', 'PHASE1-LEGACY');
+    await js('document.querySelector("#pickup-history-search").value="";document.querySelector("#pickup-history-status").value="completed";document.querySelector("#pickup-history-status").dispatchEvent(new Event("change"));void 0');
     await text('#payout-history-table-body', 'Menunggu pembayaran');
     await js("Array.from(document.querySelectorAll('#payout-history-table-body button')).find(el => el.closest('li').innerText.includes('Menunggu pembayaran')).click()");
     await text('#track-disp-reward', 'Menunggu pembayaran');
@@ -276,6 +351,11 @@ try {
         await checkPhase8Browser({send, js, nav, login, click, text, waitFor, profile});
         const {checkPortalDesign} = await import('./check-portal-design.mjs');
         await checkPortalDesign({send, js, nav, login, click, text, waitFor, profile});
+        if (process.env.SAMPIRA_TEST_PHASE9_FINAL === '1') {
+            const {checkPhase9Frontend,checkPhase9Finalization} = await import('./check-phase9-frontend.mjs');
+            await checkPhase9Frontend({send,js,nav,login,click,text,waitFor,profile});
+            await checkPhase9Finalization({send,js,nav,login,click,text,waitFor,profile,password});
+        }
         assert.deepEqual(exceptions, [], 'Uncaught JavaScript exceptions in Phase 6B');
         assert.deepEqual(consoleErrors, [], 'Application console errors in Phase 6B');
     }

@@ -21,6 +21,11 @@ export async function checkHandlingBrowser({send, js, login, click, text, waitFo
     const png = join(profile, 'phase4-proof.png');
     writeFileSync(png, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==','base64'));
     const pngBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==','base64');
+    if(process.env.SAMPIRA_TEST_HANDLING_PHOTO==='1') {
+        // Valid PNG with padded metadata/trailing bytes: accepted image, packet
+        // payload exceeds the 1 MiB server configuration found locally.
+        writeFileSync(png,Buffer.concat([pngBytes,Buffer.alloc(1400000)]));
+    }
     const validForm = (values, photo=false) => {
         const form = new FormData();
         for(const [key,value] of Object.entries(values)) form.set(key,value);
@@ -205,10 +210,24 @@ export async function checkHandlingBrowser({send, js, login, click, text, waitFo
     await queue();
     await act('Mulai asesmen',{public_note:'Petugas menuju lokasi.'});
     await text(root,'Sedang diperiksa');
+    if(process.env.SAMPIRA_TEST_HANDLING_PHOTO==='1') {
+        const before=await api(path,{token:second.token});
+        const body=validForm({version:before.version,action:'record_assessment',condition:'Pemeriksaan ukuran paket.',assessment:'Tidak boleh tersimpan sebagian.'});
+        body.set('photo',new Blob([pngBytes,Buffer.alloc(1400000)],{type:'image/png'}),'large-proof.png');
+        await api(path+'/activity',{token:second.token,method:'POST',body},413);
+        const unchanged=await api(path,{token:second.token});
+        assert.equal(unchanged.version,before.version);assert.equal(unchanged.status,before.status);
+    }
     await act('Catat hasil pemeriksaan',{condition:'Pengunci tidak rapat.',assessment:'Perlu uji pengunci.',internal_note:'Temuan teknis privat',public_note:'Kondisi sudah diperiksa.'},true);
     await text(root,'Dalam penanganan');
     const assessment = (await api(path+'/history',{token:second.token})).items.find(e=>e.action==='record_assessment');
     assert(assessment.has_photo);
+    if(process.env.SAMPIRA_TEST_HANDLING_PHOTO==='1') {
+        const photoResponse=await fetch(origin+path+'/history/'+assessment.version+'/photo',{headers:{Authorization:'Bearer '+second.token}});
+        assert.equal(photoResponse.status,200);assert.match(photoResponse.headers.get('content-type'),/image\/jpeg/);
+        assert((await photoResponse.arrayBuffer()).byteLength<=750*1024);
+        console.log('PASS large handling photo: 1.4 MB input optimized, assessment saved with MySQL max_allowed_packet=1 MiB; raw oversized API returns 413 with unchanged version/status.');
+    }
     await api(path+'/history/'+assessment.version+'/photo',{token:owner.token},404);
     await act('Catat tindakan',{action_taken:'Menyiapkan pengujian pengunci.'});
     await act('Serahkan hasil',{result:'Uji awal selesai.'});

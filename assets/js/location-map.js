@@ -42,7 +42,7 @@ function output(root) {
     return status;
 }
 
-function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false, kind = 'pickup', record} = {}) {
+function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false, kind = 'pickup', record, compact = false} = {}) {
     const frame = node('div', null, 'location-map');
     frame.setAttribute('role', 'region');
     frame.setAttribute('aria-label', 'Peta lokasi');
@@ -79,7 +79,7 @@ function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false, kind = '
         tiles = layer;
         layer.on('tileerror', () => {
             if (tiles !== layer) return;
-            tileStatus.textContent = 'Peta jalan gagal dimuat. Titik dan isian manual tetap bisa digunakan.';
+            tileStatus.textContent = compact ? 'Peta jalan gagal dimuat. Coba muat lagi atau gunakan lokasi perangkat.' : 'Peta jalan gagal dimuat. Titik dan isian manual tetap bisa digunakan.';
             layer.remove();
             tiles = null;
             loadTiles.disabled = false;
@@ -155,7 +155,7 @@ function mapPanel(root, onPoint, {onHide, authorize, autoTiles = false, kind = '
         visible = true;
         if (!window.L) {
             frame.hidden = true;
-            tileStatus.textContent = 'Peta tidak tersedia. Gunakan pilihan manual atau alamat.';
+            tileStatus.textContent = compact ? 'Peta belum tersedia. Gunakan lokasi perangkat atau muat ulang halaman.' : 'Peta tidak tersedia. Gunakan pilihan manual atau alamat.';
             loadTiles.hidden = true;
             observer.disconnect();
             return;
@@ -227,9 +227,9 @@ function writePoint(inputs, point, digits) {
     inputs.forEach((input, index) => { input.value = point ? point[index].toFixed(digits) : ''; });
 }
 
-function locate(status, current, accept) {
+function locate(status, current, accept, {compact = false} = {}) {
     if (!window.isSecureContext || !navigator.geolocation) {
-        status.textContent = 'Lokasi perangkat tidak tersedia di halaman ini. Gunakan peta atau isi koordinat manual.';
+        status.textContent = compact ? 'Lokasi perangkat tidak tersedia. Geser pin pada peta.' : 'Lokasi perangkat tidak tersedia di halaman ini. Gunakan peta atau isi koordinat manual.';
         return;
     }
     status.textContent = 'Menunggu lokasi perangkat…';
@@ -243,24 +243,32 @@ function locate(status, current, accept) {
     }, error => {
         if (!current()) return;
         const reason = {1: 'Izin lokasi ditolak.', 2: 'Perangkat belum dapat menentukan posisi.', 3: 'Waktu tunggu lokasi habis.'};
-        status.textContent = (reason[error.code] || 'Lokasi perangkat tidak tersedia.') + ' Gunakan peta atau isi koordinat manual.';
+        status.textContent = (reason[error.code] || 'Lokasi perangkat tidak tersedia.') + (compact ? ' Geser pin pada peta.' : ' Gunakan peta atau isi koordinat manual.');
     }, {enableHighAccuracy: true, timeout: 10000, maximumAge: 0});
 }
 
-export function mountLocationPicker(host, {title, prefix, digits, saved, includeSaved = false}) {
+export function mountLocationPicker(host, {title, prefix, digits, saved, includeSaved = false, compact = false}) {
     const root = panel(host, title);
-    root.append(node('p', 'Periksa alamat dan titik tujuan. Klik peta, geser marker, atau isi kedua koordinat. Kamu tetap bisa mengirim alamat saja jika titik belum tersedia.'));
+    if (compact) {
+        root.classList.add('location-picker-compact');
+        root.firstElementChild.hidden = true;
+        root.append(node('p', 'Gunakan lokasi Anda atau seret pin pada peta untuk menentukan titik ' + (prefix === 'facility' ? 'fasilitas.' : 'penjemputan.'), 'location-picker-hint'));
+    } else root.append(node('p', 'Periksa alamat dan titik tujuan. Klik peta, geser marker, atau isi kedua koordinat. Kamu tetap bisa mengirim alamat saja jika titik belum tersedia.'));
     let choice = 'untouched';
     let gpsSequence = 0;
-    const map = mapPanel(root, (lat, lon) => pick(locationPoint(lat, lon)), {autoTiles: true});
+    const map = mapPanel(root, (lat, lon) => pick(locationPoint(lat, lon)), {autoTiles: true, compact});
     const inputs = coordinateInputs(root, prefix);
+    if (compact) {
+        inputs[0].parentElement.parentElement.hidden = true;
+        for (const input of inputs) input.type = 'hidden';
+    }
     const status = output(root);
     const actions = node('div', null, 'location-actions');
-    actions.append(
-        action('Gunakan Lokasi Saya', () => {
+    actions.append(action('Gunakan Lokasi Saya', () => {
             const id = ++gpsSequence;
-            locate(status, () => root.isConnected && gpsSequence === id, pick);
-        }),
+            locate(status, () => root.isConnected && gpsSequence === id, pick, {compact});
+        }));
+    if (!compact) actions.append(
         action(prefix === 'facility' ? 'Konfirmasi Titik Fasilitas' : 'Konfirmasi Titik Penjemputan', () => {
             ++gpsSequence;
             const point = read();
@@ -282,24 +290,25 @@ export function mountLocationPicker(host, {title, prefix, digits, saved, include
     function pick(point) {
         if (!point) return;
         ++gpsSequence;
-        choice = 'draft';
+        choice = compact ? 'confirmed' : 'draft';
         writePoint(inputs, point, digits);
         map.marker('T', enteredPoint(inputs, digits), true);
-        status.textContent = 'Titik dipilih. Periksa lalu konfirmasi.';
+        status.textContent = compact ? '' : 'Titik dipilih. Periksa lalu konfirmasi.';
     }
 
     for (const input of inputs) input.addEventListener('input', () => {
         ++gpsSequence;
-        choice = 'draft';
+        choice = compact ? 'confirmed' : 'draft';
         map.marker('T', enteredPoint(inputs, digits), true);
-        status.textContent = 'Periksa dan konfirmasi kedua koordinat.';
+        status.textContent = compact ? '' : 'Periksa dan konfirmasi kedua koordinat.';
     });
 
     function read() {
         const point = enteredPoint(inputs, digits);
         if (!point) {
-            status.textContent = 'Isi kedua koordinat dengan angka desimal dalam rentang dan maksimal ' + digits + ' desimal, atau gunakan Hapus titik.';
-            inputs.find(input => !input.value.trim())?.focus();
+            status.textContent = compact ? 'Pilih titik pada peta atau gunakan lokasi perangkat.'
+                : 'Isi kedua koordinat dengan angka desimal dalam rentang dan maksimal ' + digits + ' desimal, atau gunakan Hapus titik.';
+            if (!compact) inputs.find(input => !input.value.trim())?.focus();
         }
         return point;
     }
@@ -307,14 +316,16 @@ export function mountLocationPicker(host, {title, prefix, digits, saved, include
     function reset(report) {
         ++gpsSequence;
         choice = 'untouched';
-        const point = locationPoint(report?.latitude, report?.longitude);
+        const point = locationPoint(report?.latitude, report?.longitude) ?? (compact ? bandung : null);
+        if (compact) choice = 'confirmed';
         writePoint(inputs, point, digits);
         map.marker('T', point ?? bandung, true);
-        status.textContent = point ? 'Titik tersimpan. Pindahkan jika ingin menggantinya.'
+        status.textContent = compact ? '' : point ? 'Titik tersimpan. Pindahkan jika ingin menggantinya.'
             : 'Geser pin awal ke lokasi yang tepat, lalu konfirmasi.';
     }
 
     function fields() {
+        if (compact) return read() ? {latitude: inputs[0].value.trim(), longitude: inputs[1].value.trim()} : null;
         if (choice === 'draft') {
             if (read()) {
                 status.textContent = 'Konfirmasi titik sebelum menyimpan, atau gunakan Hapus titik.';

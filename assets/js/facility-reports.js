@@ -1,4 +1,4 @@
-import {mountReportForm} from './facility-report-form.js?v=portal-redesign-2';
+import {mountReportForm} from './facility-report-form.js?v=user-estimate-1';
 import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=admin-6b4';
 import {base, request} from './facility-api.js?v=phase5b';
 import {mountPublicHandling} from './facility-handling.js?v=phase8';
@@ -50,7 +50,6 @@ function init(root) {
     let editing;
     let postAttempt;
     let busy = false;
-    let initialized = false;
     let sessionEnding = false;
     let disposeLocation;
     if (admin) $('status').value = 'pending';
@@ -71,12 +70,63 @@ function init(root) {
         announce(messageFor(error, collection), true);
     }
 
+    let cachedReports = [];
+
+    function renderDisplayedList(focusFirst = false) {
+        if (admin) return;
+        list.replaceChildren();
+        const query = ($('search')?.value || '').trim().toLocaleLowerCase('id-ID');
+        const sortDir = $('sort')?.value === 'oldest' ? 1 : -1;
+        let items = cachedReports;
+        if (query) {
+            items = items.filter(report => {
+                const title = String(report.title || '').toLocaleLowerCase('id-ID');
+                const tracking = String(report.tracking_number || '').toLocaleLowerCase('id-ID');
+                const address = String(report.address || '').toLocaleLowerCase('id-ID');
+                const desc = String(report.description || '').toLocaleLowerCase('id-ID');
+                return title.includes(query) || tracking.includes(query) || address.includes(query) || desc.includes(query);
+            });
+        }
+        items = [...items].sort((a, b) => {
+            const timeA = Date.parse(a.created_at) || 0;
+            const timeB = Date.parse(b.created_at) || 0;
+            return sortDir * (timeA - timeB);
+        });
+        const nodes = items.map(report => reportCard(report, admin, openFromList, base));
+        list.append(...nodes);
+        $('list-message').textContent = list.children.length
+            ? list.children.length + ' laporan ditampilkan.'
+            : 'Belum ada laporan untuk filter ini.';
+        if (focusFirst && nodes.length) {
+            (nodes[0].querySelector('button') || $('list-heading')).focus();
+        }
+    }
+
     function show(view) {
         if (view !== 'list') ++listRequest;
         if (view !== 'detail') disposeLocation?.();
         for (const panel of ['list', 'detail', 'form']) {
             const section = $(panel + '-view');
             if (section) section.hidden = panel !== view;
+        }
+        if (!admin) {
+            const heroLabel = root.querySelector('.ref-hero-label');
+            const heroTitle = root.querySelector('#facility-heading');
+            const heroDesc = root.querySelector('.ref-form-hero p');
+            const heroNote = root.querySelector('.ref-hero-note');
+            if (heroTitle) {
+                if (view === 'form') {
+                    if (heroLabel) heroLabel.textContent = 'Layanan Pengaduan';
+                    heroTitle.textContent = 'Lapor Fasilitas';
+                    if (heroDesc) heroDesc.textContent = 'Laporkan masalah pada fasilitas sampah dan pantau hasil verifikasinya.';
+                    if (heroNote) heroNote.hidden = true;
+                } else {
+                    if (heroLabel) heroLabel.textContent = 'Pusat Monitoring Laporan';
+                    heroTitle.textContent = 'Riwayat & Pelacakan';
+                    if (heroDesc) heroDesc.textContent = 'Lihat riwayat penjemputan sampah dan laporan fasilitas yang Anda ajukan.';
+                    if (heroNote) heroNote.hidden = false;
+                }
+            }
         }
         $(view + '-heading').focus();
     }
@@ -90,6 +140,7 @@ function init(root) {
         if (cursor !== null) params.set('before_id', cursor);
         else {
             list.replaceChildren();
+            cachedReports = [];
             listCursor = null;
         }
         list.setAttribute('aria-busy', 'true');
@@ -99,13 +150,20 @@ function init(root) {
         try {
             const page = await request(base + '?' + params);
             if (sequence !== listRequest) return;
-            const items = page.items.map(report => reportCard(report, admin, openFromList, base));
-            list.append(...items);
-            listCursor = page.next_before_id;
-            $('list-message').textContent = list.children.length
-                ? list.children.length + ' laporan ditampilkan.'
-                : 'Belum ada laporan untuk filter ini.';
-            if (cursor !== null) (items[0]?.querySelector('button') || $('list-heading')).focus();
+            if (admin) {
+                const items = page.items.map(report => reportCard(report, admin, openFromList, base));
+                list.append(...items);
+                listCursor = page.next_before_id;
+                $('list-message').textContent = list.children.length
+                    ? list.children.length + ' laporan ditampilkan.'
+                    : 'Belum ada laporan untuk filter ini.';
+                if (cursor !== null) (items[0]?.querySelector('button') || $('list-heading')).focus();
+            } else {
+                if (cursor === null) cachedReports = page.items;
+                else cachedReports.push(...page.items);
+                listCursor = page.next_before_id;
+                renderDisplayedList(cursor !== null);
+            }
         } catch (error) {
             if (sequence !== listRequest) return;
             retryCursor = cursor;
@@ -383,6 +441,8 @@ function init(root) {
     for (const filter of ['status', 'category']) {
         $(filter).addEventListener('change', () => { announce(''); void loadList(); });
     }
+    $('search')?.addEventListener('input', () => { announce(''); renderDisplayedList(); });
+    $('sort')?.addEventListener('change', () => { announce(''); renderDisplayedList(); });
     listRetry.addEventListener('click', () => { announce(''); void loadList(retryCursor); });
     listMore.addEventListener('click', () => void loadList(listCursor));
     historyMore.addEventListener('click', () => void loadHistory(historyCursor));
@@ -406,12 +466,6 @@ function init(root) {
         void loadList();
     } else {
         initUser();
-        $('list-heading').insertAdjacentHTML('beforebegin', `
-            <div class="sp-history-switch" aria-label="Jenis riwayat">
-                <button type="button" class="sp-button sp-button--quiet" data-sp-user-tab="riwayat-payout"><i class="fas fa-truck" aria-hidden="true"></i> Riwayat Penjemputan</button>
-                <button type="button" class="sp-button" aria-current="page"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Riwayat Lapor Fasilitas</button>
-            </div>
-        `);
         window.addEventListener('sampira:user-report-view', event => {
             if (!root.classList.contains('active') || busy || sessionEnding) return;
             if (event.detail.view === 'new') $('new').click();
@@ -419,11 +473,9 @@ function init(root) {
             else if (event.detail.view === 'list' && $('list-view').hidden) showList();
         });
         document.querySelector('[data-target="laporan-fasilitas"]').addEventListener('click', () => {
-            $('heading').focus();
-            if (!initialized) {
-                initialized = true;
-                void loadList();
-            }
+            if (busy || sessionEnding) return;
+            if ($('form-view').hidden) $('new').click();
+            else $('form-heading').focus();
         });
     }
 }

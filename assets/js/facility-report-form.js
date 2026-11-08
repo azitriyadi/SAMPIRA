@@ -1,6 +1,5 @@
 import {categories} from './facility-report-ui.js?v=phase4b';
-import {mountLocationPicker} from './location-map.js?v=phase8';
-import {mountLocationSearch} from './location-search.js?v=phase8';
+import {mountLocationPicker} from './location-map.js?v=user-estimate-1';
 
 const textLengths = {title: [5, 120], description: [10, 3000], address: [5, 300]};
 const categoryIcons = {tps: 'fa-trash-can', collection_site: 'fa-truck', waste_bank: 'fa-recycle', other: 'fa-ellipsis'};
@@ -81,9 +80,8 @@ export function mountReportForm(root) {
     const form = root.querySelector('#facility-form');
     const pickerHost = root.querySelector('#facility-location-picker');
     const picker = mountLocationPicker(pickerHost, {
-        title: 'Titik Lokasi Fasilitas yang Dilaporkan', prefix: 'facility', digits: 6, includeSaved: true
+        title: 'Titik Lokasi Fasilitas yang Dilaporkan', prefix: 'facility', digits: 6, includeSaved: true, compact: true
     });
-    mountLocationSearch(root.querySelector('#facility-location-search'), pickerHost, picker, 'facility');
     const preview = root.querySelector('#facility-preview');
     const photoStatus = root.querySelector('#facility-photo-status');
     const fileInput = form.elements.photo;

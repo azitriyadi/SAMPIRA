@@ -2,6 +2,7 @@ import {base, request} from './facility-api.js?v=phase4b';
 import {checkImage} from './facility-report-form.js?v=phase4b';
 import {element} from './facility-report-ui.js?v=phase4b';
 import {button, coordinationStatuses, fieldLabels} from './facility-handling-ui.js?v=phase4b';
+import {prepareHandlingPhoto} from './handling-photo.js?v=handling-photo-fix';
 
 const field = (name, required = false, max = 1000) => ({name, required, max});
 const notes = [field('internal_note'), field('public_note')];
@@ -160,7 +161,7 @@ export function openHandlingForm(root, report, config, events, submit, onSession
     preview.alt = 'Pratinjau foto bukti';
     preview.hidden = true;
     if (file) {
-        fields.append(element('p', 'JPEG atau PNG, maksimal 5 MiB dan 16 megapiksel.', 'facility-muted'), preview);
+        fields.append(element('p', 'JPEG atau PNG, maksimal 5 MiB dan 16 megapiksel. Foto besar dioptimalkan otomatis sebelum dikirim; file asli di perangkat tidak diubah.', 'facility-muted'), preview);
         file.addEventListener('change', () => {
             if (objectURL) URL.revokeObjectURL(objectURL);
             objectURL = file.files[0] ? URL.createObjectURL(file.files[0]) : null;
@@ -181,7 +182,7 @@ export function openHandlingForm(root, report, config, events, submit, onSession
         sending = true;
         error.textContent = '';
         const data = {version: report.version, ...config.data};
-        const upload = file?.files[0];
+        let upload = file?.files[0];
         fields.disabled = close.disabled = confirm.disabled = true;
         status.textContent = 'Memeriksa dan menyimpan…';
         try {
@@ -208,7 +209,10 @@ export function openHandlingForm(root, report, config, events, submit, onSession
             if (upload) {
                 if (upload.size > 5 * 1024 * 1024) throw new Error('Foto melebihi batas 5 MiB.');
                 await checkImage(upload, objectURL);
+                status.textContent = 'Menyiapkan foto agar mudah dikirim…';
+                upload = await prepareHandlingPhoto(upload);
             }
+            status.textContent = 'Menyimpan hasil…';
             let options = {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)};
             if (config.multipart) {
                 const body = new FormData();

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/mail"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -28,6 +29,7 @@ type App struct {
 	FacilityReports  repositories.FacilityReports
 	FacilityHandling repositories.FacilityHandling
 	Education        repositories.Education
+	loginAttempts    *loginLimiter
 }
 
 func NewApp(db *sql.DB, auth *services.AuthService) *App {
@@ -40,6 +42,7 @@ func NewApp(db *sql.DB, auth *services.AuthService) *App {
 		FacilityReports:  repositories.FacilityReports{DB: db},
 		FacilityHandling: repositories.FacilityHandling{DB: db},
 		Education:        repositories.Education{DB: db},
+		loginAttempts:    newLoginLimiter(),
 	}
 }
 
@@ -47,6 +50,16 @@ func (a *App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
 		return
+	}
+	var releaseAttempt func()
+	if a.loginAttempts != nil {
+		var retry int
+		releaseAttempt, retry = a.loginAttempts.take(r.RemoteAddr)
+		if releaseAttempt == nil {
+			w.Header().Set("Retry-After", strconv.Itoa(retry))
+			httpx.SendResponse(w, "error", "Percobaan login terlalu banyak. Tunggu satu menit sebelum mencoba lagi.", nil, http.StatusTooManyRequests)
+			return
+		}
 	}
 	data := httpx.RequestData(r)
 	email := strings.ToLower(strings.TrimSpace(data["email"]))
@@ -81,6 +94,9 @@ func (a *App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if err := a.Users.CreateSession(user.ID, user.Password, token, time.Now().Add(services.SessionTTL)); err != nil {
 		httpx.SendResponse(w, "error", "Gagal membuat sesi aktif.", nil, http.StatusUnauthorized)
 		return
+	}
+	if releaseAttempt != nil {
+		releaseAttempt()
 	}
 	a.setPortalCookie(w, r, token, int(services.SessionTTL.Seconds()))
 	if r.Header.Get("X-SAMPIRA-Portal") == "1" {

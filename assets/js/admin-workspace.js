@@ -85,18 +85,20 @@ async function loadOverview() {
     table.replaceChildren();
     for (const field of metrics) field.textContent = '—';
     try {
-        const [verification, handling] = await Promise.allSettled([
-            request(base + '?limit=20'), request(base + '/handling?limit=20')
+        const [verification, handling, aggregate] = await Promise.allSettled([
+            request(base + '?limit=20'), request(base + '/handling?limit=20'), request('/api/analytics')
         ]);
         if (run !== sequence) return;
         const count = (items, status) => items.filter(item => item.status === status).length;
         const reports = verification.value?.items;
         const tasks = handling.value?.items;
-        const complete = Boolean(reports && tasks);
+        const totals = aggregate.value;
+        const keys = {pending:'pending_verification',approved:'awaiting_assignment',handling_in_progress:'handling_in_progress',resolution_submitted:'awaiting_validation'};
+        const complete = Boolean(reports && tasks && totals && Object.values(keys).every(key=>Number.isFinite(totals[key])));
         for (const field of metrics) {
             const key = field.dataset.overviewStatus;
-            const items = key === 'pending' ? reports : tasks;
-            if (items) field.textContent = count(items, key);
+            const value = totals?.[keys[key]];
+            if (Number.isFinite(value)) field.textContent = value;
         }
         for (const report of (reports || []).slice(0, 8)) addReport(report);
         tableRegion.hidden = !reports?.length;
@@ -119,6 +121,11 @@ async function loadOverview() {
 }
 
 overview.addEventListener('sampira:open', loadOverview);
+function refreshVisibleOverview() {
+    if (!document.hidden && overview.getClientRects().length) void loadOverview();
+}
+window.addEventListener('focus', refreshVisibleOverview);
+document.addEventListener('visibilitychange', refreshVisibleOverview);
 retry.addEventListener('click', loadOverview);
 overview.addEventListener('sampira:close', () => { sequence++; overview.removeAttribute('aria-busy'); });
 void loadOverview();

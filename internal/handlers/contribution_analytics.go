@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"ecorecycle/internal/models"
 )
@@ -55,6 +56,7 @@ func (a *App) roleAnalytics(w http.ResponseWriter, r *http.Request) {
 			"awaiting_assignment":  "SELECT COUNT(*) FROM facility_handling WHERE status='approved'",
 			"assigned":             "SELECT COUNT(*) FROM facility_assignments WHERE status='active'",
 			"awaiting_validation":  "SELECT COUNT(*) FROM facility_handling WHERE status='resolution_submitted'",
+			"handling_in_progress": "SELECT COUNT(*) FROM facility_handling WHERE status='handling_in_progress'",
 			"completed":            "SELECT COUNT(*) FROM facility_handling WHERE status='completed'",
 		}
 	case models.RoleAdministrator:
@@ -308,7 +310,7 @@ func (a *App) contributionAudit(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	rows, err := a.DB.QueryContext(r.Context(), "SELECT id,actor_id,action,entity_id,details,created_at FROM phase9_audit WHERE (?=0 OR id<?) ORDER BY id DESC LIMIT ?", before, before, limit)
+	rows, err := a.DB.QueryContext(r.Context(), "SELECT id,actor_id,action,entity_id,details,UNIX_TIMESTAMP(created_at) FROM phase9_audit WHERE (?=0 OR id<?) ORDER BY id DESC LIMIT ?", before, before, limit)
 	if err != nil {
 		phase9Error(w)
 		return
@@ -317,12 +319,13 @@ func (a *App) contributionAudit(w http.ResponseWriter, r *http.Request) {
 	items := []any{}
 	for rows.Next() {
 		var id, entity, actor int64
-		var action, details, at string
-		if rows.Scan(&id, &actor, &action, &entity, &details, &at) != nil {
+		var action, details string
+		var epoch int64
+		if rows.Scan(&id, &actor, &action, &entity, &details, &epoch) != nil {
 			phase9Error(w)
 			return
 		}
-		items = append(items, map[string]any{"id": id, "actor_id": actor, "action": action, "entity_id": entity, "details": details, "created_at": at})
+		items = append(items, map[string]any{"id": id, "actor_id": actor, "action": action, "entity_id": entity, "details": details, "created_at": time.Unix(epoch, 0).UTC()})
 	}
 	if rows.Err() != nil {
 		phase9Error(w)

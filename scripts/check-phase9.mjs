@@ -9,8 +9,8 @@ const password=process.env.SAMPIRA_TEST_PASSWORD;
 assert(password && process.env.SAMPIRA_TEST_MYSQL);
 const sql=(query,database='sampira_phase1_test')=>execFileSync(process.env.SAMPIRA_TEST_MYSQL,['--no-defaults','--protocol=tcp','-h','127.0.0.1','-P','13316','-u','root','-N','-B',database,'-e',query],{encoding:'utf8'}).trim();
 const count=query=>Number(sql(query));
-async function request(path,{actor,body,method,key,cookie,origin}={}) {
- const response=await fetch(base+path,{method:method||(body?'POST':'GET'),headers:{...(actor?{Authorization:'Bearer '+actor.token}:{}),...(cookie?{Cookie:cookie}:{}),...(origin?{Origin:origin}:{}),...(body?{'Content-Type':'application/json'}:{}),...(key?{'Idempotency-Key':key}:{})},body:body?JSON.stringify(body):undefined});
+async function request(path,{actor,body,method,key,cookie,origin,headers={}}={}) {
+ const response=await fetch(base+path,{method:method||(body?'POST':'GET'),headers:{...(actor?{Authorization:'Bearer '+actor.token}:{}),...(cookie?{Cookie:cookie}:{}),...(origin?{Origin:origin}:{}),...(body?{'Content-Type':'application/json'}:{}),...(key?{'Idempotency-Key':key}:{}),...headers},body:body?JSON.stringify(body):undefined});
  return {code:response.status,body:await response.json(),cookie:response.headers.get('set-cookie')?.split(';')[0]};
 }
 async function expect(path,status,options){const result=await request(path,options);assert.equal(result.code,status,path+' '+JSON.stringify(result.body));return result.body.data;}
@@ -64,6 +64,10 @@ const validFrom=new Date(Date.now()-3600000).toISOString(),validUntil=new Date(D
 const voucherBody={name:'Voucher demonstrasi',description:'SIMULASI, tidak berlaku di merchant.',category:'simulasi',point_cost:10,stock:3,valid_from:validFrom,valid_until:validUntil,active:true};
 async function voucher(overrides={}){return expect('/api/administrator/vouchers',200,{actor:administrator,body:{...voucherBody,...overrides}});}
 const v=await voucher();
+for(const cost of ['0','-1','invalid','1000000001'])await expect(`/api/vouchers/${v.id}/redeem`,400,{actor:owner,key:randomUUID(),method:'POST',headers:{'X-Expected-Point-Cost':cost}});
+await expect(`/api/vouchers/${v.id}/redeem`,409,{actor:owner,key:randomUUID(),method:'POST',headers:{'X-Expected-Point-Cost':'11'}});
+assert.equal(count('SELECT balance FROM point_wallets WHERE user_id='+owner.id),25);
+assert.equal(count('SELECT stock FROM voucher_catalog WHERE id='+v.id),3);
 const redeem=(actor,id,key=randomUUID())=>({actor,key,method:'POST'});
 await expect(`/api/vouchers/${v.id}/redeem`,409,redeem(other,v.id));
 await expect(`/api/vouchers/${v.id}/redeem`,400,{actor:owner,method:'POST',key:'invalid'});
@@ -82,6 +86,7 @@ assert(redeemed.every(r=>JSON.stringify(r.body.data)===JSON.stringify(redeemed[0
 assert.equal(count('SELECT balance FROM point_wallets WHERE user_id='+owner.id),15);
 assert.equal(count('SELECT lifetime FROM point_wallets WHERE user_id='+owner.id),25);
 assert.equal(count('SELECT stock FROM voucher_catalog WHERE id='+v.id),2);
+await expect(`/api/vouchers/${v.id}/redeem`,200,{actor:owner,key,method:'POST',headers:{'X-Expected-Point-Cost':'999'}});
 const otherVoucher=await voucher();await expect(`/api/vouchers/${otherVoucher.id}/redeem`,409,redeem(owner,otherVoucher.id,key));
 const own=await expect('/api/user/vouchers',200,{actor:owner});assert.equal(own.length,1);assert.equal(own[0].simulation,true);
 assert.deepEqual(await expect('/api/user/vouchers',200,{actor:other}),[]);

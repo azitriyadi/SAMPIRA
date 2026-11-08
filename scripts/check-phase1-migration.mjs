@@ -81,7 +81,9 @@ try {
         await delay(200);
     }
     assert(ready && server.exitCode === null, 'Isolated HTTP server failed to start.');
-    execFileSync(process.execPath, [resolve('scripts/check-api-regressions.mjs')], {cwd, env, stdio: 'inherit'});
+    if (process.env.SAMPIRA_TEST_REWARD_PAYMENT !== '1' && process.env.SAMPIRA_TEST_SECURITY10B !== '1' && process.env.SAMPIRA_TEST_EDUCATION_CONTENT !== '1' && (process.env.SAMPIRA_TEST_USER_REFERENCE !== '1' || process.env.SAMPIRA_TEST_USER_REFERENCE_FULL === '1')) {
+        execFileSync(process.execPath, [resolve('scripts/check-api-regressions.mjs')], {cwd, env, stdio: 'inherit'});
+    }
     if (process.env.SAMPIRA_TEST_PHASE3 === '1') {
         execFileSync(process.execPath, [resolve('scripts/check-phase3-reports.mjs')], {cwd, env, stdio: 'inherit'});
     }

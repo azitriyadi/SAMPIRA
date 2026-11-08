@@ -693,10 +693,8 @@ historyNext.addEventListener('click', () => { pickupPage++; renderPickupHistory(
 
 function renderUserDashboard(pickups) {
     const summary = summarizeUserPickups(pickups);
-    let userLevel = 'Bronze Saver';
-    if (summary.totalWeight >= 15) userLevel = 'Emerald Hero';
-    else if (summary.totalWeight >= 5) userLevel = 'Silver Guardian';
-    document.getElementById('user-display-level').innerText = userLevel;
+    const userLevel = window.sampiraContributionLevel || 'Memuat level…';
+    document.getElementById('user-display-level').textContent = userLevel;
     document.getElementById('profile-avatar').dataset.level = userLevel;
     document.getElementById('metric-total-weight').innerText = summary.totalWeight.toFixed(1);
     document.getElementById('metric-total-carbon').innerText = summary.totalCarbon.toFixed(1);
@@ -807,12 +805,7 @@ if (pickupForm) {
     const host = document.getElementById('pickup-location-picker');
     const requestTitle = document.getElementById('form-request-title');
     locationMaps.then(({mountLocationPicker}) => {
-        picker = mountLocationPicker(host, {title: 'Titik Lokasi Penjemputan', prefix: 'pickup', digits: 7});
-        import('/assets/js/location-search.js?v=phase8').then(({mountLocationSearch}) => {
-            mountLocationSearch(document.getElementById('pickup-location-search'), host, picker, 'pickup');
-        }).catch(() => {
-            document.getElementById('pickup-location-search').textContent = 'Pencarian belum tersedia.';
-        });
+        picker = mountLocationPicker(host, {title: 'Titik Lokasi Penjemputan', prefix: 'pickup', digits: 7, compact: true});
     }).catch(() => {
         host.textContent = 'Peta belum tersedia. Kamu dapat mengirim alamat lengkap saja.';
     });
