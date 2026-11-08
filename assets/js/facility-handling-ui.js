@@ -50,6 +50,17 @@ function badge(value) {
     return node;
 }
 
+function officerTaskCopy(status) {
+    return {
+        assigned: ['Tugas baru', 'Periksa kondisi fasilitas di lokasi.'],
+        assessment_in_progress: ['Sedang diperiksa', 'Catat kondisi dan hasil pemeriksaan fasilitas.'],
+        handling_in_progress: ['Sedang ditangani', 'Catat tindakan yang dilakukan, lalu kirim hasilnya.'],
+        resolution_submitted: ['Menunggu persetujuan Admin', 'Hasil sudah dikirim dan sedang menunggu pemeriksaan Admin.'],
+        resolution_revision_required: ['Perlu perbaikan', 'Buka tugas untuk melihat catatan perbaikan dari Admin.'],
+        completed: ['Selesai', 'Penanganan fasilitas sudah selesai dan disetujui Admin.']
+    }[status];
+}
+
 export function handlingCard(report, open, admin = false) {
     const action = button('Lihat detail', () => open(report.report_id));
     action.setAttribute('aria-label', 'Lihat detail ' + report.tracking_number);
@@ -65,14 +76,7 @@ export function handlingCard(report, open, admin = false) {
         return row;
     }
     const card = element('li', undefined, 'facility-card handling-card');
-    const taskText = {
-        assigned: ['Tugas baru', 'Periksa kondisi fasilitas di lokasi.'],
-        assessment_in_progress: ['Sedang diperiksa', 'Catat kondisi dan hasil pemeriksaan fasilitas.'],
-        handling_in_progress: ['Sedang ditangani', 'Catat tindakan yang dilakukan, lalu kirim hasilnya.'],
-        resolution_submitted: ['Menunggu persetujuan Admin', 'Hasil sudah dikirim dan sedang menunggu pemeriksaan Admin.'],
-        resolution_revision_required: ['Perlu perbaikan', 'Buka tugas untuk melihat catatan perbaikan dari Admin.'],
-        completed: ['Selesai', 'Penanganan fasilitas sudah selesai dan disetujui Admin.']
-    }[report.status];
+    const taskText = officerTaskCopy(report.status);
     action.textContent = report.status === 'completed' ? 'Lihat hasil' : 'Buka tugas';
     const taskBadge = badge(report.status);
     if (taskText) taskBadge.textContent = taskText[0];
@@ -107,6 +111,27 @@ export function handlingPhoto(id, version, description) {
 
 export function handlingSummary(report, role) {
     const panel = element('div', undefined, 'facility-stack');
+    if (role === 'petugas') {
+        panel.classList.add('collector-report-summary');
+        const copy = officerTaskCopy(report.status);
+        const top = element('div', undefined, 'collector-report-title');
+        const title = element('div');
+        title.append(element('p', 'Laporan fasilitas', 'facility-kicker'), element('h3', report.title), element('small', report.tracking_number, 'facility-ref'));
+        const state = badge(report.status);
+        if (copy) state.textContent = copy[0];
+        top.append(title, state);
+        panel.append(top, element('h4', 'Masalah yang dilaporkan'), element('p', report.description, 'facility-copy'),
+            dataFields([['Jenis fasilitas',label(categories,report.category)],['Lokasi',report.address]], 'collector-report-location'));
+        if (copy) panel.append(element('p', copy[1], 'handling-card-guidance'));
+        if (report.status === 'completed' && report.public_result) panel.append(element('h4','Hasil penanganan'),element('p',report.public_result,'facility-copy'));
+        const extra = element('details', undefined, 'collector-extra-details');
+        extra.append(element('summary','Informasi tambahan'), dataFields([
+            ['Verifikasi laporan',label(statuses,report.verification_status)],['Penugasan',label(assignmentStatuses,report.assignment_status)],
+            ['Koordinasi instansi',label(coordinationStatuses,report.coordination_status)],['Terakhir diperbarui',dateLabel(report.updated_at)]
+        ]));
+        panel.append(extra);
+        return panel;
+    }
     if (role !== 'user') {
         const heading = element('div', undefined, 'facility-card-head');
         heading.append(element('h3', report.title), element('span', report.tracking_number, 'facility-ref'));

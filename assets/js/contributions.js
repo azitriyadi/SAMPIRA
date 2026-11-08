@@ -1,5 +1,6 @@
 import {request} from './facility-api.js';
 import {createMap, streetTiles} from './map-core.js?v=phase8';
+import {countChart} from './admin-charts.js?v=admin-refresh-1';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const money = value => new Intl.NumberFormat('id-ID', {style:'currency',currency:'IDR',maximumFractionDigits:2}).format(value);
@@ -151,11 +152,18 @@ const metricLabels={pickups:'Total penjemputan',completed_pickups:'Penjemputan s
 function analytics(root,role){
     const actualRole=role==='reward'?'user':role;
     const collectorSummary=actualRole==='petugas'&&root.hasAttribute('data-collector-summary');
+    const adminCharts=actualRole==='admin'&&root.hasAttribute('data-admin-charts');
     root.innerHTML=heading(role==='reward'?'Ringkasan reward':'Statistik '+({user:'kontribusi',admin:'operasional',petugas:'tugas',administrator:'sistem'}[role]),'Seluruh waktu · sesuai kewenangan akun. Angka dapat berubah saat ada aktivitas baru.',button('Perbarui statistik','data-analytics-retry'))+'<p role="status" class="p9-state" data-analytics-state></p><div data-analytics-values></div>';
+    if(adminCharts){$('h2',root).textContent='Statistik Laporan';$('.p9-kicker',root).textContent='Analisis operasional';}
     if(collectorSummary)root.innerHTML='<div class="collector-summary-heading"><div><h2>Ringkasan operasional</h2><p>Seluruh waktu · sesuai penugasan akun Anda.</p></div>'+button('Perbarui statistik','data-analytics-retry')+'</div><div data-analytics-values></div><p role="status" class="p9-state" data-analytics-state></p>';
     let sequence=0;
     async function load(){if(ended||!root.isConnected)return;const run=++sequence;state($('[data-analytics-state]',root),'Memuat statistik…');$('[data-analytics-values]',root).replaceChildren();
         try{const data=await api('/api/analytics');if(run!==sequence)return;if(data.role!==actualRole)throw new Error('Cakupan statistik tidak sesuai sesi.');
+            if(adminCharts){
+                const rows=keys=>keys.map(key=>({key,label:metricLabels[key],value:data[key]}));
+                $('[data-analytics-values]',root).innerHTML='<div class="admin-chart-grid">'+countChart('Laporan & verifikasi',rows(['reports','pending_verification','approved_reports']),'Seluruh waktu · satuan jumlah laporan. Indikator dapat saling beririsan.')+countChart('Penanganan & penugasan',rows(['awaiting_assignment','assigned','handling_in_progress','awaiting_validation','completed']),'Seluruh waktu · jumlah catatan/tugas, bukan bagian dari satu total.')+'</div>';
+                state($('[data-analytics-state]',root),'Diperbarui '+date(new Date().toISOString())+' WIB.');return;
+            }
             if(collectorSummary){
                 const cards=[['completed_pickups','Penjemputan selesai','Status selesai','fa-circle-check','green'],['active_facility_tasks','Tugas fasilitas aktif','Perlu penanganan','fa-clipboard-list','amber'],['in_progress_pickups','Pickup berjalan','Termasuk menunggu hub','fa-truck','blue'],['completed_facility_tasks','Fasilitas selesai','Penugasan diselesaikan','fa-screwdriver-wrench','green']];
                 $('[data-analytics-values]',root).innerHTML='<div class="collector-summary-grid">'+cards.map(([key,label,note,icon,tone])=>`<article class="collector-summary-card ${tone}"><div><h3>${label}</h3><strong data-collector-metric="${key}">${typeof data[key]==='number'?number(data[key]):'—'}</strong><p>${note}</p></div><span class="collector-summary-icon"><i class="fas ${icon}" aria-hidden="true"></i></span></article>`).join('')+'</div>';
@@ -221,7 +229,9 @@ function audit(root){
 }
 
 function facilityGrid(root){
+    const chartOnly=document.body.classList.contains('sp-admin')&&Boolean(document.querySelector('[data-admin-charts]'));
     root.innerHTML=heading('Sebaran laporan fasilitas','Jumlah laporan fasilitas yang disetujui per sel, bukan ukuran kepadatan sampah.')+`<p class="p9-note">Hanya sel dengan minimal 3 laporan disetujui yang ditampilkan. Lingkaran hijau menunjukkan pusat sel agregasi 0,01°, bukan titik rumah atau fasilitas. Tidak memuat titik penjemputan privat Warga.</p><form class="p9-grid-filter"><label>Kategori<select name="category"><option value="">Semua kategori</option><option value="tps">TPS</option><option value="collection_site">Lokasi pengumpulan</option><option value="waste_bank">Bank sampah</option><option value="other">Lainnya</option></select></label><label>Maksimal sel<input name="limit" type="number" min="1" max="100" value="50" required></label><button type="submit" class="p9-primary">Terapkan filter</button><details><summary>Batasi area koordinat (opsional)</summary><div class="p9-form-grid">${['min_lat','max_lat','min_lng','max_lng'].map((name,index)=>`<label>${['Lintang minimum','Lintang maksimum','Bujur minimum','Bujur maksimum'][index]}<input name="${name}" type="number" step="any" min="${index<2?-90:-180}" max="${index<2?90:180}"></label>`).join('')}</div></details></form><p role="status" class="p9-state" data-grid-state></p><div class="p9-map" aria-label="Peta agregasi laporan fasilitas"></div><div data-grid-table></div>`;
+    if(chartOnly){$('.p9-map',root).hidden=true;$('.p9-note',root).textContent='Grafik menampilkan sel agregasi 0,01° dengan minimal 3 laporan disetujui. Bukan titik rumah/fasilitas dan bukan klaim hotspot.';}
     let map,layer,sequence=0;
     async function load(){
         const run=++sequence;const form=$('form',root),send=$('[type=submit]',form);send.disabled=true;
@@ -231,11 +241,11 @@ function facilityGrid(root){
             if(coordinates.some(Boolean)&&!coordinates.every(Boolean))throw new Error('Isi empat batas koordinat atau kosongkan seluruhnya.');
             const query=new URLSearchParams([...data].filter(([,value])=>value!==''));
             const result=await api('/api/analytics/facility-grid?'+query);if(run!==sequence)return;
-            if(window.L&&!map){map=createMap($('.p9-map',root));streetTiles().on('tileerror',()=>state($('[data-grid-state]',root),'Peta jalan belum tersedia. Tabel sebaran tetap dapat dibaca.',true)).addTo(map);layer=L.layerGroup().addTo(map);}
+            if(window.L&&!map&&!chartOnly){map=createMap($('.p9-map',root));streetTiles().on('tileerror',()=>state($('[data-grid-state]',root),'Peta jalan belum tersedia. Tabel sebaran tetap dapat dibaca.',true)).addTo(map);layer=L.layerGroup().addTo(map);}
             const bounds=[];
             for(const cell of result.cells){const extent=[[cell.south,cell.west],[cell.south+result.cell_degrees,cell.west+result.cell_degrees]];bounds.push(...extent);if(layer){const label=document.createElement('span');label.textContent=number(cell.count)+' laporan disetujui dalam sel agregasi';L.rectangle(extent,{color:'#277553',weight:1,fillOpacity:.35}).addTo(layer).bindPopup(label);L.circleMarker([cell.south+result.cell_degrees/2,cell.west+result.cell_degrees/2],{radius:8,color:'#fff',weight:2,fillColor:'#277553',fillOpacity:1}).addTo(layer).bindPopup(label.cloneNode(true));}}
             if(map){map.invalidateSize();if(bounds.length)map.fitBounds(bounds,{padding:[20,20],maxZoom:14,animate:false});}
-            $('[data-grid-table]',root).innerHTML=result.cells.length?table(['Sel (selatan, barat)','Laporan disetujui'],result.cells.map(cell=>[`${cell.south.toFixed(2)}, ${cell.west.toFixed(2)}`,number(cell.count)])):'<p class="p9-state">Belum ada sel dengan minimal 3 laporan disetujui untuk filter ini.</p>';
+            $('[data-grid-table]',root).innerHTML=result.cells.length?(chartOnly?countChart('Laporan disetujui per wilayah agregasi',result.cells.map((cell,index)=>({key:'cell-'+index,label:cell.south.toFixed(2)+', '+cell.west.toFixed(2),value:cell.count})),'Label: sudut selatan/barat sel, bukan koordinat pribadi. Satuan: jumlah laporan.'):table(['Sel (selatan, barat)','Laporan disetujui'],result.cells.map(cell=>[`${cell.south.toFixed(2)}, ${cell.west.toFixed(2)}`,number(cell.count)]))):'<p class="p9-state">Belum ada sel dengan minimal 3 laporan disetujui untuk filter ini.</p>';
             state($('[data-grid-state]',root),`${result.cells.length} sel ditampilkan${result.truncated?' · hasil dibatasi; persempit area atau tambah batas sel':''}. Tidak cukup untuk menyimpulkan hotspot atau kepadatan sampah.`);
         }catch(error){if(run===sequence)state($('[data-grid-state]',root),error.message,true);}
         finally{if(run===sequence)send.disabled=false;}

@@ -309,7 +309,7 @@ if (root) {
     });
     observer.observe(canvas);
     window.addEventListener('pagehide',() => observer.disconnect(),{once:true});
-    mapLegend(root);
+    mapLegend(root.querySelector('[data-map-legend]') || root);
 }
 
 const metrics = document.querySelector("#sp-system-metrics");

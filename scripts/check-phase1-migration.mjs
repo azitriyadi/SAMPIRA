@@ -2,9 +2,9 @@
 import assert from 'node:assert/strict';
 import {execFileSync, spawn} from 'node:child_process';
 import {randomBytes} from 'node:crypto';
-import {cpSync, mkdtempSync, readFileSync} from 'node:fs';
+import {cpSync, mkdtempSync, readFileSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {join, resolve} from 'node:path';
+import {join, resolve, dirname, basename} from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
 
 const db = 'sampira_phase1_test';
@@ -17,6 +17,7 @@ const sql = (database, input) => execFileSync(SAMPIRA_TEST_MYSQL, database ? [..
 }).replaceAll('\r', '').trim();
 
 const cwd = mkdtempSync(join(tmpdir(), 'sampira-phase1-http-'));
+try {
 for (const directory of ['app', 'assets']) cpSync(directory, join(cwd, directory), {recursive: true});
 const password = randomBytes(24).toString('hex');
 const env = {
@@ -111,4 +112,10 @@ try {
     }
 } finally {
     server.kill();
+    await Promise.race([new Promise(resolve=>{if(server.exitCode!==null)resolve();else server.once('exit',resolve);}),delay(5000)]);
+}
+} finally {
+    if(dirname(resolve(cwd))!==resolve(tmpdir()) || !/^sampira-phase1-http-[A-Za-z0-9]+$/.test(basename(cwd)))throw Error('Unsafe HTTP fixture cleanup path.');
+    try {rmSync(cwd,{recursive:true,force:true,maxRetries:3,retryDelay:250});}
+    catch {console.warn('HTTP fixture cleanup incomplete: '+cwd);}
 }

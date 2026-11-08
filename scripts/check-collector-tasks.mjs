@@ -4,6 +4,7 @@ import {join} from 'node:path';
 import {setTimeout as sleep} from 'node:timers/promises';
 
 export async function checkCollectorTasks({send,js,login,click,text,waitFor,profile}) {
+    const sectionsOnly=process.env.SAMPIRA_TEST_COLLECTOR_SECTIONS_ONLY==='1';
     const out=process.env.SAMPIRA_TEST_PHASE6_SCREENSHOTS||profile;await mkdir(out,{recursive:true});
     const q=JSON.stringify, root='#view-facility', base='/api/ecorecycle/facility-reports';
     const read=path=>js(`portalFetch(${q(path)}).then(async r=>{if(!r.ok)throw Error('Fixture read '+r.status);return (await r.json()).data;})`);
@@ -12,7 +13,7 @@ export async function checkCollectorTasks({send,js,login,click,text,waitFor,prof
     await login('collector@phase1.invalid','/petugas');const officer=await js('portalUser("petugas")');
     await login('owner@phase1.invalid','/dashboard');
     const pickup=await post('/api/ecorecycle/request_pickup',{item_description:'Pickup pengujian tampilan tugas Petugas',category:'Computers',weight_kg:2,pickup_address:'Jalan Uji Petugas Bandung Nomor 12',contact_phone:'081234567890',latitude:-6.91,longitude:107.61});
-    const report=await js(`(async()=>{const form=new FormData();for(const [k,v]of Object.entries({category:'tps',title:'TPS pengujian tampilan Petugas',description:'Kontainer membutuhkan pemeriksaan dan perbaikan pengunci.',address:'Jalan Uji Fasilitas Bandung Nomor 12',latitude:'-6.91',longitude:'107.61'}))form.set(k,v);const r=await portalFetch(${q(base)},{method:'POST',headers:{'Idempotency-Key':crypto.randomUUID()},body:form});if(r.status!==201)throw Error('Report fixture failed');return(await r.json()).data;})()`);
+    const report=await js(`(async()=>{const form=new FormData();for(const [k,v]of Object.entries({category:'tps',title:'TPS pengujian tampilan Petugas',description:'Kontainer membutuhkan pemeriksaan dan perbaikan pengunci.',address:'Jalan Uji Fasilitas Bandung Nomor 12',latitude:'-6.92',longitude:'107.62'}))form.set(k,v);const r=await portalFetch(${q(base)},{method:'POST',headers:{'Idempotency-Key':crypto.randomUUID()},body:form});if(r.status!==201)throw Error('Report fixture failed');return(await r.json()).data;})()`);
     const handling=base+'/'+report.id+'/handling';
     await login('admin@phase1.invalid','/admin');
     await post(base+'/'+report.id+'/verification',{status:'approved',version:report.version});
@@ -40,6 +41,15 @@ export async function checkCollectorTasks({send,js,login,click,text,waitFor,prof
     assert(await js('(()=>{const m=document.querySelector("#mission-location .location-map").getBoundingClientRect(),p=document.querySelector("#mission-location .leaflet-popup").getBoundingClientRect();return p.top>=m.top;})()'),'Donor popup clipped above map');
     await capture('pickup-active','#view-active-mission');
     await capture('pickup-map-actions','.mission-map-panel');
+    if(sectionsOnly) {
+        await js('switchView("operations");void 0');
+        await waitFor(()=>js('document.querySelectorAll("#view-operations .sp-map-marker").length>=2'),'Operational pins missing');
+        assert.equal(await js('getComputedStyle(document.querySelector("#view-operations .leaflet-tile-pane")).filter'),'none');
+        assert.equal(await js('document.querySelector("#view-operations [data-operation-filter]").getClientRects().length'),0);
+        assert.equal(await js('document.querySelectorAll("[data-map-legend] .sp-status-legend").length'),1);
+        await capture('sections-map','#view-operations');
+        await js('viewActiveMission('+q(pickup.tracking_number)+')');await text('#mission-resi',pickup.tracking_number);
+    }
     for(const status of ['transit','arrived']) {
         await click('#mission-btn');await text('.swal2-title','Konfirmasi Perubahan Status');await click('.swal2-confirm');
         await text('.swal2-html-container','Status misi berhasil diperbarui');
@@ -53,6 +63,16 @@ export async function checkCollectorTasks({send,js,login,click,text,waitFor,prof
     await js('document.getElementById("swal2-input").value="2.5";void 0');await click('.swal2-confirm');
     await text('.swal2-title','penjemputan selesai');await click('.swal2-confirm');
     const complete=await read('/api/ecorecycle/pickup_status?tracking_number='+pickup.tracking_number);assert.equal(complete.status,'completed');assert.equal(Number(complete.final_weight_kg),2.5);
+    if(sectionsOnly) {
+        await waitFor(()=>js('document.getElementById("collector-history-count").textContent.includes("1")'),'History not refreshed');
+        await js('switchView("history");void 0');await text('#history-table-body',pickup.tracking_number);await text('#history-table-body','2,5 kg');
+        await capture('sections-history','#view-history');
+        await js('switchView("earnings");void 0');assert.equal(await js('document.getElementById("earnings-total").textContent'),'—');await text('#earnings-weight','2,5 kg');
+        await capture('sections-earnings','#view-earnings');
+        await click('.collector-work-summary button');assert(await js('document.getElementById("view-history").classList.contains("active")'));
+        await js('switchView("profile");void 0');await text('#collector-profile-email','collector@phase1.invalid');
+        await capture('sections-profile','#view-profile');
+    }
     await click('.sidebar [data-open-handling]');await text(root+' .facility-cards','TPS pengujian tampilan Petugas');
     await text(root+' .facility-cards','Tugas baru');await text(root+' .facility-cards','Periksa kondisi fasilitas di lokasi.');
     await capture('facility-list',root);
@@ -67,6 +87,7 @@ export async function checkCollectorTasks({send,js,login,click,text,waitFor,prof
     const png=join(profile,'collector-evidence.png');await writeFile(png,Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==','base64'));
     await act('Catat hasil pemeriksaan',{condition:'Pengunci pintu kontainer rusak.',assessment:'Perlu penggantian pengunci.',public_note:'Pemeriksaan telah dilaksanakan.'},png);
     const history=await read(handling+'/history');const assessment=history.items.find(e=>e.action==='record_assessment');assert(assessment.has_photo);
+    if(await js(`Boolean(document.querySelector('${root} .collector-history-group'))`))await click(root+' .collector-history-group>summary');
     await clickText(root+' .handling-timeline button','Tampilkan foto bukti');
     await waitFor(()=>js(`Boolean(document.querySelector('${root} .handling-photo-frame img')?.naturalWidth)`),'Evidence did not load');
     await act('Catat tindakan',{action_taken:'Pengunci diganti dan diuji.'});
@@ -85,6 +106,10 @@ export async function checkCollectorTasks({send,js,login,click,text,waitFor,prof
     assert.deepEqual(legacy,['Gunakan Lokasi Saya','Lihat Rute','Buka di Google Maps']);
     await waitFor(()=>js('legacyMapHost.textContent.includes("Fixture authorization denied")'),'Default authorization check bypassed');
     await js('legacyMapDispose();legacyMapHost.remove();void 0');
+    if(sectionsOnly) {
+        await js('switchView("profile");void 0');await click('.collector-profile-actions .btn-primary');
+        await waitFor(()=>js('location.pathname==="/login"'),'Profile logout failed');
+    }
     await writeFile(join(out,'task-results.json'),JSON.stringify({pickup_claim:true,transit_arrived_completed:true,actual_weight:2.5,whatsapp_from_valid_phone:true,progress_not_clickable:true,mission_map:true,facility_filters:true,assessment_with_photo:true,photo_readback:true,progress_resolution:true,admin_completion:true,closed_task_readonly:true,viewports:[1440,1280,390]},null,2));
     console.log('PASS Petugas task UI: real pickup lifecycle/weight, map/contact, facility filters, assessment photo, progress/submission and Admin completion; responsive views.');
 
@@ -103,11 +128,12 @@ export async function checkCollectorTasks({send,js,login,click,text,waitFor,prof
         await text(root+' .facility-notice','Perubahan tersimpan');
     }
     async function capture(name,selector) {
-        for(const width of [1440,1280,390]) {
+        if(sectionsOnly && !name.startsWith('sections-') && name!=='facility-detail')return;
+        for(const width of (sectionsOnly?[1280,390]:[1440,1280,390])) {
             await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<600});
             await js(`document.querySelector(${q(selector)}).scrollIntoView({block:'start',behavior:'instant'});void 0`);await sleep(180);
             assert(await js('document.documentElement.scrollWidth<=innerWidth+2'),name+' overflow '+width);
-            const shot=await send('Page.captureScreenshot',{format:'png'});await writeFile(join(out,name+'-'+width+'.png'),Buffer.from(shot.data,'base64'));
+            const shot=await send('Page.captureScreenshot',sectionsOnly?{format:'jpeg',quality:65}:{format:'png'});await writeFile(join(out,name+'-'+width+(sectionsOnly?'.jpg':'.png')),Buffer.from(shot.data,'base64'));
         }
         await send('Emulation.setDeviceMetricsOverride',{width:1280,height:1000,deviceScaleFactor:1,mobile:false});
     }

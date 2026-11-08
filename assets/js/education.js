@@ -237,10 +237,10 @@ if (cms) {
     const path = "/manage/articles";
     const filters = cms.querySelector("#education-filters");
     const rows = cms.querySelector("tbody");
-    const status = cms.querySelector("[role=status]");
+    const status = cms.querySelector("[role=status], :scope>output");
     const dialog = cms.querySelector("dialog");
     const editor = dialog.querySelector("form");
-    const feedback = dialog.querySelector("[role=status]");
+    const feedback = dialog.querySelector("[role=status], output");
     const add = cms.querySelector("#education-add");
     const save = editor.querySelector("[type=submit]");
     const confirm = editor.querySelector("#education-confirmation");

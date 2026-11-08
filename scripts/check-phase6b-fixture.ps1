@@ -27,6 +27,7 @@ if (!$SkipBrowser -and !(Test-Path -LiteralPath $Chrome)) { throw 'Pass the inst
 if ($Screenshots) { $env:SAMPIRA_TEST_PHASE6_SCREENSHOTS = [IO.Path]::GetFullPath($Screenshots) }
 $previousTemp=$env:TEMP
 $previousTmp=$env:TMP
+if(([IO.DriveInfo]::new([IO.Path]::GetPathRoot($previousTemp))).AvailableFreeSpace -lt 2GB){throw 'Fixture requires at least 2 GiB free. Clean unused test artifacts before retrying.'}
 $t=[IO.Path]::GetFullPath((Join-Path $previousTemp ('sampira-6b-fe-'+[guid]::NewGuid().ToString('N'))))
 New-Item -ItemType Directory $t | Out-Null
 Set-Content -LiteralPath (Join-Path $t '.sampira-test-fixture') -Value 'Disposable isolated SAMPIRA test run'
@@ -119,6 +120,8 @@ $db=Start-Process (Join-Path $MySqlBin 'mysqld.exe') -ArgumentList $dbArguments 
  $scripts += 'check-user-reference.mjs'
  $scripts += 'check-user-form-steps.mjs'
  $scripts += 'check-collector-tasks.mjs'
+ $scripts += 'check-admin-refresh.mjs'
+ $scripts += 'check-administrator-refresh.mjs'
  foreach($file in $scripts){
   $source = "scripts/$file"
   $content=(Get-Content -Raw -Encoding utf8 $source).Replace('13316', [string]$DatabasePort).Replace('18081', [string]$ServerPort)

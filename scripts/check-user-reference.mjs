@@ -9,6 +9,12 @@ export async function checkUserReference(ctx) {
     await mkdir(out,{recursive:true});
     await nav('/login');
     assert.equal(await js('location.origin'),'http://127.0.0.1:18081','Fixture only.');
+    if(process.env.SAMPIRA_TEST_ADMINISTRATOR_REFRESH_ONLY==='1') {
+        const {checkAdministratorRefresh}=await import('./check-administrator-refresh.mjs');await checkAdministratorRefresh(ctx);return;
+    }
+    if(process.env.SAMPIRA_TEST_ADMIN_REFRESH_ONLY==='1') {
+        const {checkAdminRefresh}=await import('./check-admin-refresh.mjs');await checkAdminRefresh(ctx);return;
+    }
     if(process.env.SAMPIRA_TEST_COLLECTOR_TASKS_ONLY==='1') {
         const {checkCollectorTasks}=await import('./check-collector-tasks.mjs');await checkCollectorTasks(ctx);return;
     }

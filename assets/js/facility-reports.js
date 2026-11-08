@@ -1,7 +1,7 @@
 import {mountReportForm} from './facility-report-form.js?v=user-estimate-1';
-import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=admin-6b4';
+import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=admin-refresh-1';
 import {base, request} from './facility-api.js?v=phase5b';
-import {mountPublicHandling} from './facility-handling.js?v=phase8';
+import {mountPublicHandling} from './facility-handling.js?v=admin-refresh-1';
 import {mountLocationDetail} from './location-map.js?v=phase8';
 import {facilityMapStates} from './map-core.js?v=phase8';
 

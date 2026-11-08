@@ -1,0 +1,81 @@
+import assert from 'node:assert/strict';
+import {mkdir,writeFile} from 'node:fs/promises';
+import {join} from 'node:path';
+import {setTimeout as sleep} from 'node:timers/promises';
+
+export async function checkAdminRefresh({send,js,login,click,text,waitFor,profile}) {
+    const out=process.env.SAMPIRA_TEST_PHASE6_SCREENSHOTS||profile;await mkdir(out,{recursive:true});
+    const q=JSON.stringify, base='/api/ecorecycle/facility-reports';
+    const read=path=>js(`portalFetch(${q(path)}).then(async r=>{if(!r.ok)throw Error('Read '+r.status);return(await r.json()).data;})`);
+    const post=(path,body)=>js(`portalFetch(${q(path)},{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()},body:JSON.stringify(${q(body)})}).then(async r=>{if(!r.ok)throw Error('Write '+r.status);return(await r.json()).data;})`);
+    const clickText=(selector,label)=>js(`(()=>{const b=[...document.querySelectorAll(${q(selector)})].find(el=>el.textContent.trim()===${q(label)});if(!b)throw Error('Missing '+${q(label)});b.click();})()`);
+    const open=id=>click('.sp-admin-nav [aria-controls="'+id+'"]');
+    await login('owner@phase1.invalid','/dashboard');
+    const reports=[];
+    for(let i=0;i<3;i++) reports.push(await js(`(async()=>{const f=new FormData();for(const[k,v]of Object.entries({category:'tps',title:'QA Admin fasilitas '+${i},description:'Kontainer membutuhkan pemeriksaan dan penggantian pengunci.',address:'Jalan QA Admin Bandung Nomor 12',latitude:'-6.915',longitude:'107.615'}))f.set(k,v);const r=await portalFetch(${q(base)},{method:'POST',headers:{'Idempotency-Key':crypto.randomUUID()},body:f});if(r.status!==201)throw Error('Report fixture');return(await r.json()).data;})()`));
+    await login('admin@phase1.invalid','/admin');
+    await text('.sp-admin-overview-status','');
+    await waitFor(()=>js('document.querySelector("[data-overview-status=pending]").textContent!=="—"'),'Overview unavailable');
+    await capture('overview','#admin-overview');
+    await open('admin-report-verification');await text('#facility-list','QA Admin fasilitas');
+    await capture('verification','#admin-report-verification');
+    await click('#facility-list button');await text('#facility-detail','QA Admin fasilitas');
+    const first=await js('document.querySelector("#facility-detail .facility-ref").textContent');
+    const chosen=reports.find(row=>row.tracking_number===first);assert(chosen);
+    await capture('verification-detail','#facility-detail-view');
+    await js('document.getElementById("facility-decision").value="approved";document.getElementById("facility-verify").requestSubmit();void 0');
+    await waitFor(()=>js('document.getElementById("facility-confirm").open'),'Verification confirmation missing');
+    await click('#facility-confirm button[value="confirm"]');
+    await text('#facility-success','');
+    await waitFor(async()=> (await read(base+'/'+chosen.id)).status==='approved','Approval not persisted');
+    for(const report of reports.filter(row=>row.id!==chosen.id))await post(base+'/'+report.id+'/verification',{status:'approved',version:report.version});
+    await open('admin-facility-handling');await text('#admin-facility-handling .facility-cards','QA Admin fasilitas');
+    await capture('handling','#admin-facility-handling');
+    await click('#admin-facility-handling .facility-cards button');
+    await waitFor(()=>js('Boolean([...document.querySelectorAll("#admin-facility-handling .handling-actions button")].find(b=>b.textContent==="Tugaskan Petugas"))'),'Assignment unavailable');
+    await capture('handling-detail','#admin-facility-handling');
+    await clickText('#admin-facility-handling .handling-actions button','Tugaskan Petugas');
+    await waitFor(()=>js('document.querySelector(".handling-dialog[open] select[name=petugas_id]")?.options.length>1'),'Officer list unavailable');
+    await js('(()=>{const f=document.querySelector(".handling-dialog[open] form");f.elements.petugas_id.selectedIndex=1;f.requestSubmit();})()');
+    await waitFor(()=>js('!document.querySelector(".handling-dialog[open]")'),'Assignment save failed');
+    await text('#admin-facility-handling .facility-notice','Perubahan tersimpan');
+    await open('admin-operation-map');await waitFor(()=>js('document.querySelectorAll("#admin-operation-map .sp-map-marker").length>=3'),'Monitoring markers missing');
+    assert.equal(await js('getComputedStyle(document.querySelector("#admin-operation-map .leaflet-tile-pane")).filter'),'none');
+    await capture('monitoring','#admin-operation-map');
+    await open('admin-analytics');await text('[data-analytics-state]','Diperbarui');
+    const totals=await read('/api/analytics');
+    for(const[key,value]of Object.entries(totals).filter(([,v])=>typeof v==='number')) assert.equal(await js(`Number(document.querySelector('[data-chart-key="${key}"]').dataset.chartValue)`),value,'Chart value '+key);
+    await waitFor(()=>js('Boolean(document.querySelector("[data-grid-table] [data-chart-key=cell-0]"))'),'Aggregate chart unavailable');
+    assert.equal(await js('Number(document.querySelector("[data-grid-table] [data-chart-key=cell-0]").dataset.chartValue)'),3);
+    assert.equal(await js('document.querySelectorAll("#admin-analytics .p9-stats,#admin-analytics [data-grid-table] table").length'),0);
+    await capture('statistics','#admin-analytics');
+    await capture('statistics-aggregation','#admin-analytics [data-grid-table]');
+    await js('window.adminOriginalFetch=window.fetch;window.fetch=(url,opts)=>new URL(url,location.href).pathname==="/api/analytics"?Promise.resolve(new Response(JSON.stringify({message:"Statistik sementara gagal."}),{status:503,headers:{"Content-Type":"application/json"}})):adminOriginalFetch(url,opts);void 0');
+    await click('[data-analytics-retry]');await text('[data-analytics-state]','Statistik sementara gagal.');
+    await js('window.fetch=adminOriginalFetch;void 0');await click('[data-analytics-retry]');await text('[data-analytics-state]','Diperbarui');
+    await open('education-cms');await waitFor(()=>js('!document.getElementById("education-add").disabled'),'Education CMS unavailable');
+    await capture('education','#education-cms');
+    await click('#education-add');await waitFor(()=>js('document.querySelector("#education-cms dialog").open'),'Editor unavailable');
+    await js(`(()=>{const f=document.getElementById('education-editor');for(const[k,v]of Object.entries({title:'Panduan QA Admin',slug:'panduan-qa-admin',category:'pemilahan-sampah',summary:'Panduan sintetis untuk menguji CMS Edukasi Admin.',body:'Pisahkan sampah dari sumbernya dan simpan bahan daur ulang dalam kondisi bersih.',sources:'https://www.epa.gov/recycle'}))f.elements[k].value=v;})()`);
+    await capture('education-editor','#education-cms dialog');
+    await click('#education-editor button[type=submit]');await text('#education-editor output','Tersimpan');
+    await click('#education-editor [data-publication=published]');await click('#education-confirmation button');await text('#education-editor output','Terbit');
+    const published=await read('/api/ecorecycle/education/articles?limit=20');assert(published.items.some(row=>row.slug==='panduan-qa-admin'));
+    await click('#education-close');
+    await js('document.querySelector("#education-filters [name=status]").value="published";document.getElementById("education-filters").requestSubmit();void 0');
+    await text('#education-cms tbody','Panduan QA Admin');await capture('education','#education-cms');
+    await send('Emulation.setDeviceMetricsOverride',{width:390,height:900,deviceScaleFactor:1,mobile:true});
+    await click('#admin-menu-toggle');assert(await js('document.getElementById("admin-menu-toggle").getAttribute("aria-expanded")==="true"'));
+    await open('admin-analytics');assert.equal(await js('document.getElementById("admin-menu-toggle").getAttribute("aria-expanded")'),'false');
+    await writeFile(join(out,'admin-results.json'),JSON.stringify({overview:true,verification_confirmed:true,assignment:true,monitoring_pins:true,chart_matches_api:true,aggregation_minimum_three:true,chart_error_recovery:true,cms_draft_publication:true,mobile_nav:true,viewports:[1280,390]},null,2));
+    console.log('PASS Admin refresh: overview, real verification/assignment, monitoring, API-backed charts, aggregation/privacy, CMS draft/publication and responsive views.');
+    async function capture(name,selector) {
+        for(const width of [1280,390]){
+            await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<600});
+            await js(`document.querySelector(${q(selector)}).scrollIntoView({block:'start',behavior:'instant'});void 0`);await sleep(180);
+            assert(await js('document.documentElement.scrollWidth<=innerWidth+2'),name+' page overflow '+width);
+            const shot=await send('Page.captureScreenshot',{format:'jpeg',quality:60});await writeFile(join(out,name+'-'+width+'.jpg'),Buffer.from(shot.data,'base64'));
+        }
+        await send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+    }
+}

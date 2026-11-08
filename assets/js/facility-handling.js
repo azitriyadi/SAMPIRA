@@ -1,6 +1,6 @@
 import {base, request} from './facility-api.js?v=phase5b';
 import {adminTable, categories, element, options} from './facility-report-ui.js?v=admin-6b4';
-import {button, handlingCard, handlingEvent, handlingStatuses, handlingSummary} from './facility-handling-ui.js?v=collector-tasks-2';
+import {button, handlingCard, handlingEvent, handlingStatuses, handlingSummary} from './facility-handling-ui.js?v=collector-sections-1';
 import {handlingActions, openHandlingForm} from './facility-handling-form.js?v=handling-photo-fix';
 import {mountLocationDetail} from './location-map.js?v=phase8';
 
@@ -126,6 +126,7 @@ function workspace(root) {
     const back = button('Kembali ke daftar', () => showList());
     detailTop.append(detailHeading, back, refresh);
     const detailBody = element('div', undefined, 'facility-stack');
+    if(admin)detailBody.classList.add('admin-handling-detail-body');
     detailView.append(detailTop, detailBody);
 
     const filters = element('div', undefined, 'facility-filters');
@@ -256,7 +257,22 @@ function workspace(root) {
                 }, () => sessionEnded(errorBox));
             }, true));
             const location = element('div');
-            detailBody.replaceChildren(handlingSummary(report, role), location, actions, history.root);
+            if (admin) {
+                const mapGroup=element('details',undefined,'admin-detail-group');mapGroup.append(element('summary','Lokasi fasilitas'),location);
+                const historyGroup=element('details',undefined,'admin-detail-group');historyGroup.append(element('summary','Riwayat penanganan'),history.root);
+                actions.classList.add('admin-handling-actions');
+                detailBody.replaceChildren(handlingSummary(report,role),actions,mapGroup,historyGroup);
+            }
+            else {
+                const mapGroup = element('details', undefined, 'collector-detail-group');
+                mapGroup.append(element('summary','Lihat lokasi di peta'),location);
+                mapGroup.open = Boolean(navigation);
+                const historyGroup = element('details', undefined, 'collector-detail-group collector-history-group');
+                historyGroup.append(element('summary','Riwayat penanganan'),history.root);
+                actions.hidden = !actions.children.length;
+                if (actions.children.length) actions.prepend(element('h4','Tindakan petugas'));
+                detailBody.replaceChildren(handlingSummary(report,role),actions,mapGroup,historyGroup);
+            }
             disposeLocation = mountLocationDetail(location, {
                 title: 'Titik lokasi fasilitas', point: report, address: report.address, reported: true, autoTiles: true, kind:'facility',
                 navigation: admin ? null : {...navigation, authorize, recheck: true}

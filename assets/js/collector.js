@@ -84,8 +84,9 @@ function switchView(viewId, element) {
         const navItems = document.querySelectorAll('.sidebar-item, .nav-item');
         navItems.forEach(item => {
             const text = item.innerText.toLowerCase();
-            const matchesView = text.includes(viewId.replace('-', ' '));
-            const matchesHome = viewId === 'dashboard' && (text.includes('home') || text.includes('beranda'));
+            const viewLabels = {dashboard:['dashboard','beranda'],history:['riwayat'],earnings:['komisi'],profile:['profil'],facility:['fasilitas'],'active-mission':['pickup aktif','misi']};
+            const matchesView = (viewLabels[viewId] || [viewId.replace('-', ' ')]).some(label => text === label || (label !== 'misi' && text.includes(label)));
+            const matchesHome = viewId === 'dashboard' && text.includes('home');
             if (matchesView || matchesHome) item.classList.add('active');
         });
     }
@@ -284,14 +285,15 @@ async function claimPickup(trackingNum) {
 
 function renderCollectorHistory(item) {
     const statusMeta = getCollectorStatusMeta(item.status);
-    const dateObj = new Date(item.created_at);
-    const dateStr = dateObj.getDate() + ' ' + dateObj.toLocaleString('id-ID', {month: 'short'}) + ' ' + dateObj.getFullYear();
+    const dateObj = new Date(item.verified_at || item.created_at);
+    const dateStr = Number.isFinite(dateObj.getTime()) ? new Intl.DateTimeFormat('id-ID',{dateStyle:'medium',timeZone:'Asia/Jakarta'}).format(dateObj) : 'Belum tersedia';
+    const weight = item.final_weight_kg == null ? '—' : Number(item.final_weight_kg).toLocaleString('id-ID',{maximumFractionDigits:2}) + ' kg';
     return `
-                        <tr style="border-bottom: 1px solid #f1f5f9;">
-                            <td style="padding: 16px; font-weight: 800; color:#064e3b;">${escapePortalHTML(item.tracking_number)}</td>
-                            <td style="padding: 16px;">${dateStr}</td>
-                            <td style="padding: 16px; font-weight: 800; color: #087443;">—</td>
-                            <td style="padding: 16px;"><span class="status-pill success" style="background:#f0fdf4; color:#15803d; font-weight:800; padding:4px 12px; border-radius:50px; font-size:0.75rem;">${statusMeta.label}</span></td>
+                        <tr>
+                            <td><strong>${escapePortalHTML(item.tracking_number)}</strong><small>${escapePortalHTML(item.category_name || 'Penjemputan sampah')}</small></td>
+                            <td>${dateStr}<small>${item.verified_at ? 'Ditimbang di hub' : 'Tanggal pengajuan'}</small></td>
+                            <td><strong>${weight}</strong></td>
+                            <td><span class="status-pill success">${statusMeta.label}</span></td>
                         </tr>
                     `;
 }
@@ -332,9 +334,10 @@ function renderOpenCollectorTask(item) {
 }
 
 function summarizeCollectorPickups(list, userId) {
-    const result = {weight: 0, historyHtml: '', tasksHtml: '', activeMission: null, activeCount: 0, queueCount: 0};
+    const result = {weight: 0, historyHtml: '', tasksHtml: '', activeMission: null, activeCount: 0, queueCount: 0, completedCount: 0};
     for (const item of list) {
         if (item.status === 'completed') {
+            result.completedCount++;
             result.weight += Number(item.final_weight_kg ?? 0);
             result.historyHtml += renderCollectorHistory(item);
         } else if (String(item.collector_id) === String(userId)) {
@@ -357,9 +360,12 @@ function renderCollectorDashboard(list, userId) {
     document.getElementById('stat-active-tasks').textContent = result.activeCount;
     document.getElementById('stat-profit').innerText = '—';
     document.getElementById('earnings-total').innerText = '—';
+    document.getElementById('earnings-completed-count').textContent = result.completedCount;
+    document.getElementById('earnings-weight').textContent = result.weight.toLocaleString('id-ID',{maximumFractionDigits:2}) + ' kg';
+    document.getElementById('collector-history-count').textContent = result.completedCount + ' misi selesai';
     document.getElementById('collector-queue-count').textContent = result.queueCount + ' tugas';
     if (upcomingList) upcomingList.innerHTML = result.tasksHtml || '<div class="collector-queue-empty"><i class="fas fa-inbox" aria-hidden="true"></i><strong>Tidak ada antrean pickup tersedia</strong><p>Tugas baru akan tampil di sini saat tersedia. Anda juga dapat meninjau tugas fasilitas.</p><button type="button" class="sp-button sp-button--quiet" onclick="switchView(\'facility\')">Lihat Tugas Fasilitas</button></div>';
-    if (historyBody) historyBody.innerHTML = result.historyHtml || '<tr><td colspan="4" style="text-align:center; padding:16px; color:#64748b;">Belum ada riwayat misi penjemputan selesai.</td></tr>';
+    if (historyBody) historyBody.innerHTML = result.historyHtml || '<tr><td colspan="4" class="collector-history-empty"><i class="fas fa-clipboard-check" aria-hidden="true"></i><strong>Belum ada misi selesai</strong><p>Penjemputan yang sudah selesai akan tercatat di sini.</p></td></tr>';
 }
 
 let collectorLoadSequence=0;
@@ -398,6 +404,7 @@ async function loadCollectorData() {
         historyBody.replaceChildren();
         document.getElementById('stat-active-tasks').textContent='—';
         document.getElementById('stat-packages').textContent='—';
+        for(const id of ['earnings-completed-count','earnings-weight','collector-history-count'])document.getElementById(id).textContent='—';
         document.getElementById('collector-queue-count').textContent='—';
     }
 }

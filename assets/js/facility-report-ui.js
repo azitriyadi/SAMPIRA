@@ -185,6 +185,7 @@ export function reportCard(report, admin, openDetail, base) {
 
 export function reportDetails(report, admin, base) {
     const content = element('div', undefined, 'facility-stack');
+    if(admin)content.classList.add('admin-report-summary');
     const top = element('div', undefined, 'facility-card-head');
     top.append(element('span', report.tracking_number, 'facility-ref'), badge(report.status));
     const meta = element('dl', undefined, 'facility-detail-meta');

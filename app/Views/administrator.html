@@ -19,13 +19,15 @@
 <link rel="stylesheet" href="/assets/css/portal-design.css?v=roles-1">
 <link rel="stylesheet" href="/assets/css/contributions.css?v=phase9b">
 <script type="module" src="/assets/js/contributions.js?v=phase9b"></script>
+<link rel="stylesheet" href="/assets/css/administrator-refresh.css?v=administrator-refresh-1">
+<script src="/assets/js/administrator-workspace.js?v=administrator-refresh-1" defer></script>
 </head>
-<body class="sp-portal sp-console sp-system">
+<body class="sp-portal sp-console sp-system administrator-refresh">
     <aside class="sp-system-sidebar"><a class="sp-brand" href="/home"><img src="/assets/img/sampira-mark.svg" width="36" height="36" alt=""><span>SAMPIRA<small>Administrator</small></span></a><nav class="sp-system-nav" aria-label="Navigasi Administrator">
-            <a href="#sp-system-metrics">Ringkasan</a><a href="#p9-system">Statistik sistem</a><a href="#p9-accounts">Akun &amp; Role</a><a href="#p9-voucher-admin">Manajemen Voucher</a><a href="#p9-audit">Monitoring &amp; Audit</a><a href="#p9-system-grid">Sebaran Fasilitas</a><a href="#content-view">Pengumuman</a><a href="#reward-payments-title">Pembayaran Reward</a>
+            <a href="#sp-system-metrics">Ringkasan</a><a href="#p9-system">Statistik sistem</a><a href="#p9-accounts">Akun &amp; Role</a><a href="#p9-voucher-admin">Manajemen Voucher</a><a href="#p9-audit">Monitoring &amp; Audit</a><a href="#p9-system-grid">Sebaran Fasilitas</a><a href="#content-view">Pengumuman</a><a href="#system-payments">Pembayaran Reward</a>
         </nav><p class="sp-system-scope">Administrasi operasional<br>Pengumuman dan pembayaran</p></aside>
 <main class="container sp-system-main" id="sp-system-main">
-        <header class="sp-system-header"><div><p class="sp-kicker">Portal Administrator</p><h1>Kontrol operasional SAMPIRA</h1></div>
+        <header class="sp-system-header"><button id="system-menu-toggle" type="button" aria-label="Buka navigasi" aria-controls="system-navigation" aria-expanded="false">☰</button><div><p class="sp-kicker">Portal Administrator</p><h1 id="system-page-title">Ringkasan</h1></div>
 
         <form action="/logout" method="post">
             <button class="btn btn-primary" type="submit">Keluar</button>
@@ -33,9 +35,10 @@
         </header>
 
         <section class="sp-panel" id="sp-system-metrics" aria-labelledby="sp-metrics-title">
-    <p class="sp-kicker">Ringkasan sistem</p><h2 id="sp-metrics-title">Aktivitas penjemputan dan reward</h2>
-    <output aria-live="polite">Memuat ringkasan…</output>
+    <div class="system-welcome"><p class="sp-kicker">Pusat kendali layanan</p><h2 id="sp-metrics-title">Kelola layanan.<br><span>Pantau dampaknya.</span></h2><p>Ringkasan penjemputan, petugas, dan pembayaran reward yang tercatat di SAMPIRA.</p><a href="#system-payments" class="system-welcome-link">Periksa pembayaran reward</a></div>
+    <output role="status" aria-live="polite">Memuat ringkasan…</output>
     <dl class="sp-metric-grid"><div><dt>Total penjemputan</dt><dd data-metric="total_pickups" >—</dd></div><div><dt>Menunggu petugas</dt><dd data-metric="pending_verifications" >—</dd></div><div><dt>Berat terverifikasi (kg)</dt><dd data-metric="total_weight" >—</dd></div><div><dt>Akun petugas aktif</dt><dd data-metric="collectors_online" >—</dd></div><div><dt>Reward menunggu pembayaran</dt><dd data-metric="total_reward_pending" data-currency>—</dd></div><div><dt>Reward dibayar</dt><dd data-metric="total_reward_paid" data-currency>—</dd></div></dl>
+    <div class="system-shortcuts"><a href="#p9-accounts"><strong>Kelola akun</strong><span>Periksa peran dan akses pengguna</span></a><a href="#p9-voucher-admin"><strong>Atur voucher</strong><span>Kelola stok, biaya poin, dan masa berlaku</span></a><a href="#p9-audit"><strong>Tinjau aktivitas</strong><span>Pantau penukaran dan perubahan sistem</span></a></div>
 </section>
             <div id="content-view" class="view-section active">
             <div class="page-header">

@@ -1,9 +1,9 @@
 // Real Chromium QA using its DevTools protocol. Runs only with the isolated fixture server.
 import assert from 'node:assert/strict';
 import {execFileSync, spawn} from 'node:child_process';
-import {mkdtempSync, readFileSync, writeFileSync} from 'node:fs';
+import {mkdtempSync, readFileSync, writeFileSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {join, resolve, dirname, basename} from 'node:path';
 import {setTimeout as sleep} from 'node:timers/promises';
 
 const chrome = process.env.SAMPIRA_TEST_CHROME;
@@ -370,4 +370,9 @@ try {
         } else browser.kill();
         await Promise.race([new Promise(resolve=>{if(browser.exitCode!==null)resolve();else browser.once('exit',resolve);}),sleep(5000)]);
     }
+    if (dirname(resolve(profile))!==resolve(tmpdir()) || !/^sampira-browser-[A-Za-z0-9]+$/.test(basename(profile))) throw Error('Unsafe browser profile cleanup path.');
+    if (browser.exitCode!==null) {
+        try {rmSync(profile,{recursive:true,force:true,maxRetries:3,retryDelay:250});}
+        catch {console.warn('Browser test profile cleanup incomplete: '+profile);}
+    } else console.warn('Test browser still active; profile retained: '+profile);
 }
