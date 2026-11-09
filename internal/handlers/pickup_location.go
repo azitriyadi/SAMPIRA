@@ -98,6 +98,16 @@ func readPickupJSON(body io.Reader, invalidCoordinates *apiProblem) (map[string]
 			continue
 		}
 
+		if key == "items" {
+			if _, exists := data[key]; exists {
+				return nil, invalidBody
+			}
+			if array, ok := value.([]any); ok {
+				raw, _ := json.Marshal(array)
+				data[key] = string(raw)
+				continue
+			}
+		}
 		// Preserve the legacy scalar conversions for the other pickup fields.
 		switch v := value.(type) {
 		case string:

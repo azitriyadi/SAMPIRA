@@ -1,6 +1,7 @@
+import {mountCityData} from './city-datasets.js?v=bandung-2';
 import {request} from './facility-api.js';
 import {createMap, streetTiles} from './map-core.js?v=phase8';
-import {countChart} from './admin-charts.js?v=admin-refresh-1';
+import {countChart} from './admin-charts.js?v=maps-reader-9';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const money = value => new Intl.NumberFormat('id-ID', {style:'currency',currency:'IDR',maximumFractionDigits:2}).format(value);
@@ -46,11 +47,12 @@ function dialog(title, markup, submit, label='Simpan') {
     root.addEventListener('cancel',event=>{ if(busy)event.preventDefault(); });
     root.addEventListener('close',()=>root.remove(),{once:true});
     form.addEventListener('submit',async event=>{
-        event.preventDefault(); if(busy)return; busy=true; send.disabled=close.disabled=true; state(output,'Menyimpan…');
+        event.preventDefault(); if(busy)return; if(!form.reportValidity())return; busy=true; send.disabled=close.disabled=true; state(output,'Menyimpan…');
         try { const result=await submit(new FormData(form),root); if(result!==false)root.close(); }
         catch(error){state(output,error.message||'Permintaan gagal. Coba lagi.',true);}
         finally {busy=false;send.disabled=close.disabled=false;}
     });
+    form.addEventListener('invalid',event=>state(output,event.target.validationMessage||'Lengkapi isian wajib.',true),true);
     root.showModal(); return root;
 }
 
@@ -156,12 +158,13 @@ function analytics(root,role){
     root.innerHTML=heading(role==='reward'?'Ringkasan reward':'Statistik '+({user:'kontribusi',admin:'operasional',petugas:'tugas',administrator:'sistem'}[role]),'Seluruh waktu · sesuai kewenangan akun. Angka dapat berubah saat ada aktivitas baru.',button('Perbarui statistik','data-analytics-retry'))+'<p role="status" class="p9-state" data-analytics-state></p><div data-analytics-values></div>';
     if(adminCharts){$('h2',root).textContent='Statistik Laporan';$('.p9-kicker',root).textContent='Analisis operasional';}
     if(collectorSummary)root.innerHTML='<div class="collector-summary-heading"><div><h2>Ringkasan operasional</h2><p>Seluruh waktu · sesuai penugasan akun Anda.</p></div>'+button('Perbarui statistik','data-analytics-retry')+'</div><div data-analytics-values></div><p role="status" class="p9-state" data-analytics-state></p>';
+    if(actualRole==='admin'||actualRole==='administrator')mountCityData(root);
     let sequence=0;
     async function load(){if(ended||!root.isConnected)return;const run=++sequence;state($('[data-analytics-state]',root),'Memuat statistik…');$('[data-analytics-values]',root).replaceChildren();
         try{const data=await api('/api/analytics');if(run!==sequence)return;if(data.role!==actualRole)throw new Error('Cakupan statistik tidak sesuai sesi.');
             if(adminCharts){
                 const rows=keys=>keys.map(key=>({key,label:metricLabels[key],value:data[key]}));
-                $('[data-analytics-values]',root).innerHTML='<div class="admin-chart-grid">'+countChart('Laporan & verifikasi',rows(['reports','pending_verification','approved_reports']),'Seluruh waktu · satuan jumlah laporan. Indikator dapat saling beririsan.')+countChart('Penanganan & penugasan',rows(['awaiting_assignment','assigned','handling_in_progress','awaiting_validation','completed']),'Seluruh waktu · jumlah catatan/tugas, bukan bagian dari satu total.')+'</div>';
+                $('[data-analytics-values]',root).innerHTML='<div class="admin-chart-grid">'+countChart('Laporan & verifikasi',rows(['reports','pending_verification','approved_reports']),'Seluruh waktu · satuan jumlah laporan. Indikator dapat saling beririsan.',true)+countChart('Penanganan & penugasan',rows(['awaiting_assignment','assigned','handling_in_progress','awaiting_validation','completed']),'Seluruh waktu · jumlah catatan/tugas, bukan bagian dari satu total.')+'</div>';
                 state($('[data-analytics-state]',root),'Diperbarui '+date(new Date().toISOString())+' WIB.');return;
             }
             if(collectorSummary){
@@ -203,11 +206,11 @@ function manageCatalog(root){
 }
 
 function accounts(root){
-    root.innerHTML=heading('Akun & Role','Perubahan kewenangan mencabut sesi akun terkait. Periksa tugas aktif sebelum menonaktifkan Petugas.')+'<div data-accounts-list></div>';
+    root.innerHTML=heading('Akun & Role','Role akun bersifat tetap. Anda dapat mengatur status aktif akun; perubahan status mencabut sesi akun terkait.')+'<div data-accounts-list></div>';
     const entries=list($('[data-accounts-list]',root),'/api/administrator/accounts',rows=>table(['Akun','Role','Status','Aksi'],rows.map(row=>[`${escape(row.name)}<small>${escape(row.email)}</small>`,escape(row.role),badge(row.is_active?'Aktif':'Nonaktif'),button(row.id===actor.id?'Akun Anda':'Kelola',`data-account-edit="${row.id}" ${row.id===actor.id?'disabled':''}`)])),{search:row=>row.name+' '+row.email+' '+row.role+' '+row.id});
     root.addEventListener('click',event=>{
         const control=event.target.closest('[data-account-edit]');if(!control)return;const row=entries.rows().find(item=>item.id===Number(control.dataset.accountEdit));if(!row)return;
-        dialog('Kelola akun',`<p><strong>${escape(row.name)}</strong><br>${escape(row.email)}</p><div class="p9-form-grid"><label>Role<select name="role">${['user','petugas','admin','administrator'].map(role=>`<option value="${role}" ${role===row.role?'selected':''}>${role}</option>`).join('')}</select></label><label>Status akun<select name="is_active"><option value="true" ${row.is_active?'selected':''}>Aktif</option><option value="false" ${!row.is_active?'selected':''}>Nonaktif</option></select></label><label class="p9-wide">Alasan perubahan<textarea name="reason" minlength="10" maxlength="1000" rows="3" required></textarea></label></div><p>Sesi akun ini akan dicabut. Perubahan akun sendiri tidak diizinkan.</p>`,async data=>{
+        dialog('Kelola akun',`<p><strong>${escape(row.name)}</strong><br>${escape(row.email)}</p><div class="p9-form-grid"><label>Role (tidak dapat diubah)<input name="role" value="${escape(row.role)}" readonly aria-readonly="true"></label><label>Status akun<select name="is_active"><option value="true" ${row.is_active?'selected':''}>Aktif</option><option value="false" ${!row.is_active?'selected':''}>Nonaktif</option></select></label><label class="p9-wide">Alasan perubahan (wajib, minimal 10 karakter)<textarea name="reason" minlength="10" maxlength="1000" rows="3" placeholder="Contoh: Akun dinonaktifkan atas permintaan pemilik." required></textarea></label></div><p>Sesi akun ini akan dicabut. Perubahan akun sendiri tidak diizinkan.</p>`,async data=>{
             await api('/api/administrator/accounts/'+row.id,json('PATCH',{role:data.get('role'),is_active:data.get('is_active')==='true',expected_role:row.role,expected_active:row.is_active,reason:data.get('reason')}));
             await entries.reload();window.dispatchEvent(new Event('sampira:cash-updated'));
         },'Konfirmasi perubahan');
@@ -241,6 +244,7 @@ function facilityGrid(root){
             if(coordinates.some(Boolean)&&!coordinates.every(Boolean))throw new Error('Isi empat batas koordinat atau kosongkan seluruhnya.');
             const query=new URLSearchParams([...data].filter(([,value])=>value!==''));
             const result=await api('/api/analytics/facility-grid?'+query);if(run!==sequence)return;
+            if(!chartOnly&&!window.L)throw new Error('Peta belum dapat dimuat. Periksa koneksi lalu terapkan filter kembali.');
             if(window.L&&!map&&!chartOnly){map=createMap($('.p9-map',root));streetTiles().on('tileerror',()=>state($('[data-grid-state]',root),'Peta jalan belum tersedia. Tabel sebaran tetap dapat dibaca.',true)).addTo(map);layer=L.layerGroup().addTo(map);}
             const bounds=[];
             for(const cell of result.cells){const extent=[[cell.south,cell.west],[cell.south+result.cell_degrees,cell.west+result.cell_degrees]];bounds.push(...extent);if(layer){const label=document.createElement('span');label.textContent=number(cell.count)+' laporan disetujui dalam sel agregasi';L.rectangle(extent,{color:'#277553',weight:1,fillOpacity:.35}).addTo(layer).bindPopup(label);L.circleMarker([cell.south+result.cell_degrees/2,cell.west+result.cell_degrees/2],{radius:8,color:'#fff',weight:2,fillColor:'#277553',fillOpacity:1}).addTo(layer).bindPopup(label.cloneNode(true));}}

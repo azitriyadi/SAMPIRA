@@ -55,7 +55,7 @@ function addReport(report) {
     number.textContent = report.tracking_number;
     const date = document.createElement('small');
     date.textContent = dateLabel(report.created_at);
-    subject.append(heading, number, date);
+    const impact=document.createElement('small');impact.textContent=(report.affected_count??1)+' akun terdampak';subject.append(heading, number, date,impact);
     const badge = document.createElement('span');
     badge.className = 'facility-badge';
     badge.dataset.status = report.status;

@@ -17,6 +17,10 @@ const facilityReportsPath = "/api/ecorecycle/facility-reports"
 
 func (a *App) RegisterFacilityReports(mux *http.ServeMux) {
 	mux.HandleFunc("POST "+facilityReportsPath, a.createFacilityReport)
+	mux.HandleFunc("GET "+facilityReportsPath+"/community", a.communityFacilityReports)
+	mux.HandleFunc("GET "+facilityReportsPath+"/community/detail/{id}", a.communityFacilityDetail)
+	mux.HandleFunc("GET "+facilityReportsPath+"/community/photo/{id}", a.communityFacilityPhoto)
+	mux.HandleFunc("POST "+facilityReportsPath+"/{id}/affected", a.confirmFacilityAffected)
 	mux.HandleFunc("GET "+facilityReportsPath, a.listFacilityReports)
 	mux.HandleFunc("GET "+facilityReportsPath+"/{id}", a.facilityDetail)
 	mux.HandleFunc("PUT "+facilityReportsPath+"/{id}", a.reviseFacilityReport)

@@ -6,6 +6,8 @@ const categoryConfig = Object.fromEntries(wasteCategories.map(category => [categ
 
 const categorySelect = document.getElementById('form-waste-category');
 if (categorySelect) populateWasteOptions(categorySelect, 'Small Gadgets');
+let multiCategoryBackendReady=false;
+let selectedPickupItems = new Map([['Small Gadgets',1]]);
 const categoryGrid = document.getElementById('category-helper-grid');
 if (categoryGrid) {
     categoryGrid.replaceChildren();
@@ -98,26 +100,6 @@ function getStatusBadgeClass(status) {
     return 'pending';
 }
 
-function renderStatusStepper(currentStatus) {
-    const currentIndex = pickupStatusFlow.indexOf(currentStatus);
-    return `
-        <div class="pickup-status-stepper" aria-label="Tahapan status penjemputan">
-            ${pickupStatusFlow.map((status, index) => {
-                const meta = getPickupStatusMeta(status);
-                let stateClass = '';
-                if (index < currentIndex) stateClass = 'done';
-                if (index === currentIndex) stateClass = 'current';
-                return `
-                    <div class="pickup-status-step ${stateClass}">
-                        <span><i class="fas ${meta.icon}"></i></span>
-                        <strong>${meta.label}</strong>
-                    </div>
-                `;
-            }).join('')}
-        </div>
-    `;
-}
-
 // Tab Switching
 const tabs = document.querySelectorAll('.hub-tab');
 const panes = document.querySelectorAll('.tab-pane');
@@ -200,33 +182,34 @@ document.addEventListener('keydown', event => {
 // Payout Preview Calculation
 
 let previewRequest = 0;
-async function calculateFormPreview() {
-    const categorySelect = document.getElementById('form-waste-category');
-    const weightInput = document.getElementById('form-waste-weight');
-    if (!categorySelect || !weightInput) return;
-    const request = ++previewRequest;
-    const category = categorySelect.value;
-    const weight = weightInput.value;
-    const config = categoryConfig[category] || categoryConfig['Small Gadgets'];
-    document.getElementById('category-handling-note').textContent = config.note;
-    const fields = ['preview-gross-reward', 'preview-fee', 'preview-net-reward', 'preview-carbon'];
-    for (const id of fields) document.getElementById(id).textContent = '—';
-    if (!weight || !weightInput.validity.valid) return;
-    try {
-        const response = await portalFetch('/api/ecorecycle/estimate_reward', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({category, weight_kg: weight})
-        });
-        if (!response.ok || request !== previewRequest) return;
-        const {data} = await response.json();
-        if (request !== previewRequest) return;
-        const currency = new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR', maximumFractionDigits: 2});
-        const values = [currency.format(data.total_estimate), currency.format(data.processing_fee),
-            currency.format(data.net_estimate), Number(data.co2_saved).toFixed(1)];
-        fields.forEach((id,index) => { document.getElementById(id).textContent = values[index]; });
-    } catch {
-        // Leave the placeholder if the server has no valid estimate.
-    }
+function pickupItems(){return [...selectedPickupItems].map(([category,weight])=>({category,weight_kg:Number(weight)}));}
+function renderPickupItems(){
+ const host=document.getElementById('pickup-category-items');if(!host)return;
+ host.innerHTML=pickupItems().map(item=>`<label class="pickup-item-weight">${escapePortalHTML(categoryConfig[item.category]?.label||item.category)}<span><input type="number" min="0.01" max="99999.99" step="0.01" required value="${item.weight_kg||''}" data-item-category="${escapePortalHTML(item.category)}" aria-label="Berat ${escapePortalHTML(item.category)}"> kg</span><small data-item-estimate="${escapePortalHTML(item.category)}">Estimasi reward menunggu berat valid.</small></label>`).join('');
+ document.querySelectorAll('.category-helper-card').forEach(card=>{const active=selectedPickupItems.has(card.dataset.category);card.classList.toggle('active',active);card.setAttribute('aria-pressed',String(active));});
+ updatePickupTotal();
+}
+function updatePickupTotal(){
+ const total=pickupItems().reduce((sum,item)=>sum+(Number.isFinite(item.weight_kg)?item.weight_kg:0),0);
+ document.getElementById('form-waste-weight').value=(Math.round(total*100)/100)||'';
+ document.getElementById('form-waste-category').value=pickupItems()[0]?.category||'';
+}
+async function calculateFormPreview(){
+ const request=++previewRequest,fields=['preview-gross-reward','preview-fee','preview-net-reward','preview-carbon'];
+ fields.forEach(id=>document.getElementById(id).textContent='—');
+ const items=pickupItems();if(!items.length||items.some(item=>!Number.isFinite(item.weight_kg)||item.weight_kg<=0||item.weight_kg>99999.99||Math.abs(item.weight_kg*100-Math.round(item.weight_kg*100))>.00001))return;
+ try{
+  const response=await portalFetch('/api/ecorecycle/estimate_reward',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category:items[0].category,weight_kg:items[0].weight_kg,items:JSON.stringify(items)})});
+  if(!response.ok)throw Error('Estimasi belum tersedia');const {data}=await response.json();
+  if(request!==previewRequest)return;
+  multiCategoryBackendReady=Array.isArray(data.items);
+  const weightInput=document.getElementById('form-waste-weight');weightInput.setCustomValidity(items.length>1&&!multiCategoryBackendReady?'Layanan beberapa kategori belum aktif. Pilih satu kategori atau tunggu aktivasi Backend.':'');
+  if(items.length>1&&!multiCategoryBackendReady){document.getElementById('preview-net-reward').textContent='Layanan beberapa kategori belum aktif';return;}
+  const currency=new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:2});
+  const values=[currency.format(data.total_estimate),currency.format(data.processing_fee),currency.format(data.net_estimate),Number(data.co2_saved).toFixed(1)];
+  fields.forEach((id,i)=>document.getElementById(id).textContent=values[i]);
+  document.querySelectorAll('[data-item-estimate]').forEach(output=>{const row=data.items?.find(item=>item.category===output.dataset.itemEstimate);output.textContent='Estimasi reward bersih '+currency.format(row?Math.max(0,row.eco_reward-row.processing_fee):data.net_estimate);});
+ }catch{if(request===previewRequest)document.getElementById('preview-net-reward').textContent='Estimasi belum tersedia';}
 }
 
 const formWeight = document.getElementById('form-waste-weight');
@@ -234,38 +217,16 @@ const formCat = document.getElementById('form-waste-category');
 
 if (formWeight) formWeight.addEventListener('input', calculateFormPreview);
 
-function syncCategoryCards(category) {
-    document.querySelectorAll('.category-helper-card').forEach(card => {
-        const selected = card.dataset.category === category;
-        card.classList.toggle('active', selected);
-        card.setAttribute('aria-pressed', String(selected));
-    });
+function syncCategoryCards(category){selectedPickupItems=new Map([[category,Number(formWeight.value)||1]]);renderPickupItems();}
+if(categoryGrid){
+ const hint=document.createElement('p');hint.className='pickup-items-hint';hint.textContent='Pilih satu atau beberapa kategori. Isi estimasi berat masing-masing dalam kg.';categoryGrid.before(hint);
+ const host=document.createElement('div');host.id='pickup-category-items';categoryGrid.after(host);
+ host.addEventListener('input',event=>{if(!event.target.matches('[data-item-category]'))return;selectedPickupItems.set(event.target.dataset.itemCategory,Number(event.target.value));updatePickupTotal();calculateFormPreview();});
+ document.querySelectorAll('.category-helper-card').forEach(card=>card.addEventListener('click',()=>{const category=card.dataset.category;if(selectedPickupItems.has(category))selectedPickupItems.delete(category);else selectedPickupItems.set(category,Number(card.dataset.weight)||1);renderPickupItems();calculateFormPreview();}));
+ formWeight.readOnly=true;renderPickupItems();
 }
+if(formCat)formCat.addEventListener('change',()=>{syncCategoryCards(formCat.value);calculateFormPreview();});
 
-document.querySelectorAll('.category-helper-card').forEach(card => {
-    card.addEventListener('click', () => {
-        const categorySelect = document.getElementById('form-waste-category');
-        const weightInput = document.getElementById('form-waste-weight');
-        const descriptionInput = document.getElementById('form-item-description');
-
-        if (categorySelect) categorySelect.value = card.dataset.category;
-        if (weightInput) weightInput.value = card.dataset.weight;
-        if (descriptionInput && (descriptionInput.value.trim() === '' || descriptionInput.value === descriptionInput.dataset.suggestedExample)) {
-            descriptionInput.value = card.dataset.example;
-            descriptionInput.dataset.suggestedExample = card.dataset.example;
-        }
-
-        syncCategoryCards(card.dataset.category);
-        calculateFormPreview();
-    });
-});
-
-if (formCat) {
-    formCat.addEventListener('change', () => {
-        syncCategoryCards(formCat.value);
-        calculateFormPreview();
-    });
-}
 
 const photoInput = document.getElementById('form-waste-photo');
 const photoPreviewCard = document.getElementById('photo-preview-card');
@@ -386,11 +347,12 @@ async function editPendingPickup(trackingNumber) {
                 <label class="swal-form-label">Nomor HP / WhatsApp</label>
                 <input id="edit-contact-phone" class="swal2-input" style="margin:0 0 10px; width:100%;" value="${escapePortalHTML(item.contact_phone || '')}">
                 <label class="swal-form-label">Kategori</label>
-                <select id="edit-category" class="swal2-select" style="margin:0 0 10px; width:100%;">
+                <select ${item.items?.length?'hidden':''} id="edit-category" class="swal2-select" style="margin:0 0 10px; width:100%;">
                     ${Object.keys(categoryConfig).map(category => `<option value="${category}" ${item.category_name === category ? 'selected' : ''}>${categoryConfig[category].label}</option>`).join('')}
                 </select>
                 <label class="swal-form-label">Estimasi berat (KG)</label>
-                <input id="edit-weight" type="number" min="0.01" max="99999.99" step="0.01" class="swal2-input" style="margin:0; width:100%;" value="${item.weight_kg || ''}">
+                ${item.items?.length?`<div id="edit-category-items">${item.items.map(row=>`<label>${escapePortalHTML(categoryConfig[row.category]?.label||row.category)} (kg)<input type="number" min="0.01" max="99999.99" step="0.01" data-edit-item="${escapePortalHTML(row.category)}" value="${row.weight_kg}"></label>`).join('')}</div>`:''}
+                <input ${item.items?.length?'hidden':''} id="edit-weight" type="number" min="0.01" max="99999.99" step="0.01" class="swal2-input" style="margin:0; width:100%;" value="${item.weight_kg || ''}">
             </div>
         `,
         icon: 'info',
@@ -426,6 +388,7 @@ async function editPendingPickup(trackingNumber) {
                 category: document.getElementById('edit-category').value,
                 weight_kg: Number.parseFloat(document.getElementById('edit-weight').value)
             };
+            if(item.items?.length){const items=[...document.querySelectorAll('[data-edit-item]')].map(input=>({category:input.dataset.editItem,weight_kg:Number(input.value)}));if(items.some(row=>!row.weight_kg||row.weight_kg<=0)){Swal.showValidationMessage('Isi berat tiap kategori.');return false;}payload.items=JSON.stringify(items);payload.category=items[0].category;payload.weight_kg=Math.round(items.reduce((sum,row)=>sum+row.weight_kg,0)*100)/100;}
             if (originalTitle && !title) {
                 Swal.showValidationMessage('Isi judul permintaan.');
                 return false;
@@ -648,7 +611,7 @@ function renderPickupHistory() {
     const pageSize = 5;
     const query = historySearch.value.trim().toLocaleLowerCase('id-ID');
     const matching = pickupHistory.filter(item => Object.entries(historyFilters)
-        .every(([key, filter]) => !filter.value || item[key] === filter.value) &&
+        .every(([key, filter]) => !filter.value || item[key] === filter.value || (key==='category_name' && item.items?.some(row=>row.category===filter.value))) &&
         [pickupHistoryTitle(item), item.tracking_number].some(value => String(value).toLocaleLowerCase('id-ID').includes(query)));
     const direction = historySort.value === 'oldest' ? 1 : -1;
     matching.sort((first, second) => direction * ((Date.parse(first.created_at) || 0) - (Date.parse(second.created_at) || 0)));
@@ -708,7 +671,7 @@ function renderUserDashboard(pickups) {
     pickupHistory = pickups;
     for (const [key, filter] of Object.entries(historyFilters)) {
         const selected = filter.value;
-        const values = Array.from(new Set(pickups.map(item => item[key]).filter(Boolean)));
+        const values = Array.from(new Set(pickups.flatMap(item => key==='category_name' && item.items?.length ? item.items.map(row=>row.category) : [item[key]]).filter(Boolean)));
         filter.replaceChildren(filter.options[0], ...values.map(value => new Option(
             key === 'status' ? getPickupStatusMeta(value).label : value, value)));
         if (values.includes(selected)) filter.value = selected;
@@ -805,13 +768,14 @@ if (pickupForm) {
     const host = document.getElementById('pickup-location-picker');
     const requestTitle = document.getElementById('form-request-title');
     locationMaps.then(({mountLocationPicker}) => {
-        picker = mountLocationPicker(host, {title: 'Titik Lokasi Penjemputan', prefix: 'pickup', digits: 7, compact: true});
+        picker = mountLocationPicker(host, {title: 'Titik Lokasi Penjemputan', prefix: 'pickup', digits: 7, compact: true, addressField: document.getElementById('form-pickup-address')});
     }).catch(() => {
         host.textContent = 'Peta belum tersedia. Kamu dapat mengirim alamat lengkap saja.';
     });
     pickupForm.addEventListener('submit', function (e) {
         e.preventDefault();
         if (submit.disabled) return;
+        if(pickupItems().length>1&&!multiCategoryBackendReady){Swal.fire({icon:'warning',title:'Layanan beberapa kategori belum siap',text:'Tunggu estimasi berhasil atau aktivasi Backend terbaru.'});return;}
         const btn = submit;
         const originalHtml = btn.innerHTML;
 
@@ -862,6 +826,7 @@ if (pickupForm) {
         formData.append('contact_phone', phone);
         formData.append('weight_kg', weight);
         formData.append('category', document.getElementById('form-waste-category').value);
+        formData.append('items',JSON.stringify(pickupItems()));
         for (const [key, value] of Object.entries(fields)) formData.set(key, value);
 
         const photoInput = document.getElementById('form-waste-photo');
@@ -895,7 +860,7 @@ if (pickupForm) {
                     btn.innerHTML = originalHtml;
                     btn.disabled = false;
                     clearPhotoPreview();
-                    syncCategoryCards('Small Gadgets');
+                    selectedPickupItems=new Map([['Small Gadgets',1]]);renderPickupItems();
                     calculateFormPreview();
                     loadDashboardData();
                     const trackInput = document.getElementById('track-number-search');
@@ -996,13 +961,15 @@ function searchTracking() {
             document.getElementById('track-disp-detail').innerText = `${item.category_name} • Estimasi ${item.weight_kg} KG` +
                 (item.final_weight_kg == null ? "" : ` • Aktual ${item.final_weight_kg} KG`);
 
+            const breakdown=document.getElementById('track-item-breakdown');breakdown.replaceChildren();
+            for(const row of item.items||[]){const line=document.createElement('p');line.textContent=`${categoryConfig[row.category]?.label||row.category} · ${row.final_weight_kg??row.weight_kg} kg · ${row.final_weight_kg==null?'Estimasi':'Terverifikasi'} Rp ${new Intl.NumberFormat('id-ID').format(Math.max(0,(row.final_eco_reward??row.eco_reward)-(row.final_processing_fee??row.processing_fee)))}`;breakdown.append(line);}
             document.getElementById('track-disp-reward').textContent = [
                 pickupRewardLabel(item), pickupPaymentLabel(item), item.payment_reference ? 'Ref. ' + item.payment_reference : ''
             ].filter(Boolean).join(' • ');
 
             // Populate Timeline
             const timelineList = document.getElementById('track-timeline-list');
-            timelineList.innerHTML = renderStatusStepper(item.status);
+            timelineList.innerHTML = '<h3 class="ref-detail-history-title">Perkembangan permintaan</h3>'; 
 
             if (history.length === 0) {
                 timelineList.innerHTML += '<p style="color:var(--text-secondary);">Belum ada log pelacakan.</p>';
@@ -1031,7 +998,7 @@ function searchTracking() {
             `;
 
             container.style.display = 'block';
-            trackingFeedback.textContent='Detail penjemputan siap.';
+            trackingFeedback.textContent='';
         } else {
             trackingFeedback.textContent='Detail belum tersedia. Periksa nomor tracking dan akses akun Anda.';
         }

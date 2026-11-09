@@ -98,6 +98,7 @@ type FacilityAssignment struct {
 }
 
 type FacilityHandlingSummary struct {
+	AffectedCount         int                 `json:"affected_count"`
 	ReportID              int                 `json:"report_id"`
 	TrackingNumber        string              `json:"tracking_number"`
 	Title                 string              `json:"title"`

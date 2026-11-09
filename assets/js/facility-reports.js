@@ -1,7 +1,8 @@
-import {mountReportForm} from './facility-report-form.js?v=user-estimate-1';
-import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=admin-refresh-1';
+import {mountCommunityReports} from './facility-community.js?v=community-detail-15';
+import {mountReportForm} from './facility-report-form.js?v=home-location-14';
+import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=community-13';
 import {base, request} from './facility-api.js?v=phase5b';
-import {mountPublicHandling} from './facility-handling.js?v=admin-refresh-1';
+import {mountPublicHandling} from './facility-handling.js?v=community-13';
 import {mountLocationDetail} from './location-map.js?v=phase8';
 import {facilityMapStates} from './map-core.js?v=phase8';
 
@@ -33,6 +34,7 @@ function init(root) {
     const admin = root.dataset.facilityReports === 'admin';
     mountReports(root, admin);
     const userForm = admin ? null : mountReportForm(root);
+    const community=admin?null:mountCommunityReports(root);
     const $ = name => root.querySelector('#facility-' + name);
     const list = $('list');
     const listMore = $('list-more');
@@ -102,6 +104,11 @@ function init(root) {
         }
     }
 
+    function syncCommunity() {
+        if(community)community.hidden=$('form-view').hidden||Boolean(editing)||(userForm.form.dataset.wizardStep||'1')!=='1';
+    }
+    userForm?.form.addEventListener('sampira:form-step',syncCommunity);
+
     function show(view) {
         if (view !== 'list') ++listRequest;
         if (view !== 'detail') disposeLocation?.();
@@ -109,6 +116,7 @@ function init(root) {
             const section = $(panel + '-view');
             if (section) section.hidden = panel !== view;
         }
+        syncCommunity();
         if (!admin) {
             const heroLabel = root.querySelector('.ref-hero-label');
             const heroTitle = root.querySelector('#facility-heading');
@@ -312,6 +320,7 @@ function init(root) {
             userForm.reset();
             const action = revision ? 'Revisi terkirim. ' : 'Laporan tercatat. ';
             announce(action + 'Nomor laporan ' + report.tracking_number + '.');
+            window.dispatchEvent(new Event('sampira:facility-community-updated'));
             void loadDetail(report.id);
         } catch (error) {
             if (!revision && (error.status === 0 || error.status >= 500)) {
@@ -350,7 +359,7 @@ function init(root) {
             editing = selected;
             ++detailRequest;
             userForm.reset(editing);
-            announce('');
+            announce('Konfirmasi terdampak warga akan direset setelah revisi berhasil dikirim.');
             show('form');
         });
         $('form-back').addEventListener('click', () => {
@@ -365,7 +374,7 @@ function init(root) {
                     postAttempt = null;
                     userForm.reset();
                 }
-                showList();
+                document.querySelector('.sidebar-item[data-target="beranda"]').click();
             }
         });
         $('retry-post').addEventListener('click', () => {
@@ -474,11 +483,13 @@ function init(root) {
             else if (event.detail.view === 'detail') openFromList(event.detail.id);
             else if (event.detail.view === 'list' && $('list-view').hidden) showList();
         });
-        document.querySelector('[data-target="laporan-fasilitas"]').addEventListener('click', () => {
-            if (busy || sessionEnding) return;
+        window.addEventListener('sampira:user-view', event => {
+            if(event.detail!=='laporan-fasilitas'||busy||sessionEnding)return;
             if ($('form-view').hidden) $('new').click();
             else $('form-heading').focus();
+            syncCommunity();
         });
+        $('new').click();
     }
 }
 

@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
-    <link rel="stylesheet" href="/assets/css/location-map.css?v=phase8">
+    <link rel="stylesheet" href="/assets/css/location-map.css?v=home-location-14">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.6.1/dist/chart.umd.min.js" integrity="sha384-Emf5ZVIUiarAdhkgtqK+5/Z5qIvM6QoVrS+qAVtfyZVuD5lIHrac0me485+Antp0" crossorigin="anonymous"></script>
 
@@ -26,22 +26,26 @@
     <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase4b">
     <script src="/assets/js/portal-session.js?v=phase5b"></script>
     <link rel="stylesheet" href="/assets/css/facility-handling.css?v=phase4b">
-    <script type="module" src="/assets/js/facility-reports.js?v=user-education-2"></script>
+    <script type="module" src="/assets/js/facility-reports.js?v=facility-back-17"></script>
     <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/sampira.css?v=phase6b-live">
     <link rel="stylesheet" href="/assets/css/user-workspace.css?v=phase8">
     <link rel="stylesheet" href="/assets/css/user-theme.css?v=reward-summary-clean">
-    <script type="module" src="/assets/js/education.js?v=user-education-2"></script>
+    <script type="module" src="/assets/js/education.js?v=education-unified-19"></script>
     <script type="module" src="/assets/js/sampira-navigation.js?v=phase6b3"></script>
     <script type="module" src="/assets/js/user-activity.js?v=home-header-fresh"></script>
 <link rel="stylesheet" href="/assets/css/portal-design.css?v=roles-1">
 <link rel="stylesheet" href="/assets/css/contributions.css?v=phase9b">
 <script type="module" src="/assets/js/contributions.js?v=phase9b"></script>
-<link rel="stylesheet" href="/assets/css/user-reference.css?v=user-education-2">
+<link rel="stylesheet" href="/assets/css/user-reference.css?v=education-unified-19">
+<link rel="stylesheet" href="/assets/css/education-photos.css?v=maps-reader-9">
 <script defer src="/assets/vendor/lucide/lucide.min.js"></script>
-<script defer src="/assets/js/user-reference.js?v=reference-1"></script>
-<script type="module" src="/assets/js/user-form-steps.js?v=user-education-2"></script>
+<script defer src="/assets/js/user-reference.js?v=maps-reader-9-education-cms-6"></script>
+<script type="module" src="/assets/js/user-form-steps.js?v=facility-controls-18"></script>
 <script type="module" src="/assets/js/user-camera.js?v=camera-1"></script>
+<link rel="stylesheet" href="/assets/css/facility-community.css?v=community-detail-15">
+<link rel="stylesheet" href="/assets/css/city-datasets.css?v=education-unified-19">
+<script type="module" src="/assets/js/city-datasets.js?v=education-unified-19"></script>
 </head>
 
 <body class="sp-portal portal-page role-warrior user-reference">
@@ -242,7 +246,7 @@
 
                 <form id="pickup-request-form"><nav class="ref-form-navigation" aria-label="Bagian formulir penjemputan"><a href="#pickup-data"><span>1</span>Kategori &amp; Detail</a><a href="#pickup-map"><span>2</span>Lokasi Penjemputan</a><a href="#pickup-contact"><span>3</span>Kontak &amp; Reward</a></nav><section class="sp-pickup-panel ref-data-panel" id="pickup-data"><h3><i class="far fa-clipboard" aria-hidden="true"></i> Data Permintaan</h3><fieldset class="sp-pickup-categories">
                             <legend><i class="fas fa-trash-can" aria-hidden="true"></i> Kategori Sampah <span aria-hidden="true">*</span></legend>
-                            <p>Pilih satu kategori sampah yang akan dijemput.</p>
+                            <p>Pilih satu atau beberapa kategori sampah yang akan dijemput.</p>
                             <div class="category-helper-grid" id="category-helper-grid"></div>
                             <select id="form-waste-category" aria-label="Kategori terpilih" hidden></select>
                             <p id="category-handling-note"></p>
@@ -258,7 +262,7 @@
 
                     </div><div>
                         <div class="sp-pickup-field">
-                            <label for="form-waste-weight">Estimasi berat <span aria-hidden="true">*</span></label>
+                            <label for="form-waste-weight">Total estimasi berat <span aria-hidden="true">*</span></label>
                             <div class="sp-pickup-weight">
                                 <input type="number" id="form-waste-weight" value="1.0" min="0.01" max="99999.99" step="0.01" required>
                                 <span>kg</span>
@@ -286,7 +290,7 @@
                         <h3><i class="fas fa-location-dot" aria-hidden="true"></i> Detail Penjemputan</h3>
                         <div class="sp-pickup-field">
                             <label for="form-pickup-address">Alamat lengkap di wilayah Bandung <span aria-hidden="true">*</span></label>
-                            <textarea id="form-pickup-address" rows="2" required placeholder="Tulis alamat lengkap beserta kecamatan atau kelurahan."></textarea>
+                            <textarea id="form-pickup-address" rows="2" maxlength="1000" required placeholder="Alamat terisi otomatis setelah memilih titik di peta. Tambahkan patokan bila perlu."></textarea>
                         </div>
                         <div class="sp-pickup-contact">
                             <div class="sp-pickup-field">
@@ -318,11 +322,12 @@
             <!-- TAB: LACAK PICKUP (TIMELINE) -->
             <div id="lacak-pickup" class="tab-pane">
                 <div class="panel-card u-6d93f75cb7" data-inline-style="background: white; border-radius: 24px; padding: 40px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-soft);">
-                    <h2 data-inline-style="font-weight: 800; font-size: 1.4rem; color: var(--brand-dark); margin-bottom: 8px;" class="u-f5cfbfebcd">Pelacakan Penjemputan</h2>
-                    <p data-inline-style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 32px;" class="u-3643694671">Pantau perjalanan sampah Anda dari penjemputan hingga verifikasi daur ulang akhir.</p>
+                    <h2 data-inline-style="font-weight: 800; font-size: 1.4rem; color: var(--brand-dark); margin-bottom: 8px;" class="u-f5cfbfebcd">Detail Penjemputan</h2>
+                    <p data-inline-style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 32px;" class="u-3643694671">Informasi permintaan, lokasi, dan perkembangan penjemputan Anda.</p>
 
-                    <!-- Search Box Lacak -->
-                    <form class="tracking-search" id="tracking-search-form">
+                    <button type="button" class="hub-tab ref-detail-back" data-target="riwayat-payout"><span aria-hidden="true">←</span> Kembali ke riwayat</button>
+                    <!-- Retained as an internal input for existing detail navigation. -->
+                    <form class="tracking-search" id="tracking-search-form" hidden>
                         <div class="input-wrapper u-6253876a64" data-inline-style="flex:1;">
                             <i class="fas fa-barcode" aria-hidden="true"></i>
                             <input type="text" id="track-number-search" aria-label="Nomor pelacakan" placeholder="Masukkan Nomor Tracking (ECR-XXXXXXXXX)">
@@ -333,9 +338,9 @@
 
                     <!-- Timeline Hasil Lacak -->
                     <div id="tracking-timeline-container" data-inline-style="display: none; animation: fadeIn 0.4s ease;" class="u-316af56250">
-                        <div data-inline-style="display:flex; justify-content:space-between; align-items:flex-start; background: var(--gray-50); border: 1px solid var(--gray-200); padding: 24px; border-radius: 16px; margin-bottom: 32px; flex-wrap:wrap; gap:16px;" class="u-8b9476c4c7">
+                        <div data-inline-style="display:flex; justify-content:space-between; align-items:flex-start; background: var(--gray-50); border: 1px solid var(--gray-200); padding: 24px; border-radius: 16px; margin-bottom: 32px; flex-wrap:wrap; gap:16px;" class="u-8b9476c4c7 ref-pickup-summary">
                             <div>
-                                <span data-inline-style="font-size:0.8rem; font-weight:800; color:var(--text-secondary); text-transform:uppercase;" class="u-ce0598a230">No. Tracking</span>
+                                <span data-inline-style="font-size:0.8rem; font-weight:800; color:var(--text-secondary); text-transform:uppercase;" class="u-ce0598a230">ID Penjemputan</span>
                                 <h4 data-inline-style="font-size:1.3rem; font-weight:900; color:var(--brand-dark); margin:4px 0;" id="track-disp-number" class="u-9a8156b3a4">ECR-XXXX</h4>
                             </div>
                             <div>
@@ -346,7 +351,7 @@
                                 <span data-inline-style="font-size:0.8rem; font-weight:800; color:var(--text-secondary); text-transform:uppercase;" class="u-ce0598a230">Kategori & Berat</span>
                                 <strong id="track-disp-title" hidden></strong>
                                 <h4 data-inline-style="font-size:1.1rem; font-weight:700; color:var(--brand-dark); margin:4px 0;" id="track-disp-detail" class="u-c4b4cf7b4f">-</h4>
-                                <p id="track-disp-reward"></p>
+                                <p id="track-disp-reward"></p><div id="track-item-breakdown"></div>
                             </div>
                         </div>
 
@@ -382,7 +387,7 @@
                         <button class="sp-button sp-button--quiet" type="button" id="pickup-history-next" aria-label="Halaman berikutnya" disabled><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
                     </nav>
                 </div>
-                <button type="button" class="sp-button sp-button--quiet hub-tab sp-history-track" data-target="lacak-pickup">Lacak dengan nomor tracking</button>
+                <button type="button" class="hub-tab sp-history-track" data-target="lacak-pickup" hidden>Detail Penjemputan</button>
             </div>
 
             <section id="poin-voucher" class="tab-pane p9" data-p9-user></section>
@@ -428,6 +433,7 @@
 
             <section class="tab-pane" id="edukasi" data-portal-education aria-labelledby="sp-education-title">
                 <header class="sp-history-intro"><h2 id="sp-education-title">Pusat Edukasi</h2><p>Temukan informasi, tips, dan panduan pengelolaan sampah serta lingkungan.</p></header>
+                <div data-city-summary></div>
                 <section class="sp-education-feature" aria-label="Artikel terbaru" hidden></section>
                 <section class="sp-education-categories" aria-labelledby="sp-education-category-title">
                     <h3 id="sp-education-category-title">Jelajahi Berdasarkan Kategori</h3>
@@ -466,9 +472,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="assets/js/portal-announcements.js?v=phase1-final"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
-    <script src="assets/js/user-map.js?v=user-education-2"></script>
+    <script src="assets/js/user-map.js?v=home-location-14-user-education-2"></script>
     <script src="assets/js/waste-categories.js?v=20261029-categories2"></script>
-    <script src="assets/js/dashboard.js?v=user-education-2"></script>
+    <script src="assets/js/dashboard.js?v=home-location-14"></script>
     <nav class="sp-user-mobile" aria-label="Navigasi pengguna">
         <button type="button" data-sp-user-tab="beranda"><i class="fas fa-house" aria-hidden="true"></i>Beranda</button>
         <button type="button" data-sp-user-tab="setor-sampah"><i class="fas fa-recycle" aria-hidden="true"></i>Setor</button>

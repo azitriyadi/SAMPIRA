@@ -1,3 +1,4 @@
+import {mountPointAddress} from './location-address.js?v=home-location-14';
 import {locationPoint, navigationURL, roadRoute, routingConfig} from './location-routing.js?v=phase5b';
 import {createMap, streetTiles, statusIcon, mapStatus} from './map-core.js?v=phase8';
 
@@ -252,7 +253,7 @@ function locate(status, current, accept, {compact = false} = {}) {
     }, {enableHighAccuracy: true, timeout: 10000, maximumAge: 0});
 }
 
-export function mountLocationPicker(host, {title, prefix, digits, saved, includeSaved = false, compact = false}) {
+export function mountLocationPicker(host, {title, prefix, digits, saved, includeSaved = false, compact = false, addressField}) {
     const root = panel(host, title);
     if (compact) {
         root.classList.add('location-picker-compact');
@@ -281,6 +282,7 @@ export function mountLocationPicker(host, {title, prefix, digits, saved, include
             choice = 'confirmed';
             map.marker('T', point, true);
             status.textContent = 'Titik dikonfirmasi.';
+            pointAddress.select(point);
         }, true),
         action('Hapus titik', () => {
             ++gpsSequence;
@@ -291,6 +293,7 @@ export function mountLocationPicker(host, {title, prefix, digits, saved, include
         })
     );
     root.append(actions);
+    const pointAddress=mountPointAddress(root,addressField);
 
     function pick(point) {
         if (!point) return;
@@ -299,6 +302,7 @@ export function mountLocationPicker(host, {title, prefix, digits, saved, include
         writePoint(inputs, point, digits);
         map.marker('T', enteredPoint(inputs, digits), true);
         status.textContent = compact ? '' : 'Titik dipilih. Periksa lalu konfirmasi.';
+        if(compact)pointAddress.select(enteredPoint(inputs,digits));
     }
 
     for (const input of inputs) input.addEventListener('input', () => {
@@ -319,6 +323,7 @@ export function mountLocationPicker(host, {title, prefix, digits, saved, include
     }
 
     function reset(report) {
+        pointAddress.cancel();
         ++gpsSequence;
         choice = 'untouched';
         const point = locationPoint(report?.latitude, report?.longitude) ?? (compact ? bandung : null);
@@ -348,6 +353,7 @@ export function mountLocationPicker(host, {title, prefix, digits, saved, include
     function dispose() {
         activePanels.delete(dispose);
         ++gpsSequence;
+        pointAddress.dispose();
         map.destroy();
         root.remove();
     }

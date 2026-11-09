@@ -108,3 +108,7 @@
 @media (prefers-reduced-motion:reduce) {
     .location-panel .location-action { transition:none; }
 }
+
+.location-address-status:empty { display:none; }
+.location-address-status { padding:12px 14px; margin:14px 0 0; font-size:12px; line-height:1.7; color:#174c3c; background:#edf5ef; border-radius:10px; }
+.location-address-status[data-address-state=error] { background:#fff6e6; color:#8b5a19; }

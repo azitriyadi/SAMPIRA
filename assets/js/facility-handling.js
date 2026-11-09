@@ -1,6 +1,6 @@
 import {base, request} from './facility-api.js?v=phase5b';
-import {adminTable, categories, element, options} from './facility-report-ui.js?v=admin-6b4';
-import {button, handlingCard, handlingEvent, handlingStatuses, handlingSummary} from './facility-handling-ui.js?v=collector-sections-1';
+import {adminTable, categories, element, options} from './facility-report-ui.js?v=community-13';
+import {button, handlingCard, handlingEvent, handlingStatuses, handlingSummary} from './facility-handling-ui.js?v=community-13';
 import {handlingActions, openHandlingForm} from './facility-handling-form.js?v=handling-photo-fix';
 import {mountLocationDetail} from './location-map.js?v=phase8';
 

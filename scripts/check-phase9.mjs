@@ -136,8 +136,9 @@ await expect('/api/administrator/accounts/'+administrator.id,400,{actor:administ
 await expect('/api/administrator/accounts/'+account.id,200,{actor:administrator,method:'PATCH',body:change});
 await expect('/api/analytics',401,{actor:account});
 await expect('/api/administrator/accounts/'+account.id,409,{actor:administrator,method:'PATCH',body:change});
-await expect('/api/administrator/accounts/'+account.id,200,{actor:administrator,method:'PATCH',body:{...change,role:'admin',is_active:true,expected_active:false}});
-const roleChanged=await login(sql('SELECT email FROM users WHERE id='+account.id));assert.equal(roleChanged.role,'admin');
+await expect('/api/administrator/accounts/'+account.id,403,{actor:administrator,method:'PATCH',body:{...change,role:'admin',is_active:true,expected_active:false}});
+await expect('/api/administrator/accounts/'+account.id,200,{actor:administrator,method:'PATCH',body:{...change,is_active:true,expected_active:false}});
+const roleChanged=await login(sql('SELECT email FROM users WHERE id='+account.id));assert.equal(roleChanged.role,'user');
 await expect('/api/user/points',403,{actor:roleChanged});
 assert((await expect('/api/administrator/contribution-audit',200,{actor:administrator})).some(item=>item.action==='account_change'));
 // Browser mutation protection applies to new endpoints too.

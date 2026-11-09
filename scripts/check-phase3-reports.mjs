@@ -202,7 +202,7 @@ const lastHistory = (await expect(history + '?limit=2&before_version=3', 200, {u
 assert.equal(lastHistory.next_before_version, null);
 assert.deepEqual([...firstHistory.items, ...lastHistory.items].map(({version, actor_id, from_status, to_status, note}) =>
     [version, actor_id, from_status, to_status, note]), [
-    [4, admin.id, 'pending', 'approved', null], [3, user.id, 'revision_required', 'pending', null],
+    [4, admin.id, 'pending', 'approved', null], [3, user.id, 'revision_required', 'pending', 'Laporan direvisi; konfirmasi terdampak sebelumnya direset.'],
     [2, admin.id, 'pending', 'revision_required', reason], [1, user.id, null, 'pending', null]
 ]);
 const replay = (await expect(reports, 200, creation(form(), key))).body.data;

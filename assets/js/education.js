@@ -1,5 +1,8 @@
+import {educationArticleBody,educationPhotos,educationPhotoImage as photoImage,educationPhotoFigure as photoFigure} from './education-photos.js?v=maps-reader-9';
 const base = "/api/ecorecycle/education";
 const publicPage = "/assets/education.html";
+// Version the document as well as its assets: browsers cache each ?page=N URL separately.
+function publicURL(query){const params=new URLSearchParams(query);params.set('ui','education-unified-19');return publicPage+'?'+params;}
 const statuses = { draft: "Draf", published: "Terbit", archived: "Arsip" };
 const date = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" });
 
@@ -13,7 +16,7 @@ function node(tag, content, className) {
 async function request(path, method = "GET", body) {
     const response = await fetch(base + path, {
         credentials: "same-origin", method,
-        ...(body && { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+        ...(body instanceof FormData?{body}:body&&{ headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
     });
     const result = await response.json().catch(() => null);
     if (!response.ok || !result?.data) {
@@ -27,7 +30,7 @@ async function request(path, method = "GET", body) {
 }
 
 function articleLink(item) {
-    return publicPage + "?" + new URLSearchParams({ artikel: item.slug });
+    return publicURL({artikel:item.slug});
 }
 
 function options(select, categories, label) {
@@ -38,6 +41,7 @@ function options(select, categories, label) {
 
 function card(item, categories) {
     const article = node("article", "", "sp-article-card");
+    article.append(photoFigure(educationPhotos(item)[0]));
     const category = categories.find(entry => entry.key === item.category)?.label || item.category;
     const label = node("span", category, "sp-kicker");
     const heading = node("h3");
@@ -62,7 +66,6 @@ if (portalEducation) {
     const categoryIcons = {"pemilahan-sampah":"fa-boxes-stacked", "pengurangan-sampah":"fa-leaf",
         "daur-ulang":"fa-recycle", pengomposan:"fa-seedling", "bank-sampah":"fa-box",
         "sampah-elektronik":"fa-plug", "panduan-sampira":"fa-book-open"};
-    const categoryArtwork = {pengomposan:"waste-organic.svg", "sampah-elektronik":"waste-electronics.svg"};
     const form = portalEducation.querySelector("form");
     const message = portalEducation.querySelector("[role=status], output[aria-live]");
     const list = portalEducation.querySelector(".sp-portal-articles");
@@ -74,13 +77,6 @@ if (portalEducation) {
     let page = 1;
     let sequence = 0;
     let filters = {};
-
-    function artwork(item) {
-        const image = node("img");
-        image.src = "/assets/img/" + (categoryArtwork[item.category] || "waste-inorganic.svg");
-        image.alt = "";
-        return image;
-    }
 
     function renderCategories(categories) {
         if (!categoryGrid.children.length) {
@@ -99,17 +95,6 @@ if (portalEducation) {
         }
     }
 
-    function renderFeature(item) {
-        feature.hidden = !item;
-        if (!item) return;
-        const copy = node("div", "", "sp-education-feature-copy");
-        const link = node("a", "Baca Selengkapnya →", "sp-button sp-button--quiet");
-        link.href = articleLink(item);
-        copy.append(node("span", "Artikel Terbaru", "sp-education-feature-label"),
-            node("h3", item.title), node("p", item.summary), link);
-        feature.replaceChildren(copy, artwork(item));
-    }
-
     async function load() {
         const run = ++sequence;
         prev.disabled = next.disabled = true;
@@ -121,18 +106,14 @@ if (portalEducation) {
             const data = await request("/articles?" + query);
             if (run !== sequence) return;
             renderCategories(data.categories);
-            if (page === 1 && !filters.q && !filters.category) renderFeature(data.items[0]);
             list.replaceChildren(...data.items.map(item => {
                 const article = card(item, data.categories);
-                const cover = artwork(item);
-                cover.className = "sp-education-cover";
-                cover.loading = "lazy";
-                article.prepend(cover);
                 return article;
             }));
             const start = (page - 1) * 6 + 1;
             message.textContent = data.items.length ? `Menampilkan ${start}–${start + data.items.length - 1} artikel` : "Tidak ada artikel untuk pilihan ini.";
             pageLabel.textContent = page;
+            pageLabel.classList.add('sp-button','education-page-current');
             prev.disabled = page <= 1;
             next.disabled = data.next_page === null;
         } catch (error) {
@@ -173,14 +154,23 @@ if (reader) {
     const previous = reader.querySelector("#education-prev");
     const params = new URLSearchParams(location.search);
     const slug = params.get("artikel");
+    const back=reader.querySelector('#education-back');
+    reader.dataset.view=slug?'article':'catalog';
+    if(back&&slug){back.href=publicURL();back.setAttribute('aria-label','Kembali ke pusat edukasi');back.title='Kembali ke pusat edukasi';}
 
     if (slug) {
         filter.hidden = true;
+        reader.querySelector('.sp-pager').hidden=true;
         request("/articles/" + encodeURIComponent(slug)).then(item => {
             const article = node("article", "", "sp-reader-article");
-            article.append(node("h1", item.title), node("p", item.summary, "sp-deck"));
-            if (item.published_at) article.append(node("time", date.format(new Date(item.published_at))));
-            article.append(node("div", item.body, "sp-article-body"));
+            const heading=node('header','','education-reading-header');
+            heading.append(node('p','Pusat edukasi SAMPIRA','sp-kicker'),node("h1", item.title), node("p", item.summary, "sp-deck"));
+            if (item.published_at) heading.append(node("time", date.format(new Date(item.published_at))));
+            article.append(heading);
+            const photos=educationPhotos(item);
+            const gallery=node('div','','education-reading-photos');gallery.append(photoFigure(photos[0],true));article.append(gallery);
+            article.append(educationArticleBody(item.body));
+            if(photos[1]){const supporting=node('div','','education-reading-photos education-reading-support');supporting.append(photoFigure(photos[1],true));article.append(supporting);}
             const sources = node("ul");
             for (const value of item.sources || []) {
                 let url;
@@ -193,7 +183,7 @@ if (reader) {
                 source.append(link);
                 sources.append(source);
             }
-            if (sources.childElementCount) article.append(node("h2", "Sumber"), sources);
+            if (sources.childElementCount){const references=node('section','','education-reading-sources');references.append(node("h2", "Sumber"),sources);article.append(references);}
             results.classList.remove("sp-card-grid");
             results.replaceChildren(article);
             document.title = item.title + " | SAMPIRA";
@@ -211,13 +201,25 @@ if (reader) {
             filter.elements.category.value = filters.get("category") || "";
             status.textContent = data.items.length ? "Halaman " + data.page : "Tidak ada artikel untuk pilihan ini.";
             results.replaceChildren(...data.items.map(item => card(item, data.categories)));
-            for (const [link, page] of [[previous, data.page > 1 ? data.page - 1 : null], [next, data.next_page]]) {
-                if (!page) continue;
-                filters.set("page", String(page));
+            const pageURL=page=>{
                 const query = new URLSearchParams(filters);
+                query.set('page',String(page));
                 query.delete("limit");
-                link.href = publicPage + "?" + query;
-                link.hidden = false;
+                return publicURL(query);
+            };
+            for (const [link, page] of [[previous, data.page > 1 ? data.page - 1 : null], [next, data.next_page]]) {
+                if(!page)continue;
+                link.href=pageURL(page);link.removeAttribute('aria-disabled');link.removeAttribute('tabindex');
+            }
+            const pages=reader.querySelector('#education-pages');
+            if(pages){
+                const known=[...new Set([1,Math.max(1,data.page-1),data.page,...(data.next_page?[data.next_page]:[])])].sort((a,b)=>a-b);
+                pages.replaceChildren();let last=0;
+                for(const page of known){
+                    if(last&&page>last+1){const gap=node('span','…','education-page-gap');gap.setAttribute('aria-hidden','true');pages.append(gap);}
+                    const link=node('a',String(page),'education-page');link.href=pageURL(page);link.setAttribute('aria-label','Halaman '+page);
+                    if(page===data.page)link.setAttribute('aria-current','page');pages.append(link);last=page;
+                }
             }
         }).catch(error => {
             status.textContent = error.message;
@@ -227,7 +229,7 @@ if (reader) {
             event.preventDefault();
             const query = new URLSearchParams();
             for (const [key, value] of new FormData(filter)) if (value.trim()) query.set(key, value.trim());
-            location.assign(publicPage + (query.size ? "?" + query : ""));
+            location.assign(publicURL(query));
         });
     }
 }
@@ -250,6 +252,51 @@ if (cms) {
     let page = 1;
     let revision = 0;
     let detailRevision = 0;
+    const photoEditor=editor.querySelector('#education-photo-editor');
+    let photoSupported=false,photosChanged=false,photoObjectURLs=[];
+    const photoSlots=[];
+    function clearPhotoURLs(){for(const url of photoObjectURLs)URL.revokeObjectURL(url);photoObjectURLs=[];}
+    if(photoEditor){
+        for(let i=0;i<1;i++){
+            const slot=node('div','','education-photo-slot');
+            const modes=node('div','','education-photo-modes');slot.append(modes);
+            const values={};
+            const labels={};
+            for(const[name,label,type]of [['url','Tautan foto internet','url'],['file','Pilih foto','file']]){
+                const input=node('input');input.type=type;input.name='photo_'+i+'_'+name;input.id='education-photo-'+i+'-'+name;input.disabled=true;
+                if(type==='file')input.accept='image/jpeg,image/png,image/webp';else {input.maxLength=2048;input.placeholder='https://.../foto.jpg';}
+                const caption=node('label',label);caption.htmlFor=input.id;slot.append(caption,input);values[name]=input;labels[name]=caption;
+            }
+            const image=node('img');image.alt='Pratinjau foto artikel';image.hidden=true;slot.append(image);
+            const remove=node('button','Hapus foto','sp-button sp-button--quiet');remove.type='button';remove.disabled=true;slot.append(remove);
+            const entry={...values,image,remove,keep:false,modeButtons:[],alt:'',credit:''};photoSlots.push(entry);
+            entry.setMode=mode=>{for(const name of ['file','url']){entry[name].hidden=labels[name].hidden=name!==mode;}for(const b of entry.modeButtons)b.setAttribute('aria-pressed',String(b.dataset.mode===mode));};
+            for(const [mode,label]of [['file','Upload foto'],['url','Tautan internet']]){const b=node('button',label,'sp-button sp-button--quiet');b.type='button';b.dataset.mode=mode;b.disabled=true;b.addEventListener('click',()=>{entry.setMode(mode);const other=mode==='file'?entry.url:entry.file;if(other.value){other.value='';entry.keep=false;entry.alt=entry.credit='';image.hidden=true;photosChanged=true;}});entry.modeButtons.push(b);modes.append(b);}entry.setMode('file');
+            const preview=()=>{photosChanged=true;image.hidden=true;const file=entry.file.files[0];
+                if(file){if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024){photoEditor.querySelector('[data-photo-status]').textContent='Pilih JPG, PNG atau WEBP maksimal 5 MB.';return;}const url=URL.createObjectURL(file);photoObjectURLs.push(url);image.src=url;image.hidden=false;}
+                else if(entry.url.value.trim().startsWith('https://')){image.src=entry.url.value.trim();image.hidden=false;}
+            };
+            entry.file.addEventListener('change',()=>{entry.keep=false;entry.alt=entry.credit='';entry.url.value='';preview();});entry.url.addEventListener('input',()=>{entry.keep=false;entry.alt=entry.credit='';entry.file.value='';preview();});
+            remove.addEventListener('click',()=>{entry.keep=false;entry.alt=entry.credit='';for(const key of ['url','file'])entry[key].value='';image.hidden=true;image.removeAttribute('src');photosChanged=true;});
+            photoEditor.querySelector('[data-photo-fields]').append(slot);
+        }
+        request('/manage/photos').then(()=>{photoSupported=true;setPhotoAccess();photoEditor.querySelector('[data-photo-status]').textContent='';}).catch(()=>{photoEditor.querySelector('[data-photo-status]').textContent='Penyimpanan foto belum aktif di server ini. Teks artikel tetap dapat dikelola.';});
+    }
+    function setPhotoAccess(){for(const slot of photoSlots)for(const field of [slot.url,slot.file,slot.remove,...slot.modeButtons])field.disabled=!photoSupported||Boolean(current&&current.status!=='draft');}
+    function renderPhotos(item){clearPhotoURLs();photosChanged=false;for(let i=0;i<photoSlots.length;i++){const slot=photoSlots[i],photo=item?.photos?.[i];slot.keep=Boolean(photo?.url.startsWith('/api/ecorecycle/education/media/'));slot.url.value=photo&&!slot.keep?photo.url:'';slot.file.value='';slot.alt=photo?.alt||'';slot.credit=photo?.credit||'';slot.image.hidden=!photo;slot.setMode(photo&&!slot.keep?'url':'file');if(photo)slot.image.src=photo.url;else slot.image.removeAttribute('src');}setPhotoAccess();}
+    async function preparePhotos(){
+        if(!photoSupported)throw Error('Layanan foto belum aktif.');
+        const data=new FormData();let primary=false;
+        for(let i=0;i<photoSlots.length;i++){
+            const slot=photoSlots[i],file=slot.file.files[0],url=slot.url.value.trim();const active=Boolean(file||url||slot.keep);
+            if(i===0)primary=active;if(i===1&&active&&!primary)throw Error('Isi foto utama sebelum foto pendamping.');
+            if(url){const parsed=new URL(url);if(parsed.protocol!=='https:'||parsed.username||parsed.password)throw Error('Tautan foto harus HTTPS tanpa kredensial.');}
+            const key='photo_'+i+'_';data.set(key+'url',url);data.set(key+'alt',slot.alt||('Foto artikel: '+editor.elements.title.value.trim()));data.set(key+'credit',slot.credit);data.set(key+'keep',String(slot.keep));
+            if(file){if(file.size>5*1024*1024)throw Error('Foto maksimal 5 MB.');const {prepareHandlingPhoto}=await import('./handling-photo.js');const optimized=await prepareHandlingPhoto(file);data.set(key+'file',optimized,optimized===file?file.name:'artikel.jpg');}
+        }
+        if(primary&&current?.photos?.[1]){const old=current.photos[1],keep=old.url.startsWith('/api/ecorecycle/education/media/');data.set('photo_1_url',keep?'':old.url);data.set('photo_1_keep',String(keep));data.set('photo_1_alt',old.alt);data.set('photo_1_credit',old.credit||'');}
+        return data;
+    }
 
     async function load() {
         const run = ++revision;
@@ -290,6 +337,7 @@ if (cms) {
         current = item;
         const editable = !item || item.status === "draft";
         editor.reset();
+        renderPhotos(item);
         dialog.querySelector("h3").textContent = item ? "Artikel · " + statuses[item.status] : "Buat draf";
         for (const name of fields) {
             const field = editor.elements[name];
@@ -322,7 +370,9 @@ if (cms) {
         feedback.textContent = "Menyimpan…";
         save.disabled = true;
         try {
-            const item = await request(url, method, data);
+            const photos=photosChanged&&data.body!==undefined?await preparePhotos():null;
+            let item = await request(url, method, data);
+            if(photos){current=item;photos.set('version',String(item.version));try{item=await request(path+'/'+item.id+'/photos','POST',photos);}catch(error){error.message='Teks artikel tersimpan, tetapi foto belum tersimpan. '+error.message;throw error;}}
             render(item);
             feedback.textContent = "Tersimpan · " + statuses[item.status];
             await load();
@@ -363,6 +413,7 @@ if (cms) {
     });
     for (const action of actions) action.addEventListener("click", () => {
         if (editor.getAttribute("aria-busy") === "true") return;
+        if(photosChanged){feedback.textContent='Simpan draf beserta foto sebelum mengubah publikasi.';return;}
         confirm.hidden = false;
         confirm.querySelector("p").textContent = action.dataset.publication === "published"
             ? "Artikel akan tersedia bagi publik. Gunakan versi draf yang telah disimpan."

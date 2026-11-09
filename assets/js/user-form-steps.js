@@ -27,12 +27,14 @@ export function mountFormSteps(form, panels, navigation, footer, kind) {
         });
         previous.hidden = step === 0; next.hidden = step === 2; submit.hidden = step !== 2;
         next.textContent = step === 0 ? 'Lanjut ke Lokasi' : kind === 'pickup' ? 'Lanjut ke Kontak & Reward' : 'Lanjut ke Alamat';
-        if (exit) exit.hidden = step !== 0;
+        if (exit) exit.hidden = kind === 'facility' || step !== 0;
+        form.dispatchEvent(new CustomEvent('sampira:form-step',{bubbles:true,detail:{step:step+1}}));
         if (scroll) navigation.scrollIntoView({block:'start',behavior:'auto'});
     }
     function validate(index) {
         const panel = panels[index];
         if (index === 1) {
+            if(panel.querySelector('[data-address-state=loading]')){status.textContent='Tunggu alamat otomatis selesai dimuat.';return false;}
             const prefix = kind === 'pickup' ? 'pickup' : 'facility';
             const lat = document.getElementById(prefix+'-latitude'), lon = document.getElementById(prefix+'-longitude');
             const waiting = panel.querySelector('.location-status')?.textContent.startsWith('Menunggu lokasi');

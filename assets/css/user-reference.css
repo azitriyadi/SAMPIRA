@@ -100,6 +100,11 @@ body.sp-portal.user-reference .sp-welcome-banner { background:#eef6f2; min-heigh
 body.sp-portal.user-reference .sp-welcome-banner h2 { font-size:32px; max-width:17ch; }
 body.sp-portal.user-reference .sp-welcome-banner p { font-size:13px; }
 body.sp-portal.user-reference .sp-hero-visual { border-radius:12px; }
+body.sp-portal.user-reference #beranda .sp-welcome-banner { background:#edf5eb; }
+body.sp-portal.user-reference #beranda .sp-hero-visual { margin:0; border-radius:0; }
+body.sp-portal.user-reference #beranda .sp-hero-visual::after { content:''; position:absolute; inset:0; pointer-events:none; background:linear-gradient(90deg,#edf5eb 0%,#edf5eb99 16%,#edf5eb00 52%),linear-gradient(0deg,#103d2f26,transparent 55%); }
+body.sp-portal.user-reference #beranda .sp-hero-visual figcaption { z-index:1; }
+@media(max-width:767px) { body.sp-portal.user-reference #beranda .sp-hero-visual::after { background:linear-gradient(180deg,#edf5eb 0%,#edf5eb99 12%,#edf5eb00 50%); } }
 body.sp-portal.user-reference .sp-hero-visual figcaption { font-size:11px; padding:12px; }
 body.sp-portal.user-reference .sp-summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; border:0; background:none; padding:0; margin:24px 0; }
 body.sp-portal.user-reference .sp-summary-card { padding:20px; display:flex; flex-direction:column; align-items:flex-start; gap:12px; min-width:0; border:1px solid #e2e8f0; border-radius:16px; background:#fff; box-shadow:0 1px 2px #00000004; }
@@ -255,7 +260,10 @@ body.sp-portal.user-reference .wizard-status:empty { display:none; }
 body.sp-portal.user-reference .wizard-status { color:#b91c1c; margin:12px 0; font-size:12px; }
 body.sp-portal.user-reference .wizard-step:not([hidden]) { animation:user-step-enter .18s ease-out; }
 body.sp-portal.user-reference .ref-contact-grid.wizard-step { display:grid; }
-body.sp-portal.user-reference #facility-form .sp-report-controls { justify-content:space-between; margin-top:24px; }
+body.sp-portal.user-reference #facility-form .sp-report-controls { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:20px 0 0; padding:0; border:0; background:none; }
+body.sp-portal.user-reference #facility-form .sp-report-controls :is(.wizard-next,[type=submit]) { margin-left:auto; }
+body.sp-portal.user-reference #facility-form-view>.facility-actions:not(:has(button:not([hidden]))) { display:none; }
+@media(max-width:650px) { body.sp-portal.user-reference #facility-form .sp-report-controls { flex-wrap:nowrap; } body.sp-portal.user-reference #facility-form .sp-report-controls>button { min-width:0; padding:13px 16px; } }
 body.sp-portal.user-reference #pickup-map>p,body.sp-portal.user-reference #pickup-location-search,body.sp-portal.user-reference #facility-location-search { display:none; }
 body.sp-portal.user-reference .location-picker-compact { padding:0; border:0; }
 body.sp-portal.user-reference .location-picker-compact .location-map { height:400px; margin:0; }
@@ -355,3 +363,40 @@ body.sp-portal.user-reference #edukasi .sp-history-pagination { padding-top:20px
  body.sp-portal.user-reference #edukasi .sp-education-list-heading form label { flex:1; min-width:0; }
  body.sp-portal.user-reference #edukasi .sp-education-list-heading input { width:100%; }
 }
+
+/* Pickup detail: a focused reading view, opened from the request history. */
+body.sp-portal.user-reference #lacak-pickup [hidden],body.sp-portal.user-reference .sp-history-track[hidden] { display:none!important; }
+body.sp-portal.user-reference #lacak-pickup>.panel-card { padding:0; border:0; background:transparent; box-shadow:none; }
+body.sp-portal.user-reference #lacak-pickup>.panel-card>h2 { font-size:clamp(25px,3vw,34px); color:#103d2f; margin:0 0 10px; }
+body.sp-portal.user-reference #lacak-pickup>.panel-card>p { font-size:14px; color:#61766a; margin-bottom:20px; }
+body.sp-portal.user-reference .ref-detail-back { display:inline-flex; align-items:center; gap:10px; padding:10px 15px; border:1px solid #d4e1d8; border-radius:10px; background:#fff; color:#174c3c; font:600 12px Inter,sans-serif; margin-bottom:24px; cursor:pointer; }
+body.sp-portal.user-reference #tracking-feedback:empty { display:none; }
+body.sp-portal.user-reference #lacak-pickup .ref-pickup-summary { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:24px; padding:26px; border:1px solid #d4e1d8; border-radius:18px; background:#fff; margin-bottom:24px; }
+body.sp-portal.user-reference #lacak-pickup .ref-pickup-summary>div { min-width:0; }
+body.sp-portal.user-reference #lacak-pickup .ref-pickup-summary>div:last-child { grid-column:1/-1; border-top:1px solid #e3ece2; padding-top:20px; }
+body.sp-portal.user-reference #lacak-pickup .ref-pickup-summary>div>span { display:block; font-size:10px; letter-spacing:.06em; font-weight:600; color:#61766a; margin-bottom:8px; }
+body.sp-portal.user-reference #track-disp-number { font-size:14px; font-weight:600; overflow-wrap:anywhere; line-height:1.6; color:#174c3c; }
+body.sp-portal.user-reference #track-disp-title { display:block; font-size:19px; margin:0 0 9px; color:#103d2f; }
+body.sp-portal.user-reference #track-disp-detail { font-size:14px; font-weight:500; line-height:1.7; }
+body.sp-portal.user-reference #track-disp-reward { font-size:12px; color:#61766a; line-height:1.8; margin-top:10px; }
+body.sp-portal.user-reference #lacak-pickup .sp-tracking-grid { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:24px; padding:0; background:none; align-items:start; }
+body.sp-portal.user-reference #user-tracking-location,body.sp-portal.user-reference #track-timeline-list { min-width:0; padding:24px; border:1px solid #d4e1d8; border-radius:18px; background:#fff; margin:0; }
+body.sp-portal.user-reference #user-tracking-location .sp-location-detail { margin:0; padding:0; background:none; border:0; }
+body.sp-portal.user-reference #user-tracking-location h3,body.sp-portal.user-reference .ref-detail-history-title { font-size:18px; color:#103d2f; margin:0 0 18px; }
+body.sp-portal.user-reference #user-tracking-location p { font-size:12px; line-height:1.8; color:#61766a; }
+body.sp-portal.user-reference #user-tracking-location .sp-map-canvas { height:300px; min-height:260px; border-radius:12px; margin-top:16px; }
+body.sp-portal.user-reference #track-timeline-list { display:flex; flex-direction:column; gap:22px; }
+body.sp-portal.user-reference #track-timeline-list .timeline-node { padding:0 0 20px 22px; border-left:2px solid #dce9dd; margin-left:6px; }
+body.sp-portal.user-reference #track-timeline-list .timeline-node-dot { width:12px; height:12px; left:-7px; top:4px; border:3px solid #e5f2e6; background:#277553; box-shadow:none; }
+body.sp-portal.user-reference #track-timeline-list .timeline-node-time { font-size:11px; color:#61766a; margin-bottom:8px; }
+body.sp-portal.user-reference #track-timeline-list .timeline-node-title { font-size:15px; line-height:1.5; margin-bottom:7px; color:#174c3c; }
+body.sp-portal.user-reference #track-timeline-list .timeline-node-desc { font-size:12px; line-height:1.8; color:#61766a; overflow-wrap:anywhere; }
+body.sp-portal.user-reference #track-timeline-list .tracking-next-step { padding:16px; background:#edf5ef; border:0; border-radius:12px; font-size:12px; line-height:1.8; }
+@media(max-width:900px) { body.sp-portal.user-reference #lacak-pickup .sp-tracking-grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:600px) { body.sp-portal.user-reference #lacak-pickup .ref-pickup-summary { grid-template-columns:minmax(0,1fr); gap:18px; padding:20px; } body.sp-portal.user-reference #user-tracking-location,body.sp-portal.user-reference #track-timeline-list { padding:20px; } }
+
+body.sp-portal.user-reference #pickup-category-items { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-top:20px; }
+body.sp-portal.user-reference .pickup-item-weight { display:grid; gap:10px; background:#f1f7ef; padding:18px; border:1px solid #d4e1d8; border-radius:12px; font-size:13px; color:#174c3c; }
+body.sp-portal.user-reference .pickup-item-weight>span { display:flex; align-items:center; gap:10px; }
+body.sp-portal.user-reference .pickup-item-weight small,.pickup-items-hint { font-size:12px; color:#61766a; }
+body.sp-portal.user-reference #track-item-breakdown p { font-size:12px; padding:10px 0; border-top:1px solid #e4ece3; line-height:1.7; }

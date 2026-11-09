@@ -76,6 +76,7 @@ func (a *App) PickupStatusGetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer tx.Rollback()
+	var categoryItems sql.NullString
 	var p struct {
 		ID                   int
 		UserID               int
@@ -107,7 +108,7 @@ func (a *App) PickupStatusGetHandler(w http.ResponseWriter, r *http.Request) {
 		HasLegacyTransaction bool
 	}
 
-	query := `SELECT p.id, p.user_id, p.collector_id, p.tracking_number, p.item_description, p.pickup_address, p.contact_phone, p.weight_kg, p.category_id, p.eco_reward, p.processing_fee, p.photo_url, p.is_processed, p.status, p.created_at, p.final_weight_kg, p.final_eco_reward, p.final_processing_fee, c.category_name, u.name AS donor_name, col.name AS collector_name, pr.status, pr.amount, pr.reference, pr.paid_at, p.verified_at, EXISTS(SELECT 1 FROM transactions t WHERE t.pickup_id=p.id), p.latitude, p.longitude
+	query := `SELECT p.id, p.user_id, p.collector_id, p.tracking_number, p.item_description, p.pickup_address, p.contact_phone, p.weight_kg, p.category_id, p.eco_reward, p.processing_fee, p.photo_url, p.is_processed, p.status, p.created_at, p.final_weight_kg, p.final_eco_reward, p.final_processing_fee, c.category_name, u.name AS donor_name, col.name AS collector_name, pr.status, pr.amount, pr.reference, pr.paid_at, p.verified_at, EXISTS(SELECT 1 FROM transactions t WHERE t.pickup_id=p.id), p.latitude, p.longitude, p.category_items
 			  FROM pickups p
 			  LEFT JOIN waste_categories c ON p.category_id = c.id
 			  LEFT JOIN users u ON p.user_id = u.id
@@ -120,7 +121,7 @@ func (a *App) PickupStatusGetHandler(w http.ResponseWriter, r *http.Request) {
 		&p.ContactPhone, &p.WeightKg, &p.CategoryID, &p.EcoReward, &p.ProcessingFee,
 		&p.PhotoURL, &p.IsProcessed, &p.Status, &p.CreatedAt, &p.FinalWeightKg, &p.FinalEcoReward, &p.FinalProcessingFee, &p.CategoryName,
 		&p.DonorName, &p.CollectorName, &p.PaymentStatus, &p.RewardAmount, &p.PaymentReference, &p.PaidAt, &p.VerifiedAt, &p.HasLegacyTransaction,
-		&p.Latitude, &p.Longitude,
+		&p.Latitude, &p.Longitude, &categoryItems,
 	)
 	if err == sql.ErrNoRows {
 		httpx.SendResponse(w, "error", "Nomor tracking tidak ditemukan.", nil, http.StatusNotFound)
@@ -188,6 +189,10 @@ func (a *App) PickupStatusGetHandler(w http.ResponseWriter, r *http.Request) {
 		"donor_name":           p.DonorName,
 		"collector_name":       p.CollectorName,
 		"history":              historyList,
+	}
+	if err := applyPickupItems(respData, categoryItems); err != nil {
+		(&apiProblem{"Gagal membaca rincian kategori.", 500}).write(w)
+		return
 	}
 	if p.PaymentStatus != nil {
 		respData["payment_status"] = *p.PaymentStatus

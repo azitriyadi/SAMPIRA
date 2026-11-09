@@ -15,11 +15,7 @@ export async function checkIntegration10({send,js,nav,login,click,text,waitFor,p
  }
  const auth=async email=>api('/api/auth/login',null,{email,password});
  const [admin,user,administrator]=await Promise.all(['admin','owner','administrator'].map(role=>auth(role+'@phase1.invalid')));
- const officerEmail=randomUUID()+'@integration10.invalid';
- await api('/api/auth/register',null,{name:'Petugas Integration 10',email:officerEmail,password},'POST',201);
- const registered=await auth(officerEmail);
- await api('/api/administrator/accounts/'+registered.id,administrator.token,{role:'petugas',is_active:true,expected_role:'user',expected_active:true,reason:'Akun petugas khusus fixture integrasi.'},'PATCH');
- const officer=await auth(officerEmail);
+ const officer=await auth('collector@phase1.invalid');
  const prefix='Integration10-'+Date.now(), base='/api/ecorecycle/facility-reports';
  const form=values=>{const f=new FormData();for(const [k,v] of Object.entries(values))f.set(k,String(v));return f;};
  const report=await api(base,user.token,form({category:'waste_bank',title:prefix,description:'Pemeriksaan lintas role Phase 10A.',address:'Jalan Fixture Bandung',latitude:-6.9,longitude:107.6}),'POST',201);

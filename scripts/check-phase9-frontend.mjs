@@ -73,9 +73,10 @@ export async function checkPhase9Frontend({send,js,nav,login,click,text,waitFor,
  await click('#p9-accounts [data-list-retry]');await text('#p9-accounts [data-list-items]',accountEmail);
  const account=(await read('/api/administrator/accounts?limit=100')).find(row=>row.email.toLowerCase()===accountEmail.toLowerCase());assert(account);
  await click(`[data-account-edit="${account.id}"]`);await capture('administrator-account-dialog','.p9-dialog');
- await fields({role:'petugas',is_active:'false',reason:'Pengujian perubahan role dan penonaktifan akun sintetis.'});
+ assert.equal(await js('document.querySelector(".p9-dialog [name=role]").readOnly'),true);
+ await fields({is_active:'false',reason:'Pengujian penonaktifan akun sintetis tanpa perubahan role.'});
  await waitFor(()=>js('!document.querySelector(".p9-dialog[open]")'),'Account update failed');
- const changed=(await read('/api/administrator/accounts?limit=100')).find(row=>row.id===account.id);assert.equal(changed.role,'petugas');assert.equal(changed.is_active,false);
+ const changed=(await read('/api/administrator/accounts?limit=100')).find(row=>row.id===account.id);assert.equal(changed.role,'user');assert.equal(changed.is_active,false);
  await capture('administrator-accounts','#p9-accounts');
 
  await login('owner@phase1.invalid','/dashboard');await click('[data-target=poin-voucher]');await text('[data-wallet-state]','Saldo sesuai');await text('[data-catalog] [data-list-state]','data dimuat');

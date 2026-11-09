@@ -122,6 +122,7 @@ $db=Start-Process (Join-Path $MySqlBin 'mysqld.exe') -ArgumentList $dbArguments 
  $scripts += 'check-collector-tasks.mjs'
  $scripts += 'check-admin-refresh.mjs'
  $scripts += 'check-administrator-refresh.mjs'
+ $scripts += 'check-education-cms-photos.mjs','check-facility-community.mjs','check-home-location.mjs','check-city-datasets.mjs','check-education-layout.mjs'
  foreach($file in $scripts){
   $source = "scripts/$file"
   $content=(Get-Content -Raw -Encoding utf8 $source).Replace('13316', [string]$DatabasePort).Replace('18081', [string]$ServerPort)

@@ -66,7 +66,7 @@ export function handlingCard(report, open, admin = false) {
     action.setAttribute('aria-label', 'Lihat detail ' + report.tracking_number);
     if (admin) {
         const row = element('tr');
-        row.insertCell().append(element('h4', report.title), element('small', report.tracking_number), element('small', report.address));
+        row.insertCell().append(element('h4', report.title), element('small', report.tracking_number), element('small', report.address),element('small',(report.affected_count??1)+' akun terdampak'));
         row.insertCell().append(badge(report.status));
         row.insertCell().append(element('span', label(assignmentStatuses, report.assignment_status)),
             element('small', report.assignment?.petugas_id ? 'Petugas #' + report.assignment.petugas_id : ''));
@@ -92,7 +92,7 @@ export function handlingCard(report, open, admin = false) {
     place.append(icon, address);
     const foot = element('div', undefined, 'facility-actions facility-card-foot');
     foot.append(element('p', 'Terakhir diperbarui ' + dateLabel(report.updated_at)), action);
-    card.append(header, place);
+    card.append(header, place,element('p',(report.affected_count??1)+' akun terdampak · termasuk pelapor','facility-affected-count'));
     if (taskText) card.append(element('p', taskText[1], 'handling-card-guidance'));
     card.append(foot);
     return card;
@@ -111,6 +111,7 @@ export function handlingPhoto(id, version, description) {
 
 export function handlingSummary(report, role) {
     const panel = element('div', undefined, 'facility-stack');
+    panel.append(element('p',(report.affected_count??1)+' akun terdampak · termasuk pelapor','facility-affected-count'));
     if (role === 'petugas') {
         panel.classList.add('collector-report-summary');
         const copy = officerTaskCopy(report.status);

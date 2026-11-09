@@ -177,7 +177,7 @@ export function reportCard(report, admin, openDetail, base) {
     const row = element('tr');
     row.insertCell().append(element('h4', report.title), element('small', report.tracking_number));
     row.insertCell().append(element('span', category), element('small', 'Pelapor #' + report.reporter_id));
-    row.insertCell().append(badge(report.status));
+    row.insertCell().append(badge(report.status),element('small',(report.affected_count??1)+' akun terdampak'));
     row.insertCell().append(time(report.created_at), element('small', 'Diperbarui ' + dateLabel(report.updated_at)));
     row.insertCell().append(action);
     return row;
@@ -192,6 +192,7 @@ export function reportDetails(report, admin, base) {
     const fields = [
         ['Kategori', Object.hasOwn(categories, report.category) ? categories[report.category] : '—'],
         ['Alamat', report.address],
+        ['Akun terdampak',String(report.affected_count??1)+' (termasuk pelapor)'],
         ['Diajukan', dateLabel(report.created_at)],
         ['Diperbarui', dateLabel(report.updated_at)]
     ];

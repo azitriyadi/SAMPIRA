@@ -226,7 +226,8 @@ function renderMission(item) {
 }
 
 async function recordActualWeight(pickupId) {
-    const result = await Swal.fire({
+    const rows=globalActiveMission?.id===pickupId?globalActiveMission.items:null;
+    const result = rows?.length ? await Swal.fire({title:'Berat aktual per kategori (kg)',customClass:{popup:'pickup-weighing-dialog'},html:rows.map((row,index)=>`<label class="pickup-actual-field">${escapePortalHTML(row.category)}<input class="swal2-input" type="number" min="0.01" max="99999.99" step="0.01" id="actual-item-${index}" value="${row.weight_kg}"></label>`).join(''),showCancelButton:true,cancelButtonText:'Batal',confirmButtonText:'Simpan penimbangan',preConfirm:()=>{const items=rows.map((row,index)=>({category:row.category,weight_kg:Number(document.getElementById('actual-item-'+index).value)}));if(items.some(row=>!row.weight_kg||row.weight_kg<=0||row.weight_kg>99999.99||Math.abs(row.weight_kg*100-Math.round(row.weight_kg*100))>.00001)){Swal.showValidationMessage('Isi berat aktual tiap kategori, maksimal dua desimal.');return false;}return items;}}) : await Swal.fire({
         title: 'Berat aktual di hub (kg)', input: 'number', inputAttributes: {min: '0.01', max: '99999.99', step: '0.01'},
         showCancelButton: true, confirmButtonText: 'Simpan',
         inputValidator: value => /^[0-9]{1,5}(\.[0-9]{1,2})?$/.test(value) && Number(value) > 0 ? undefined : 'Masukkan berat lebih dari nol.'
@@ -235,7 +236,7 @@ async function recordActualWeight(pickupId) {
     try {
         const response = await portalFetch('/api/ecorecycle/verify_pickup', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({pickup_id: pickupId, final_weight_kg: Number(result.value)})
+            body: JSON.stringify({pickup_id: pickupId, final_weight_kg: rows?.length ? Math.round(result.value.reduce((sum,row)=>sum+row.weight_kg,0)*100)/100 : Number(result.value), ...(rows?.length?{items:JSON.stringify(result.value)}:{})})
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message);

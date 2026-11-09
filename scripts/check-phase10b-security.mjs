@@ -77,17 +77,17 @@ export async function checkPhase10BSecurity({send,js,login,click,text,waitFor,pr
  // No script execution from voucher text when traversing Administrator -> User.
  await login('owner@phase1.invalid','/dashboard');await click('[data-target=poin-voucher]');await text('[data-catalog]',exploit);
  assert.equal(await js('window.phase10bXSS'),undefined);assert.equal(await js('document.querySelectorAll("[data-catalog] img").length'),0);
- // Revoke a dedicated Admin while their analytics tab remains open.
- const tempMail=randomUUID()+'@security-admin.invalid';await call('/api/auth/register',null,{name:'Revocation fixture',email:tempMail,password},201);const temp=await auth(tempMail);
- await call('/api/administrator/accounts/'+temp.id,administrator.token,{role:'admin',is_active:true,expected_role:'user',expected_active:true,reason:'Synthetic admin for revocation test'},200,{},'PATCH');
- await login(tempMail,'/admin');await click('[aria-controls=admin-analytics]');await text('#admin-analytics [data-analytics-state]','Diperbarui');
- await call('/api/administrator/accounts/'+temp.id,administrator.token,{role:'admin',is_active:false,expected_role:'admin',expected_active:true,reason:'Revoke synthetic admin for security test'},200,{},'PATCH');
+ // Role changes are forbidden; revoke the existing fixture Admin through activation only.
+ await call('/api/administrator/accounts/'+owner.id,administrator.token,{role:'admin',is_active:true,expected_role:'user',expected_active:true,reason:'Synthetic escalation must be denied'},403,{},'PATCH');
+ await login('admin@phase1.invalid','/admin');await click('[aria-controls=admin-analytics]');await text('#admin-analytics [data-analytics-state]','Diperbarui');
+ await call('/api/administrator/accounts/'+admin.id,administrator.token,{role:'admin',is_active:false,expected_role:'admin',expected_active:true,reason:'Revoke fixture admin for security test'},200,{},'PATCH');
  const previousErrors=exceptions.length;
  await click('#admin-analytics [data-analytics-retry]');await text('#admin-analytics','Sesi berakhir');
  await js('window.dispatchEvent(new Event("sampira:cash-updated"));void 0');await sleep(200);
  findings.no_refresh_exception_after_revocation=exceptions.length===previousErrors;
  assert.equal(await js('Boolean(document.querySelector("#admin-analytics [data-analytics-values]"))'),false);
  await capture('revoked-session');
+ await call('/api/administrator/accounts/'+admin.id,administrator.token,{role:'admin',is_active:true,expected_role:'admin',expected_active:false,reason:'Restore fixture admin after revocation'},200,{},'PATCH');
  // Deliberately bounded login attempts against the isolated server, never 8080.
  const attempts=[];for(let i=0;i<35;i++)attempts.push(await call('/api/auth/login',null,{email:'owner@phase1.invalid',password:'intentionally-wrong'},null));
  findings.login_throttled=attempts.some(r=>r.status===429&&Number(r.retry)>0);

@@ -17,6 +17,15 @@ func (a *App) EstimateRewardHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := httpx.RequestData(r)
+	if data["items"] != "" {
+		items, _, weight, reward, fee, err := pricePickupItems(r.Context(), a.DB, data["items"])
+		if err != nil {
+			(&apiProblem{err.Error(), 400}).write(w)
+			return
+		}
+		httpx.SendResponse(w, "success", "Estimasi per kategori berhasil dihitung.", map[string]any{"items": items, "weight_kg": weight, "total_estimate": reward, "processing_fee": fee, "net_estimate": netReward(reward, fee), "co2_saved": services.CO2Saved(weight)}, 200)
+		return
+	}
 	categoryName := strings.TrimSpace(data["category"])
 	weightStr := data["weight_kg"]
 	if categoryName == "" || weightStr == "" {
@@ -94,15 +103,16 @@ func (a *App) VerifyPickupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
+	var categoryItems sql.NullString
 	var pickupStatus string
 	var assignee sql.NullInt64
 	var verifiedAt sql.NullTime
 	var legacyPayment bool
 	var rewardPerKg, processingFeePerKg float64
-	err = tx.QueryRow(`SELECT p.status, p.collector_id, p.verified_at, (p.is_processed OR EXISTS(SELECT 1 FROM transactions t WHERE t.pickup_id=p.id)), c.reward_per_kg, c.processing_fee_per_kg
+	err = tx.QueryRow(`SELECT p.status, p.collector_id, p.verified_at, (p.is_processed OR EXISTS(SELECT 1 FROM transactions t WHERE t.pickup_id=p.id)), c.reward_per_kg, c.processing_fee_per_kg, p.category_items
 		FROM pickups p
 		LEFT JOIN waste_categories c ON p.category_id = c.id
-		WHERE p.id = ? FOR UPDATE`, pickupID).Scan(&pickupStatus, &assignee, &verifiedAt, &legacyPayment, &rewardPerKg, &processingFeePerKg)
+		WHERE p.id = ? FOR UPDATE`, pickupID).Scan(&pickupStatus, &assignee, &verifiedAt, &legacyPayment, &rewardPerKg, &processingFeePerKg, &categoryItems)
 	if err == sql.ErrNoRows {
 		httpx.SendResponse(w, "error", "Data penjemputan tidak ditemukan.", nil, http.StatusNotFound)
 		return
@@ -125,6 +135,19 @@ func (a *App) VerifyPickupHandler(w http.ResponseWriter, r *http.Request) {
 
 	finalReward := rewardValue(rewardPerKg, finalWeight)
 	finalFee := rewardValue(processingFeePerKg, finalWeight)
+	if categoryItems.Valid {
+		raw, reward, fee, err := verifyPickupItems(r.Context(), tx, categoryItems, data["items"], finalWeight)
+		if err != nil {
+			(&apiProblem{"Berat per kategori tidak valid atau tidak sesuai pengajuan. Periksa jumlah berat dan kategori.", 400}).write(w)
+			return
+		}
+		if _, err = tx.ExecContext(r.Context(), "UPDATE pickups SET category_items=? WHERE id=?", raw, pickupID); err != nil {
+			(&apiProblem{"Gagal menyimpan rincian penimbangan.", 500}).write(w)
+			return
+		}
+		finalReward = reward
+		finalFee = fee
+	}
 	amount := netReward(finalReward, finalFee)
 	paymentStatus := "pending"
 	if amount == 0 {

@@ -151,8 +151,11 @@ if (document.body.classList.contains('user-reference')) {
             if (controller.signal.aborted) return;
             const title = document.createElement('h2'); title.textContent = data.title;
             const summary = document.createElement('p'); summary.textContent = data.summary;
-            const body = document.createElement('div'); body.className = 'sp-article-body'; body.textContent = data.body;
-            content.append(title,summary,body);
+            
+            const {educationArticleBody,educationPhotos,educationPhotoFigure}=await import('./education-photos.js?v=maps-reader-9');
+            if(controller.signal.aborted)return;
+            const photos=educationPhotos(data);const body=educationArticleBody(data.body);
+            content.append(title,summary,educationPhotoFigure(photos[0],true),body);if(photos[1])content.append(educationPhotoFigure(photos[1],true));
             if (data.published_at) {
                 const date = document.createElement('time');date.dateTime = data.published_at;
                 date.textContent = new Intl.DateTimeFormat('id-ID',{dateStyle:'medium',timeZone:'Asia/Jakarta'}).format(new Date(data.published_at));title.after(date);

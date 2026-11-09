@@ -24,12 +24,12 @@ type EducationFilter struct {
 	Limit    int
 }
 
-const educationSummaryColumns = "id, slug, title, summary, category, published_at"
+const educationSummaryColumns = "id, slug, title, summary, category, published_at, photos_json"
 const educationBodyColumns = ", body, source_urls"
 const educationAuditColumns = ", status, version, created_by, updated_by, created_at, updated_at"
 
 func educationSummaryFields(item *models.EducationSummary) []any {
-	return []any{&item.ID, &item.Slug, &item.Title, &item.Summary, &item.Category, &item.PublishedAt}
+	return []any{&item.ID, &item.Slug, &item.Title, &item.Summary, &item.Category, &item.PublishedAt, &item.Photos}
 }
 
 func educationAuditFields(item *models.EducationAudit) []any {

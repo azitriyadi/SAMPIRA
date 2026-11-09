@@ -80,6 +80,15 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 		(&apiProblem{"Kategori sampah belum dapat dibaca.", http.StatusInternalServerError}).write(w)
 		return
 	}
+	var categoryItems []pickupCategoryItem
+	if data["items"] != "" {
+		var err error
+		categoryItems, catID, weight, _, _, err = a.priceRequestItems(r, data)
+		if err != nil {
+			(&apiProblem{err.Error(), 400}).write(w)
+			return
+		}
+	}
 	photo, extension, _, problem := readPickupImage(r, "photo")
 	if problem != nil {
 		problem.write(w)
@@ -110,6 +119,14 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 	ecoReward := rewardValue(rewardPerKg, weight)
 	processingFee := rewardValue(processingFeePerKg, weight)
+	if len(categoryItems) > 0 {
+		ecoReward = 0
+		processingFee = 0
+		for _, item := range categoryItems {
+			ecoReward += item.Reward
+			processingFee += item.Fee
+		}
+	}
 	trackingNum := fmt.Sprintf("ECR-%s-%s", time.Now().Format("20060102"), rand.Text())
 
 	tx, err := a.DB.BeginTx(r.Context(), nil)
@@ -132,6 +149,12 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(categoryItems) > 0 {
+		if _, err = tx.ExecContext(r.Context(), "UPDATE pickups SET category_items=? WHERE id=?", encodePickupItems(categoryItems), pickupID); err != nil {
+			(&apiProblem{"Gagal menyimpan rincian kategori.", 500}).write(w)
+			return
+		}
+	}
 	_, err = tx.Exec("INSERT INTO pickup_history (pickup_id, actor_id, status, location, notes) VALUES (?, ?, 'pending', 'Lokasi Masyarakat (User)', 'Permohonan penjemputan baru diajukan.')", pickupID, user.ID)
 	if err != nil {
 		httpx.SendResponse(w, "error", pickupHistorySaveMessage, nil, http.StatusInternalServerError)
@@ -205,7 +228,7 @@ func (a *App) ListPickupsHandler(w http.ResponseWriter, r *http.Request) {
 	var qErr error
 
 	if queryType == models.RoleUser {
-		query := `SELECT p.id, p.user_id, p.collector_id, p.tracking_number, p.item_description, p.pickup_address, p.contact_phone, p.weight_kg, p.category_id, p.eco_reward, p.processing_fee, p.photo_url, p.is_processed, p.status, p.created_at, p.final_weight_kg, p.final_eco_reward, p.final_processing_fee, p.verification_notes, p.verified_at, c.category_name, pr.status, pr.amount, EXISTS(SELECT 1 FROM transactions t WHERE t.pickup_id=p.id), p.latitude, p.longitude
+		query := `SELECT p.id, p.user_id, p.collector_id, p.tracking_number, p.item_description, p.pickup_address, p.contact_phone, p.weight_kg, p.category_id, p.eco_reward, p.processing_fee, p.photo_url, p.is_processed, p.status, p.created_at, p.final_weight_kg, p.final_eco_reward, p.final_processing_fee, p.verification_notes, p.verified_at, c.category_name, pr.status, pr.amount, EXISTS(SELECT 1 FROM transactions t WHERE t.pickup_id=p.id), p.latitude, p.longitude, p.category_items
 				  FROM pickups p
 				  LEFT JOIN waste_categories c ON p.category_id = c.id
                   LEFT JOIN pickup_rewards pr ON pr.pickup_id = p.id
@@ -213,7 +236,7 @@ func (a *App) ListPickupsHandler(w http.ResponseWriter, r *http.Request) {
 				  ORDER BY p.created_at DESC`
 		rows, qErr = a.DB.Query(query, user.ID)
 	} else {
-		query := `SELECT p.id, p.user_id, p.collector_id, p.tracking_number, CASE WHEN p.collector_id IS NOT NULL THEN p.item_description END, CASE WHEN p.collector_id IS NOT NULL THEN p.pickup_address END, CASE WHEN p.collector_id IS NOT NULL THEN p.contact_phone END, p.weight_kg, p.category_id, p.eco_reward, p.processing_fee, CASE WHEN p.collector_id IS NOT NULL THEN p.photo_url END, p.is_processed, p.status, p.created_at, p.final_weight_kg, p.final_eco_reward, p.final_processing_fee, p.verification_notes, p.verified_at, c.category_name, pr.status, pr.amount, EXISTS(SELECT 1 FROM transactions t WHERE t.pickup_id=p.id), CASE WHEN p.collector_id = ? THEN p.latitude END, CASE WHEN p.collector_id = ? THEN p.longitude END, CASE WHEN p.collector_id IS NOT NULL THEN u.name END AS donor_name
+		query := `SELECT p.id, p.user_id, p.collector_id, p.tracking_number, CASE WHEN p.collector_id IS NOT NULL THEN p.item_description END, CASE WHEN p.collector_id IS NOT NULL THEN p.pickup_address END, CASE WHEN p.collector_id IS NOT NULL THEN p.contact_phone END, p.weight_kg, p.category_id, p.eco_reward, p.processing_fee, CASE WHEN p.collector_id IS NOT NULL THEN p.photo_url END, p.is_processed, p.status, p.created_at, p.final_weight_kg, p.final_eco_reward, p.final_processing_fee, p.verification_notes, p.verified_at, c.category_name, pr.status, pr.amount, EXISTS(SELECT 1 FROM transactions t WHERE t.pickup_id=p.id), CASE WHEN p.collector_id = ? THEN p.latitude END, CASE WHEN p.collector_id = ? THEN p.longitude END, CASE WHEN p.collector_id IS NOT NULL THEN u.name END AS donor_name, p.category_items
 				  FROM pickups p
 				  LEFT JOIN waste_categories c ON p.category_id = c.id
                   LEFT JOIN pickup_rewards pr ON pr.pickup_id = p.id
@@ -296,9 +319,25 @@ func (a *App) UpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var categoryItems []pickupCategoryItem
+	if data["items"] != "" {
+		categoryItems, catID, weight, _, _, err = a.priceRequestItems(r, data)
+		if err != nil {
+			(&apiProblem{err.Error(), 400}).write(w)
+			return
+		}
+	}
 	ecoReward := rewardValue(rewardPerKg, weight)
 	processingFee := rewardValue(processingFeePerKg, weight)
 
+	if len(categoryItems) > 0 {
+		ecoReward = 0
+		processingFee = 0
+		for _, item := range categoryItems {
+			ecoReward += item.Reward
+			processingFee += item.Fee
+		}
+	}
 	tx, err := a.DB.Begin()
 	if err != nil {
 		httpx.SendResponse(w, "error", transactionStartMessage, nil, http.StatusInternalServerError)
@@ -322,6 +361,21 @@ func (a *App) UpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var previousItems sql.NullString
+	if err = tx.QueryRowContext(r.Context(), "SELECT category_items FROM pickups WHERE id=?", pickupID).Scan(&previousItems); err != nil {
+		(&apiProblem{"Gagal membaca rincian kategori.", 500}).write(w)
+		return
+	}
+	if previousItems.Valid && data["items"] == "" {
+		(&apiProblem{"Rincian kategori wajib disertakan saat mengubah permintaan ini.", 400}).write(w)
+		return
+	}
+	if len(categoryItems) > 0 {
+		if _, err = tx.ExecContext(r.Context(), "UPDATE pickups SET category_items=? WHERE id=?", encodePickupItems(categoryItems), pickupID); err != nil {
+			(&apiProblem{"Gagal memperbarui rincian kategori.", 500}).write(w)
+			return
+		}
+	}
 	_, err = tx.Exec(`UPDATE pickups
 		SET item_description = ?, pickup_address = ?, contact_phone = ?, weight_kg = ?, category_id = ?, eco_reward = ?, processing_fee = ?,
 		    latitude = CASE WHEN ? THEN ? ELSE latitude END,

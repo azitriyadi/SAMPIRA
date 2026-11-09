@@ -271,6 +271,11 @@ func (a *App) changeAccount(w http.ResponseWriter, r *http.Request) {
 		(&apiProblem{"Akun telah berubah. Muat ulang.", 409}).write(w)
 		return
 	}
+	// Account administration may change activation, but must not escalate or replace roles.
+	if body.Role != oldRole {
+		(&apiProblem{"Role akun tidak dapat diubah melalui Administrator.", 403}).write(w)
+		return
+	}
 	// Prevent moving an officer while they still own unfinished operational work.
 	if oldRole == models.RolePetugas && (body.Role != oldRole || !*body.Active) {
 		var tasks int

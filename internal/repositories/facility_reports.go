@@ -20,14 +20,14 @@ type FacilityReports struct {
 
 const facilityColumns = `r.id,r.tracking_number,r.reporter_id,r.category,r.title,r.description,r.address,
     r.latitude,r.longitude,r.status,r.version,r.reviewed_by,r.reviewed_at,r.verification_note,r.created_at,r.updated_at,
-    EXISTS(SELECT 1 FROM facility_report_photos p WHERE p.report_id=r.id)`
+    EXISTS(SELECT 1 FROM facility_report_photos p WHERE p.report_id=r.id),1+(SELECT COUNT(*) FROM facility_report_affected af WHERE af.report_id=r.id)`
 
 func scanFacility(row interface{ Scan(...any) error }) (models.FacilityReport, error) {
 	var report models.FacilityReport
 	err := row.Scan(&report.ID, &report.TrackingNumber, &report.ReporterID, &report.Category,
 		&report.Title, &report.Description, &report.Address, &report.Latitude, &report.Longitude, &report.Status,
 		&report.Version, &report.ReviewedBy, &report.ReviewedAt, &report.VerificationNote, &report.CreatedAt,
-		&report.UpdatedAt, &report.HasPhoto)
+		&report.UpdatedAt, &report.HasPhoto, &report.AffectedCount)
 	return report, err
 }
 
@@ -177,6 +177,11 @@ func (s FacilityReports) transition(ctx context.Context, id, ownerID, actorID, v
 			input.Category, input.Title, input.Description, input.Address, input.Latitude, input.Longitude, to, id)
 		if err == nil {
 			err = saveFacilityPhoto(ctx, tx, id, input)
+		}
+		if err == nil {
+			_, err = tx.ExecContext(ctx, "DELETE FROM facility_report_affected WHERE report_id=?", id)
+			message := "Laporan direvisi; konfirmasi terdampak sebelumnya direset."
+			note = &message
 		}
 	} else {
 		_, err = tx.ExecContext(ctx, `UPDATE facility_reports SET status=?,version=version+1,reviewed_by=?,
