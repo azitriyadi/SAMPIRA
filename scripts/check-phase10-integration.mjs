@@ -1,3 +1,4 @@
+import {sequential} from './test-sequence.mjs';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {mkdir,writeFile} from 'node:fs/promises';
@@ -10,14 +11,15 @@ export async function checkIntegration10({send,js,nav,login,click,text,waitFor,p
  const out=join(process.env.SAMPIRA_TEST_PHASE6_SCREENSHOTS||profile,'phase10a');await mkdir(out,{recursive:true});
  const findings={};
  async function api(path,token,body,method='POST',status=200){
-  const response=await fetch(origin+path,{method:body?method:'GET',headers:{...(token?{Authorization:'Bearer '+token}:{}),...(body&&!(body instanceof FormData)?{'Content-Type':'application/json'}:{}),'Idempotency-Key':randomUUID()},body:body instanceof FormData?body:body?JSON.stringify(body):undefined});
+  let displayValue1; if (body instanceof FormData) { displayValue1 = body; } else { if (body) { displayValue1 = JSON.stringify(body); } else { displayValue1 = undefined; } }
+const response=await fetch(origin+path,{method:body?method:'GET',headers:{...(token?{Authorization:'Bearer '+token}:{}),...(body&&!(body instanceof FormData)?{'Content-Type':'application/json'}:{}),'Idempotency-Key':randomUUID()},body:displayValue1});
   assert.equal(response.status,status,path);return response.headers.get('content-type')?.includes('application/json')?(await response.json()).data:null;
  }
  const auth=async email=>api('/api/auth/login',null,{email,password});
  const [admin,user,administrator]=await Promise.all(['admin','owner','administrator'].map(role=>auth(role+'@phase1.invalid')));
  const officer=await auth('collector@phase1.invalid');
  const prefix='Integration10-'+Date.now(), base='/api/ecorecycle/facility-reports';
- const form=values=>{const f=new FormData();for(const [k,v] of Object.entries(values))f.set(k,String(v));return f;};
+ const form=values=>{const f=new FormData();for(const [k,v] of Object.entries(values)){ f.set(k,String(v)); }return f;};
  const report=await api(base,user.token,form({category:'waste_bank',title:prefix,description:'Pemeriksaan lintas role Phase 10A.',address:'Jalan Fixture Bandung',latitude:-6.9,longitude:107.6}),'POST',201);
  await api(base+'/'+report.id+'/verification',admin.token,{status:'approved',version:report.version});
  const path=base+'/'+report.id+'/handling';
@@ -45,7 +47,7 @@ export async function checkIntegration10({send,js,nav,login,click,text,waitFor,p
   const r=await api(base,user.token,form({category:'other',title:prefix+' newer '+i,description:'Pagination fixture.',address:'Jalan Fixture'}),'POST',201);
   await api(base+'/'+r.id+'/verification',admin.token,{status:'approved',version:r.version});
  }));
- await click('[aria-controls=admin-overview]');await text('#admin-overview [role=status]','Cuplikan');
+ await click('[aria-controls=admin-overview]');await text('#admin-overview :is(output,[role=status])','Cuplikan');
  const totals=await api('/api/analytics',admin.token);
  findings.admin_global_validation_count=Number(await js(`document.querySelector('[data-overview-status=resolution_submitted]').textContent`))===totals.awaiting_validation;
  await capture('admin-overview');
@@ -85,5 +87,5 @@ export async function checkIntegration10({send,js,nav,login,click,text,waitFor,p
  await capture('admin-validated');
  await login('owner@phase1.invalid','/dashboard');await click('[data-target=poin-voucher]');await text('[data-catalog]','DESKRIPSI10A diperbarui');
  console.log('PASS Phase 10 targeted cross-role queue, detail refresh, voucher entry/focus, publishing label and persistence.');
- async function capture(name){for(const width of (process.env.SAMPIRA_TEST_FINAL10C==='1'?[1280,1440,768,360,390]:[1280,390])){await send('Emulation.setDeviceMetricsOverride',{width,height:960,deviceScaleFactor:1,mobile:width<500});await sleep(150);assert(await js('document.documentElement.scrollWidth<=innerWidth+2'),name+' overflow');const shot=await send('Page.captureScreenshot',{format:'png'});await writeFile(join(out,`${name}-${width}.png`),Buffer.from(shot.data,'base64'));}await send('Emulation.setDeviceMetricsOverride',{width:1280,height:960,deviceScaleFactor:1,mobile:false});}
+ async function capture(name){await sequential(process.env.SAMPIRA_TEST_FINAL10C==='1'?[1280,1440,768,360,390]:[1280,390], async (width) => {await send('Emulation.setDeviceMetricsOverride',{width,height:960,deviceScaleFactor:1,mobile:width<500});await sleep(150);assert(await js('document.documentElement.scrollWidth<=innerWidth+2'),name+' overflow');const shot=await send('Page.captureScreenshot',{format:'png'});await writeFile(join(out,`${name}-${width}.png`),Buffer.from(shot.data,'base64'));});await send('Emulation.setDeviceMetricsOverride',{width:1280,height:960,deviceScaleFactor:1,mobile:false});}
 }

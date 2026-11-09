@@ -2,7 +2,8 @@
 // Checks the regressions reported by the editor without needing SonarQube.
 const fs = require('node:fs');
 const assert = require('node:assert/strict');
-const pages = ['admin', 'administrator', 'collector', 'dashboard', 'index', 'login', 'register', 'profile', 'auth'];
+const reported=process.argv.includes('--reported');
+const pages = reported?['admin','administrator','collector','dashboard']:['admin', 'administrator', 'collector', 'dashboard', 'index', 'login', 'register', 'profile', 'auth'];
 function cssBlockEnd(css, open, file) {
     let depth = 1, quote = '';
     for (let end = open + 1; end < css.length; end++) {
@@ -59,14 +60,18 @@ for (const page of pages) {
         assert(labelled, `${page}: input missing label: ${id || input}`);
     }
 }
-for (const file of ['auth-flat', 'landing', 'user-flat', 'collector', 'admin', 'portal-system', 'admin-inline', 'user-inline', 'facility-reports', 'facility-handling']) {
+const cssTargets=reported?['admin-refresh','administrator-refresh','city-datasets','collector-sections','education-photos','education-public','facility-community','location-map','user-reference']:['auth-flat', 'landing', 'user-flat', 'collector', 'admin', 'portal-system', 'admin-inline', 'user-inline', 'facility-reports', 'facility-handling'];
+for (const file of cssTargets) {
     const css = fs.readFileSync(`assets/css/${file}.css`, 'utf8');
     checkCssBlocks(css.replace(/\/\*[\s\S]*?\*\//g, ''), file);
     assert(!/!important/.test(css), `${file}: important override`);
     assert(!/transition\s*:\s*(?:all\b|\.?\d+(?:ms|s)\s*[;}])/.test(css), `${file}: unspecified transition properties`);
 }
+if(!reported){
 const profile = fs.readFileSync('app/Views/profile.html', 'utf8');
 assert(profile.includes('prefers-reduced-motion'), 'profile: missing reduced-motion support');
 assert(!/transition\s*:\s*(?:all\b|\.?\d+(?:ms|s)\s*[;}])/.test(profile), 'profile: unspecified transition properties');
 assert(!profile.includes("getAttribute('data-target')"), 'profile: prefer dataset');
+}
+else assert(fs.readFileSync('assets/css/user-reference.css','utf8').includes('prefers-reduced-motion'),'wizard: reduced-motion support missing');
 console.log(`PASS: ${pages.length} HTML views checked for CDN integrity/pinning, keyboard controls, native semantics, labels, and zoom; target CSS has no duplicate selectors, !important, or unspecified transitions.`);

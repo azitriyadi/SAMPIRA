@@ -1,3 +1,4 @@
+import {sequential} from './test-sequence.mjs';
 // Run via check-phase1-migration.mjs against its isolated fixture only.
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
@@ -23,10 +24,10 @@ assert.equal(pickupFingerprint(), initialPickupData);
 
 async function call(path, {method = 'GET', user, cookie, origin, body, key} = {}) {
     const headers = {};
-    if (user) headers.Authorization = 'Bearer ' + user.token;
-    if (cookie) headers.Cookie = cookie;
-    if (origin) headers.Origin = origin;
-    if (key !== undefined) headers['Idempotency-Key'] = key;
+    if (user) { headers.Authorization = 'Bearer ' + user.token; }
+    if (cookie) { headers.Cookie = cookie; }
+    if (origin) { headers.Origin = origin; }
+    if (key !== undefined) { headers['Idempotency-Key'] = key; }
     if (body && !(body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
         body = typeof body === 'string' ? body : JSON.stringify(body);
@@ -61,31 +62,31 @@ await expect('/api/auth/register', 201, {method: 'POST', body: {email, password,
 const other = await login(email, 'user');
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==', 'base64');
 const replacement = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGP4DwABAQEAsTj2FAAAAABJRU5ErkJggg==', 'base64');
-function form(values = {}, photo, name = 'fixture.png') {
+function form(values = {}, photo=undefined, name = 'fixture.png') {
     const body = new FormData();
     const fields = {category: 'tps', title: 'Pintu TPS rusak', description: 'Pintu TPS macet sejak kemarin.',
         address: 'Jalan Contoh 12', ...values};
-    for (const [key, value] of Object.entries(fields)) body.set(key, String(value));
-    if (photo) body.set('photo', new Blob([photo], {type: 'image/png'}), name);
+    for (const [key, value] of Object.entries(fields)) { body.set(key, String(value)); }
+    if (photo) { body.set('photo', new Blob([photo], {type: 'image/png'}), name); }
     return body;
 }
 const creation = (body = form(), key = randomUUID(), actor = user) => ({method: 'POST', user: actor, body, key});
-const revision = (version, values = {}, photo, actor = user) => ({method: 'PUT', user: actor, body: form({version, ...values}, photo)});
+const revision = (version, values = {}, photo=undefined, actor = user) => ({method: 'PUT', user: actor, body: form({version, ...values}, photo)});
 const verify = (version, status, note, actor = admin) => ({method: 'POST', user: actor, body: {version, status, note}});
 
 await expect(reports, 401);
 await expect(reports, 401, creation(form(), randomUUID(), null));
-for (const role of [petugas, administrator]) await expect(reports, 403, {user: role});
+await sequential([petugas, administrator], async (role) => { await expect(reports, 403, {user: role}); });
 await expect(reports, 403, creation(form(), randomUUID(), admin));
 await expect(reports, 400, creation(form(), ''));
 await expect(reports, 415, creation({title: 'Wrong media'}));
 await expect(reports, 403, {method: 'POST', cookie: user.cookie, origin: 'https://untrusted.invalid', key: randomUUID(), body: form()});
 await expect(reports, 403, {method: 'POST', cookie: user.cookie, key: randomUUID(), body: form()});
-for (const fields of [{title: 'x'}, {description: ''}, {address: ''}, {category: 'computers'}, {latitude: 0},
+await sequential([{title: 'x'}, {description: ''}, {address: ''}, {category: 'computers'}, {latitude: 0},
     {latitude: '90.000001', longitude: '180'}, {latitude: 0, longitude: 181}, {latitude: '1e1', longitude: 1},
-    {reporter_id: other.id}, {actor_id: admin.id}, {status: 'approved'}, {id: 999}, {version: 1}]) {
+    {reporter_id: other.id}, {actor_id: admin.id}, {status: 'approved'}, {id: 999}, {version: 1}], async (fields) => {
     await expect(reports, 400, creation(form(fields)));
-}
+});
 await expect(reports + '?reporter_id=1', 400, creation());
 const duplicateField = form();
 duplicateField.append('title', 'Judul kedua');
@@ -104,7 +105,7 @@ const initialRequests = await Promise.all([
     call(reports, creation(form({latitude: '-6.123456', longitude: '107.012345'}, png), key)),
     call(reports, creation(form({latitude: '-6.123456', longitude: '107.012345'}, png), key))
 ]);
-assert.deepEqual(initialRequests.map(result => result.code).sort(), [200, 201]);
+assert.deepEqual(initialRequests.map(result => result.code).sort((a,b)=>a-b), [200, 201]);
 const report = initialRequests[0].body.data;
 assert.equal(initialRequests[1].body.data.id, report.id);
 const detail = reports + '/' + report.id;
@@ -125,34 +126,34 @@ await expect(history, 401);
 await expect(photo, 401);
 await expect(reports + '/xyz', 400, {user});
 await expect(reports + '/2147483647', 404, {user: admin});
-for (const path of [detail, history, photo]) {
+await sequential([detail, history, photo], async (path) => {
     await expect(path, 404, {user: other});
-    for (const role of [petugas, administrator]) await expect(path, 403, {user: role});
-}
+    await sequential([petugas, administrator], async (role) => { await expect(path, 403, {user: role}); });
+});
 assert.deepEqual((await expect(reports, 200, {user: other})).body.data, {items: [], next_before_id: null});
-for (const owner of [user, admin]) {
+await sequential([user, admin], async (owner) => {
     const image = await expect(photo, 200, {user: owner});
     assert.equal(image.headers.get('content-type'), 'image/png');
     assert.equal(image.headers.get('cache-control'), 'no-store');
     assert.equal(image.headers.get('x-content-type-options'), 'nosniff');
     assert.equal(image.headers.get('cross-origin-resource-policy'), 'same-origin');
     assert.deepEqual(image.body, png);
-}
+});
 assert.equal((await expect(history, 200, {user})).body.data.items.length, 1);
 await expect(detail, 409, revision(1));
-for (const role of [user, petugas, administrator]) await expect(verification, 403, verify(1, 'approved', null, role));
-for (const body of [{status: 'pending', version: 1}, {status: 'rejected', version: 1}, {status: 'revision_required', version: 1, note: ' '},
+await sequential([user, petugas, administrator], async (role) => { await expect(verification, 403, verify(1, 'approved', null, role)); });
+await sequential([{status: 'pending', version: 1}, {status: 'rejected', version: 1}, {status: 'revision_required', version: 1, note: ' '},
     {status: 'approved', version: 1, note: 'x'.repeat(1001)}, {status: 'approved', version: 1, actor_id: 1},
-    {status: 'approved'}, {status: 'approved', version: 1, reporter_id: 1}, '{"status":"approved","version":1} {}']) {
+    {status: 'approved'}, {status: 'approved', version: 1, reporter_id: 1}, '{"status":"approved","version":1} {}'], async (body) => {
     await expect(verification, 400, {method: 'POST', user: admin, body});
-}
+});
 await expect(verification, 413, {method: 'POST', user: admin, body: {status: 'approved', version: 1, note: 'x'.repeat(17000)}});
 const page = (await expect(reports + '?status=pending&category=tps&limit=1', 200, {user: admin})).body.data;
 assert.equal(page.items[0].id, report.id);
 assert.equal(page.next_before_id, null);
-for (const query of ['status=unknown', 'category=unknown', 'limit=101', 'limit=1&limit=2', 'before_id=-1', 'reporter_id=1']) {
+await sequential(['status=unknown', 'category=unknown', 'limit=101', 'limit=1&limit=2', 'before_id=-1', 'reporter_id=1'], async (query) => {
     await expect(reports + '?' + query, 400, {user: admin});
-}
+});
 const reason = 'Lengkapi lokasi dan kondisi pintu.';
 const requested = (await expect(verification, 200, verify(1, 'revision_required', reason))).body.data;
 assert.equal(requested.status, 'revision_required');
@@ -188,7 +189,7 @@ assert.deepEqual((await expect(photo, 200, {user})).body, replacement);
 await expect(detail, 409, revision(2));
 await expect(verification, 409, verify(1, 'approved'));
 const approvals = await Promise.all([call(verification, verify(3, 'approved')), call(verification, verify(3, 'approved'))]);
-assert.deepEqual(approvals.map(result => result.code).sort(), [200, 409]);
+assert.deepEqual(approvals.map(result => result.code).sort((a,b)=>a-b), [200, 409]);
 const approved = approvals.find(result => result.code === 200).body.data;
 assert.equal(approved.status, 'approved');
 assert.equal(approved.version, 4);

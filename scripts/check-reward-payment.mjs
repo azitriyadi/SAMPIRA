@@ -79,7 +79,10 @@ export async function checkRewardPayment({send,js,nav,login,click,text,waitFor,p
  await capture('user-paid');
  const record=sql(`SELECT CONCAT(status,':',paid_by,':',paid_at IS NOT NULL,':',OCTET_LENGTH(proof)>0) FROM pickup_rewards WHERE pickup_id=${p.pickup_id}`);assert.equal(record,`paid:${administrator.id}:1:1`);
  await nav('/dashboard');await click('[data-target=reward-user]');await text('[data-reward-list]','Pembayaran tercatat');
- await login('administrator@phase1.invalid','/administrator');await text('#reward-payment-list',row.reference);await text('#reward-payment-list','Pembayaran tercatat');
+ await login('administrator@phase1.invalid','/administrator');
+ await click('a[href="#system-payments"]');
+ await js(`const filter=document.getElementById('reward-payment-filter');filter.value='paid';filter.dispatchEvent(new Event('change',{bubbles:true}));`);
+ await text('#reward-payment-list',row.reference);await text('#reward-payment-list','Pembayaran tercatat');
  console.log('PASS reward payment: 1 MiB packet guard, optimized browser proof, one request on double submit, validation/RBAC, concurrent 200/409, DB rollback, private evidence, User refresh and login persistence.');
  async function capture(name){for(const width of (process.env.SAMPIRA_TEST_FINAL10C==='1'?[1280,1440,768,360,390]:[1280,390])){await send('Emulation.setDeviceMetricsOverride',{width,height:960,deviceScaleFactor:1,mobile:width<500});await sleep(150);const shot=await send('Page.captureScreenshot',{format:'png'});await writeFile(join(out,`${name}-${width}.png`),Buffer.from(shot.data,'base64'));}await send('Emulation.setDeviceMetricsOverride',{width:1280,height:960,deviceScaleFactor:1,mobile:false});}
 }

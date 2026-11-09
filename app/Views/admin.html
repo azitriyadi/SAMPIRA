@@ -116,7 +116,7 @@
         <label for="admin-edu-status">Status</label><select id="admin-edu-status" name="status"><option value="">Semua status</option><option value="draft">Draf</option><option value="published">Terbit</option><option value="archived">Arsip</option></select>
         <button class="sp-button" type="submit">Terapkan</button>
     </form>
-    <output role="status" aria-live="polite"></output>
+    <output aria-live="polite"></output>
     <section class="sp-table-wrap" aria-label="Daftar artikel edukasi"><table><thead><tr><th scope="col">Judul</th><th scope="col">Kategori</th><th scope="col">Status</th><th scope="col">Diperbarui</th><th scope="col">Aksi</th></tr></thead><tbody></tbody></table></section>
     <div class="sp-pager">
         <button class="sp-button sp-button--quiet" data-education-page="-1" type="button" disabled>Sebelumnya</button>
@@ -134,7 +134,7 @@
             <label for="admin-edit-sources">Sumber (opsional)</label><textarea id="admin-edit-sources" name="sources" rows="2" aria-describedby="source-hint"></textarea><small id="source-hint">Satu URL HTTPS per baris. Maksimal delapan sumber.</small>
             <fieldset id="education-photo-editor"><legend>Foto artikel (opsional)</legend><p>Upload JPG, PNG, WEBP maksimal 5 MB atau gunakan tautan foto HTTPS.</p><p data-photo-status aria-live="polite">Memeriksa layanan foto…</p><div data-photo-fields></div></fieldset>
             <details class="sp-admin-article-preview"><summary>Pratinjau teks artikel</summary><h4 data-preview-title>Pratinjau Judul</h4><p data-preview-summary></p><p data-preview-body></p></details>
-            <output role="status" aria-live="polite"></output>
+            <output aria-live="polite"></output>
             <div class="sp-pager">
                 <button class="sp-button" type="submit">Simpan draf</button>
                 <button class="sp-button" type="button" data-publication="published" hidden>Terbitkan</button>

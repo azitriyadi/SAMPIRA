@@ -1,3 +1,4 @@
+import {sequential} from './test-sequence.mjs';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {mkdir,writeFile} from 'node:fs/promises';
@@ -23,7 +24,7 @@ export async function checkHomeLocation({send,js,login,click,text,waitFor,profil
     assert.equal(await js(`portalFetch('/api/ecorecycle/facility-reports/${report.id}').then(r=>r.status)`),404);
     assert.equal(await js(`portalFetch('/api/ecorecycle/facility-reports/${report.id}/photo').then(r=>r.status)`),404);
     const shared=await js(`portalFetch('/api/ecorecycle/facility-reports/community/detail/${report.id}').then(r=>r.json()).then(r=>r.data)`);assert(shared.photo_url.includes('/community/'));assert.equal(shared.latitude,-6.913);
-    for(const key of ['reporter_id','reviewed_by','verification_note','assignment','internal_note','contact_phone'])assert.equal(Object.hasOwn(shared,key),false,key+' leak');
+    for(const key of ['reporter_id','reviewed_by','verification_note','assignment','internal_note','contact_phone']){ assert.equal(Object.hasOwn(shared,key),false,key+' leak'); }
     await capture('shared-facility-detail','.community-detail-dialog');await click('.community-detail-dialog .community-detail-top button');
     await waitFor(()=>js('document.querySelectorAll(".community-detail-dialog").length===0'),'Detail closed');
 
@@ -69,10 +70,10 @@ export async function checkHomeLocation({send,js,login,click,text,waitFor,profil
     await js('window.fetch=addressFetch;void 0');
     const adminLogin=await fetch(origin+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'admin@phase1.invalid',password})});const admin=(await adminLogin.json()).data;
     const deny=await fetch(origin+'/api/ecorecycle/facility-reports/'+report.id+'/verification',{method:'POST',headers:{Authorization:'Bearer '+admin.token,'Content-Type':'application/json'},body:JSON.stringify({status:'rejected',version:report.version,note:'Skenario penolakan sintetis fixture.'})});assert.equal(deny.status,200);
-    for(const path of ['/community/detail/'+report.id,'/community/photo/'+report.id]){assert.equal(await js(`portalFetch('/api/ecorecycle/facility-reports'+${JSON.stringify(path)}).then(r=>r.status)`),404);const anon=await fetch(origin+'/api/ecorecycle/facility-reports'+path);assert.equal(anon.status,401);}
+    await sequential(['/community/detail/'+report.id,'/community/photo/'+report.id], async (path) => {assert.equal(await js(`portalFetch('/api/ecorecycle/facility-reports'+${JSON.stringify(path)}).then(r=>r.status)`),404);const anon=await fetch(origin+'/api/ecorecycle/facility-reports'+path);assert.equal(anon.status,401);});
 
     await writeFile(join(out,'home-location-results.json'),JSON.stringify({facility_feed_below_form:true,shared_detail_photo_map:true,rejected_photo_revocation:true,no_large_search_form:true,direct_facility_form:true,community_confirmation:true,pickup_and_facility_gps_autofill:true,map_click_autofill:true,pending_navigation_block:true,stale_response_guard:true,manual_edit_guard:true,error_no_fake_address:true,real_fixture_submissions:true,viewports:[1280,390]},null,2));
     console.log('PASS facility feed below form, shared detail/photo/map privacy and rejection, direct report form, automatic addresses on both forms, map/GPS, race/manual/error handling, real submissions and 1280/390 layouts.');
     async function ready(prefix){await waitFor(()=>js(`Boolean(document.querySelector('#${prefix}-location-picker [data-address-state=ready]'))`),'Address ready '+prefix);}
-    async function capture(name,selector){for(const width of [1280,390]){await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<600});await js(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'start'});void 0`);await sleep(180);assert(await js('document.documentElement.scrollWidth<=innerWidth+2'),name+' overflow');const shot=await send('Page.captureScreenshot',{format:'jpeg',quality:55});await writeFile(join(out,name+'-'+width+'.jpg'),Buffer.from(shot.data,'base64'));}await send('Emulation.setDeviceMetricsOverride',{width:1280,height:1000,deviceScaleFactor:1,mobile:false});}
+    async function capture(name,selector){await sequential([1280,390], async (width) => {await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<600});await js(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'start'});void 0`);await sleep(180);assert(await js('document.documentElement.scrollWidth<=innerWidth+2'),name+' overflow');const shot=await send('Page.captureScreenshot',{format:'jpeg',quality:55});await writeFile(join(out,name+'-'+width+'.jpg'),Buffer.from(shot.data,'base64'));});await send('Emulation.setDeviceMetricsOverride',{width:1280,height:1000,deviceScaleFactor:1,mobile:false});}
 }

@@ -37,7 +37,7 @@ export async function checkEducationContent({send,js,nav,login,click,text,waitFo
 
     await login('admin@phase1.invalid','/admin');
     await click('[aria-controls="education-cms"]');
-    await text('#education-cms [role=status]','Halaman 1');
+    await text('#education-cms :is(output,[role=status])','Halaman 1');
     // Review and publish all curated drafts using the real Admin CMS controls.
     for (const article of articles) {
         await js(`document.querySelector('#education-filters [name=q]').value=${q(article.title)};document.getElementById('education-filters').requestSubmit();void 0`);
@@ -49,7 +49,7 @@ export async function checkEducationContent({send,js,nav,login,click,text,waitFo
         await capture('admin-draft-'+article.slug);
         await click('[data-publication="published"]');
         await click('#education-confirmation button');
-        await text('#education-editor [role=status]','Tersimpan · Terbit');
+        await text('#education-editor :is(output,[role=status])','Tersimpan · Terbit');
         await click('#education-close');
     }
     for (const [index,article] of articles.entries()) {
@@ -77,13 +77,13 @@ export async function checkEducationContent({send,js,nav,login,click,text,waitFo
 
     await login('owner@phase1.invalid','/dashboard');
     await click('[data-target="edukasi"]');
-    await text('#edukasi [role=status]','Menampilkan 1–6 artikel');
+    await text('#edukasi :is(output,[role=status])','Menampilkan 1–6 artikel');
     await capture('user-catalog');
     await click('#edukasi [data-next]');
-    await text('#edukasi [role=status]','Menampilkan 7–10 artikel');
+    await text('#edukasi :is(output,[role=status])','Menampilkan 7–10 artikel');
     await capture('user-catalog-page2');
     await click('#edukasi [data-prev]');
-    await text('#edukasi [role=status]','Menampilkan 1–6 artikel');
+    await text('#edukasi :is(output,[role=status])','Menampilkan 1–6 artikel');
     await click('#edukasi [data-category="bank-sampah"]');
     await text('#edukasi .sp-portal-articles',articles[3].title);
     assert.equal(await js('document.querySelectorAll("#edukasi .sp-portal-articles article").length'),1);

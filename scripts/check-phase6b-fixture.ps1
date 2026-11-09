@@ -110,6 +110,7 @@ $db=Start-Process (Join-Path $MySqlBin 'mysqld.exe') -ArgumentList $dbArguments 
  }
  New-Item -ItemType Directory "$t/scripts" | Out-Null
  $scripts=@('check-phase1-migration.mjs','check-api-regressions.mjs','check-phase1-browser.mjs','check-phase3-frontend.mjs','check-phase4-frontend.mjs','check-phase5-frontend.mjs','check-phase6-frontend.mjs','check-landing-frontend.mjs','check-auth-frontend.mjs','check-phase3-reports.mjs','check-phase4-handling.mjs','check-phase5-locations.mjs','check-phase6-education.mjs','check-phase7.mjs','check-user-frontend.mjs','admin-visual-fixture.mjs','check-phase8-frontend.mjs','check-portal-design.mjs')
+ $scripts += 'test-sequence.mjs'
  $scripts += 'check-phase9.mjs'
  $scripts += 'check-phase9-frontend.mjs'
  $scripts += 'check-phase10-integration.mjs'

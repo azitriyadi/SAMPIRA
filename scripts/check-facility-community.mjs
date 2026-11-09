@@ -1,3 +1,4 @@
+import {sequential} from './test-sequence.mjs';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
@@ -9,14 +10,15 @@ export async function checkFacilityCommunity({send,js,login,click,text,waitFor,p
     const origin=await js('location.origin');assert.equal(origin,'http://127.0.0.1:18081');
     const out=process.env.SAMPIRA_TEST_PHASE6_SCREENSHOTS||profile;await mkdir(out,{recursive:true});
     const base='/api/ecorecycle/facility-reports',q=JSON.stringify;
-    async function api(path,actor,body,expected=200,method){
-        const response=await fetch(origin+path,{method:method||(body?'POST':'GET'),headers:{...(actor?{Authorization:'Bearer '+actor.token}:{}),...(body&&!(body instanceof FormData)?{'Content-Type':'application/json'}:{})},body:body instanceof FormData?body:body?JSON.stringify(body):undefined});
+    async function api(path,actor,body,expected=200,method=undefined){
+        let displayValue1; if (body instanceof FormData) { displayValue1 = body; } else { if (body) { displayValue1 = JSON.stringify(body); } else { displayValue1 = undefined; } }
+const response=await fetch(origin+path,{method:method||(body?'POST':'GET'),headers:{...(actor?{Authorization:'Bearer '+actor.token}:{}),...(body&&!(body instanceof FormData)?{'Content-Type':'application/json'}:{})},body:displayValue1});
         const result=await response.json();assert.equal(response.status,expected,path+' '+result.message);return result.data;
     }
     const auth=email=>api('/api/auth/login',null,{email,password});
     const owner=await auth('owner@phase1.invalid'),admin=await auth('admin@phase1.invalid'),officer=await auth('collector@phase1.invalid');
     const secondEmail='community-'+randomUUID()+'@fixture.invalid',thirdEmail='community-'+randomUUID()+'@fixture.invalid';
-    for(const email of [secondEmail,thirdEmail])await api('/api/auth/register',null,{name:'Warga terdampak fixture',email,password},201);
+    await sequential([secondEmail,thirdEmail], async (email) => { await api('/api/auth/register',null,{name:'Warga terdampak fixture',email,password},201); });
     const second=await auth(secondEmail),third=await auth(thirdEmail);
     await login('owner@phase1.invalid','/dashboard');await waitFor(()=>js('document.readyState==="complete"'),'Ready');
     async function create(title){return js(`(async()=>{const form=new FormData();for(const[k,v]of Object.entries({category:'tps',title:${q(title)},description:'Catatan privat fixture: fasilitas memerlukan perbaikan.',address:'Jalan Fasilitas Bersama Bandung 12',latitude:'-6.915',longitude:'107.615'}))form.set(k,v);const c=document.createElement('canvas');c.width=c.height=20;const blob=await new Promise(resolve=>c.toBlob(resolve,'image/png'));form.set('photo',new File([blob],'private.png',{type:'image/png'}));const r=await portalFetch(${q(base)},{method:'POST',headers:{'Idempotency-Key':crypto.randomUUID()},body:form});const result=await r.json();if(r.status!==201)throw Error(result.message);return result.data;})()`);}
@@ -25,7 +27,7 @@ export async function checkFacilityCommunity({send,js,login,click,text,waitFor,p
     await api(base+'/community',null,undefined,401);
     const publicPage=await api(base+'/community',second);
     const shared=publicPage.items.find(item=>item.id===report.id);assert(shared);assert.equal(shared.status,'pending');
-    for(const key of ['reporter_id','reviewed_by','verification_note','description','latitude','longitude','photo_url','request_key'])assert.equal(Object.hasOwn(shared,key),false,key+' leaked');
+    for(const key of ['reporter_id','reviewed_by','verification_note','description','latitude','longitude','photo_url','request_key']){ assert.equal(Object.hasOwn(shared,key),false,key+' leaked'); }
     await api(base+'/'+report.id,second,undefined,404);await api(base+'/'+report.id+'/photo',second,undefined,404);
     await api(base+'/'+report.id+'/affected',null,{},401);await api(base+'/'+report.id+'/affected',admin,{},403);await api(base+'/'+report.id+'/affected',officer,{},403);
     const mine=await api(base+'/'+report.id+'/affected',owner,{});assert.equal(mine.affected_count,1);
@@ -44,7 +46,7 @@ export async function checkFacilityCommunity({send,js,login,click,text,waitFor,p
     assert.equal((await api(base+'/'+closed.id,owner)).affected_count,1);
     await api(base+'/'+revised.id+'/affected',third,{});
     await api(base+'/'+revised.id+'/verification',admin,{version:1,status:'revision_required',note:'Perjelas lokasi dan kondisi fasilitas.'});
-    const revision=new FormData();for(const[k,v]of Object.entries({version:'2',category:'tps',title:'Laporan fasilitas dengan rincian diperbarui',description:'Rincian kondisi fasilitas yang sudah diperjelas.',address:'Jalan Fasilitas Bersama Bandung Nomor 14'}))revision.set(k,v);
+    const revision=new FormData();for(const[k,v]of Object.entries({version:'2',category:'tps',title:'Laporan fasilitas dengan rincian diperbarui',description:'Rincian kondisi fasilitas yang sudah diperjelas.',address:'Jalan Fasilitas Bersama Bandung Nomor 14'})){ revision.set(k,v); }
     sql("CREATE TRIGGER community_revision_rollback BEFORE INSERT ON facility_report_history FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='fixture revision rollback'");
     try{await api(base+'/'+revised.id,owner,revision,500,'PUT');}finally{sql('DROP TRIGGER community_revision_rollback');}
     assert.equal((await api(base+'/'+revised.id,owner)).affected_count,2);
@@ -75,5 +77,5 @@ export async function checkFacilityCommunity({send,js,login,click,text,waitFor,p
     const csrf=await fetch(origin+base+'/'+report.id+'/affected',{method:'POST',headers:{Authorization:'Bearer '+second.token,Origin:'https://untrusted.invalid'}});assert.equal(csrf.status,403);
     await writeFile(join(out,'community-results.json'),JSON.stringify({immediate_pending_visibility:true,projection_privacy:true,private_detail_photo_isolated:true,one_confirmation_per_account:true,concurrent_retry:true,reporter_included_once:true,spoofed_user_ignored:true,verification_unchanged:true,rollback:true,rejected_hidden:true,closed_confirmation_blocked:true,admin_count:true,officer_count:true,csrf:true,viewports:[1280,390]},null,2));
     console.log('PASS community reports: User confirmation UI, unique concurrent counts, private projection/photo ownership, rollback, closed/rejected/RBAC/CSRF guards, Admin/Petugas counts and desktop/mobile.');
-    async function shots(name){for(const width of [1280,390]){await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<600});await sleep(180);assert(await js('document.documentElement.scrollWidth<=innerWidth+2'),name+' overflow '+width);const shot=await send('Page.captureScreenshot',{format:'jpeg',quality:55});await writeFile(join(out,name+'-'+width+'.jpg'),Buffer.from(shot.data,'base64'));}await send('Emulation.setDeviceMetricsOverride',{width:1280,height:1000,deviceScaleFactor:1,mobile:false});}
+    async function shots(name){await sequential([1280,390], async (width) => {await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<600});await sleep(180);assert(await js('document.documentElement.scrollWidth<=innerWidth+2'),name+' overflow '+width);const shot=await send('Page.captureScreenshot',{format:'jpeg',quality:55});await writeFile(join(out,name+'-'+width+'.jpg'),Buffer.from(shot.data,'base64'));});await send('Emulation.setDeviceMetricsOverride',{width:1280,height:1000,deviceScaleFactor:1,mobile:false});}
 }

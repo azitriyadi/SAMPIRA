@@ -25,14 +25,14 @@ export async function checkPhase6Browser({ send, js, nav, login, click, text, wa
     async function confirmPublication(status) {
         await click('[data-publication="' + status + '"]');
         await click("#education-confirmation button");
-        await text("#education-editor [role=status]", "Tersimpan");
+        await text("#education-editor :is(output,[role=status])", "Tersimpan");
     }
     await viewport(1440);
     await clear();
     await login("admin@phase1.invalid", "/admin");
     assert.equal(await js('document.querySelector(".sp-admin-account").textContent.trim()'), "Keluar");
     await click('[aria-controls="admin-overview"]');
-    await text("#admin-overview [role=status]", "Cuplikan");
+    await text("#admin-overview :is(output,[role=status])", "Cuplikan");
     await waitFor(() => js('Boolean(document.querySelector("#admin-recent-reports button"))'), 'Recent Admin report missing');
     for (const width of [320,360,390,430,768,1024,1280,1440]) {
         if (width === 390 || width === 1440) await capture("admin-overview", width);
@@ -48,7 +48,7 @@ export async function checkPhase6Browser({ send, js, nav, login, click, text, wa
     assert.equal(await js('document.querySelector("#admin-menu-toggle").getAttribute("aria-expanded")'), 'false');
     await viewport(1440);
     await click('[aria-controls="admin-operation-map"]');
-    await text("#admin-operation-map [role=status]", "lokasi dimuat");
+    await text("#admin-operation-map :is(output,[role=status])", "lokasi dimuat");
     assert(await js('document.querySelector(".sp-console-content").getBoundingClientRect().width > 700'), "Admin workspace collapsed into the navigation column");
     await waitFor(() => js('Boolean(document.querySelector("#admin-operation-map .sp-map-marker--facility"))'), "Admin map lacks an authorized facility marker");
     await click("#admin-operation-map .sp-map-marker--facility");
@@ -58,7 +58,7 @@ export async function checkPhase6Browser({ send, js, nav, login, click, text, wa
     await viewport(390);
     await click("#admin-menu-toggle");
     await click('[aria-controls="admin-operation-map"]');
-    await text("#admin-operation-map [role=status]", "lokasi dimuat");
+    await text("#admin-operation-map :is(output,[role=status])", "lokasi dimuat");
     await click("#admin-operation-map .sp-map-marker--facility");
     await text("#admin-operation-map .leaflet-popup-content", "Buka detail");
     await capture("admin-map", 390);
@@ -74,25 +74,25 @@ export async function checkPhase6Browser({ send, js, nav, login, click, text, wa
             ? Promise.resolve(new Response(null, {status: 404}))
             : window.adminTestFetch(url, options); void 0`);
     await click('[aria-controls="admin-overview"]');
-    await text("#admin-overview [role=status]", "Layanan laporan tidak tersedia");
+    await text("#admin-overview :is(output,[role=status])", "Layanan laporan tidak tersedia");
     assert(await js('document.querySelector("#admin-recent-reports").closest("[role=region]").hidden'), "Failed overview shows an empty table");
     assert.notEqual(await js('document.querySelector("[data-overview-status=approved]").textContent'), "—", "Working handling data should remain visible");
     await capture("admin-overview-error", 1280);
     await click('[aria-controls="admin-operation-map"]');
-    await text("#admin-operation-map [role=status]", "Layanan lokasi tidak tersedia");
+    await text("#admin-operation-map :is(output,[role=status])", "Layanan lokasi tidak tersedia");
     await capture("admin-map-error", 1280);
     await js(`window.fetch = (url, options) => String(url).startsWith('/api/ecorecycle/facility-reports?')
         ? Promise.resolve(Response.json({status: 'success', data: {items: []}}))
         : window.adminTestFetch(url, options); void 0`);
     await click("#admin-operation-map [data-map-retry]");
-    await text("#admin-operation-map [role=status]", "Tidak ada lokasi untuk filter ini.");
+    await text("#admin-operation-map :is(output,[role=status])", "Tidak ada lokasi untuk filter ini.");
     assert(await js('document.querySelector("#admin-operation-map [data-map-retry]").hidden'));
     await click('[aria-controls="admin-overview"]');
     await text("#admin-recent-state", "Belum ada laporan fasilitas.");
     assert(await js('document.querySelector("#admin-recent-reports").closest("[role=region]").hidden'));
     await js("window.fetch = window.adminTestFetch; delete window.adminTestFetch; void 0");
     await click('[aria-controls="admin-overview"]');
-    await text("#admin-overview [role=status]", "Cuplikan");
+    await text("#admin-overview :is(output,[role=status])", "Cuplikan");
     await click('[aria-controls="education-cms"]');
     await waitFor(() => js('!document.querySelector("#education-add").disabled'), "CMS never became editable");
     await click("#education-add");
@@ -104,13 +104,13 @@ export async function checkPhase6Browser({ send, js, nav, login, click, text, wa
         sources: "https://example.com/panduan"
     })) await field(editor + '[name="' + name + '"]', value);
     await click(editor + '[type="submit"]');
-    await text(editor + "[role=status]", "Tersimpan · Draf");
+    await text(editor + ":is(output,[role=status])", "Tersimpan · Draf");
     await click('.sp-admin-article-preview summary');
     await text('[data-preview-body]', 'Pisahkan bahan organik');
     await capture("admin-editor", 1440);
     await field(editor + '[name="title"]', "Panduan uji pilah rumah tangga");
     await click(editor + '[type="submit"]');
-    await text(editor + "[role=status]", "Tersimpan · Draf");
+    await text(editor + ":is(output,[role=status])", "Tersimpan · Draf");
     await confirmPublication("published");
     await click("#education-close");
     await text("#education-cms tbody", "Panduan uji pilah rumah tangga");
@@ -136,12 +136,12 @@ export async function checkPhase6Browser({ send, js, nav, login, click, text, wa
     await capture("admin-education", 390);
     await clear();
     await nav(publicPath);
-    await text("#education-reader [role=status]", "Halaman 1");
+    await text("#education-reader :is(output,[role=status])", "Halaman 1");
     assert(await js('!document.querySelector("#education-next").hidden'));
     await capture("education-list", 1440);
     await capture("education-list", 390);
     await click("#education-next");
-    await text("#education-reader [role=status]", "Halaman 2");
+    await text("#education-reader :is(output,[role=status])", "Halaman 2");
     await nav(publicPath + "?q=Panduan+uji&category=pemilahan-sampah");
     await text("#education-results", "Panduan uji pilah rumah tangga");
     await click("#education-results article a");
@@ -169,7 +169,7 @@ export async function checkPhase6Browser({ send, js, nav, login, click, text, wa
     await capture("petugas", 390);
     await viewport(1440);
     await click('.sidebar-item[onclick*="operations"]');
-    await text("#view-operations [role=status]", "lokasi dimuat");
+    await text("#view-operations :is(output,[role=status])", "lokasi dimuat");
     await waitFor(() => js('Boolean(document.querySelector("#view-operations .sp-map-marker--pickup"))'), "Claimed pickup missing from Petugas map");
     assert.equal(await js('document.querySelectorAll("#view-operations .sp-map-marker--facility").length'), 0, "Reassigned facility remained visible");
     await click(".sp-map-origin summary");
@@ -207,7 +207,7 @@ export async function checkPhase6Browser({ send, js, nav, login, click, text, wa
     await confirmPublication("archived");
     await clear();
     await nav(publicPath + "?artikel=panduan-uji-pilah-sampira");
-    await text("#education-reader [role=status]", "belum tersedia");
+    await text("#education-reader :is(output,[role=status])", "belum tersedia");
     console.log("PASS Chromium Phase 6B: education create/edit/publish/archive, public search/category/pagination/detail, Admin map, aggregate metrics, responsive captures.");
     console.log("Phase 6B screenshots: " + artifacts);
 }

@@ -1,3 +1,4 @@
+import {sequential} from './test-sequence.mjs';
 import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
@@ -31,11 +32,11 @@ async function checkPaymentUI({send,js,login,click,text,waitFor,out,pickup,pendi
     await writeFile(join(out,'payment-ui-results.json'),JSON.stringify({pending_search_empty:true,select_autofill:true,reference_validation:true,proof_preview:true,payment_once:true,paid_history_and_proof:true,void_workflow:true,empty_pending:true,user_paid_readback:true,viewports:[1280,390]},null,2));
     console.log('PASS Payment UI: autofill, filter/search, validation, photo preview, single payment, paid proof/history, cancellation, empty state and User readback.');
     async function capture(name,selector='#system-payments'){
-        for(const width of [1280,390]){
+        await sequential([1280,390], async (width) => {
             await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<600});await js(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'start',behavior:'instant'});void 0`);await sleep(160);
             assert(await js('document.documentElement.scrollWidth<=innerWidth+2'),name+' overflow '+width);
             const shot=await send('Page.captureScreenshot',{format:'jpeg',quality:55});await writeFile(join(out,name+'-'+width+'.jpg'),Buffer.from(shot.data,'base64'));
-        }
+        });
         await send('Emulation.setDeviceMetricsOverride',{width:1280,height:1000,deviceScaleFactor:1,mobile:false});
     }
 }
@@ -48,23 +49,23 @@ export async function checkAdministratorRefresh({send,js,nav,login,click,text,wa
     const extra=process.env.SAMPIRA_TEST_PAYMENT_UI_ONLY==='1'?await post('request_pickup',{category:'Computers',item_description:'Pickup QA pembatalan kewajiban',weight_kg:1,pickup_address:'Jalan Fixture Bandung',contact_phone:'081234567890'}):null;
     await login('collector@phase1.invalid','/petugas');
     await post('assign_collector',{tracking_number:pickup.tracking_number});
-    for(const status of ['transit','arrived'])await post('pickup_status',{tracking_number:pickup.tracking_number,status});
+    await sequential(['transit','arrived'], async (status) => { await post('pickup_status',{tracking_number:pickup.tracking_number,status}); });
     await post('verify_pickup',{pickup_id:pickup.pickup_id,final_weight_kg:2});
-    if(extra){await post('assign_collector',{tracking_number:extra.tracking_number});for(const status of ['transit','arrived'])await post('pickup_status',{tracking_number:extra.tracking_number,status});await post('verify_pickup',{pickup_id:extra.pickup_id,final_weight_kg:1});}
+    if(extra){await post('assign_collector',{tracking_number:extra.tracking_number});await sequential(['transit','arrived'], async (status) => { await post('pickup_status',{tracking_number:extra.tracking_number,status}); });await post('verify_pickup',{pickup_id:extra.pickup_id,final_weight_kg:1});}
     await login('administrator@phase1.invalid','/administrator');
     const pending=await js(`portalFetch('/api/administrator/pickup-rewards').then(r=>r.json()).then(r=>r.data.find(row=>row.pickup_id===${Number(pickup.pickup_id)}))`);assert(pending);
     if(extra){await checkPaymentUI({send,js,login,click,text,waitFor,out,pickup,pending,extra});return;}
     await waitFor(()=>js('document.querySelector("[data-metric=total_pickups]").textContent!=="—"'),'Summary unavailable');
     const menus=['sp-system-metrics','p9-system','p9-accounts','p9-voucher-admin','p9-audit','p9-system-grid','content-view','system-payments'];
     const open=async id=>{await js(`location.hash=${JSON.stringify(id)};void 0`);await waitFor(()=>js(`!document.getElementById(${JSON.stringify(id)}).hidden`),'Menu unavailable '+id);};
-    for(const id of menus){
+    await sequential(menus, async (id) => {
         await open(id);assert.equal(await js('document.querySelectorAll("#sp-system-main>section:not([hidden]),#sp-system-main>.view-section:not([hidden])").length'),1);
         assert.equal(await js('document.querySelector(".sp-system-nav [aria-current=page]").hash'),'#'+id);
-        if(id==='p9-system')await text('#p9-system [data-analytics-state]','Diperbarui');
-        if(['p9-accounts','p9-voucher-admin','p9-audit'].includes(id))await waitFor(()=>js(`!document.querySelector('#${id} [aria-busy]') && Boolean(document.querySelector('#${id} [data-list-state]'))`),'List unavailable '+id);
-        if(id==='p9-system-grid')await waitFor(()=>js('!document.querySelector("#p9-system-grid [data-grid-state]")?.textContent.includes("Memuat")'),'Grid unavailable');
+        if(id==='p9-system'){ await text('#p9-system [data-analytics-state]','Diperbarui'); }
+        if(['p9-accounts','p9-voucher-admin','p9-audit'].includes(id)){ await waitFor(()=>js(`!document.querySelector('#${id} [aria-busy]') && Boolean(document.querySelector('#${id} [data-list-state]'))`),'List unavailable '+id); }
+        if(id==='p9-system-grid'){ await waitFor(()=>js('!document.querySelector("#p9-system-grid [data-grid-state]")?.textContent.includes("Memuat")'),'Grid unavailable'); }
         await capture(id);
-    }
+    });
     await open('p9-accounts');
     await js('document.querySelector("#p9-accounts [data-list-search]").value="no-account-found-xyz";document.querySelector("#p9-accounts [data-list-search]").dispatchEvent(new Event("input"));void 0');
     await text('#p9-accounts [data-list-items]','Belum ada data');
@@ -80,7 +81,7 @@ export async function checkAdministratorRefresh({send,js,nav,login,click,text,wa
     await open('content-view');
     await js('document.getElementById("announcement-title").value="Pengumuman QA Administrator";document.getElementById("announcement-message").value="Informasi sintetis untuk pemeriksaan publikasi fixture.";document.getElementById("announcement-form").requestSubmit();void 0');
     await text('#announcement-admin-list','Pengumuman QA Administrator');
-    if(await js('Boolean(document.querySelector(".swal2-confirm"))'))await click('.swal2-confirm');
+    if(await js('Boolean(document.querySelector(".swal2-confirm"))')){ await click('.swal2-confirm'); }
     await capture('content-view');
     await open('system-payments');
     assert.equal(await js('document.querySelector("#reward-payment-form [name=reference]").minLength'),6);
@@ -99,11 +100,11 @@ export async function checkAdministratorRefresh({send,js,nav,login,click,text,wa
     await writeFile(join(out,'administrator-results.json'),JSON.stringify({menus:8,one_panel_per_menu:true,summary:true,statistics:true,account_search_dialog:true,voucher_create_edit:true,audit:true,announcement_publication:true,payment_validation:true,payment_fixture_paid:true,user_reward_readback:true,deep_link:true,mobile_navigation:true,viewports:[1280,390]},null,2));
     console.log('PASS Administrator refresh: eight menus, actual voucher create/edit and announcement publication, account search/dialog, audit, payment validation, navigation and responsive captures.');
     async function capture(name,selector='#'+name){
-        for(const width of [1280,390]){
+        await sequential([1280,390], async (width) => {
             await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width<600});await js('window.scrollTo({top:0,behavior:"instant"});void 0');await sleep(160);
             assert(await js('document.documentElement.scrollWidth<=innerWidth+2'),name+' overflow '+width);
             const shot=await send('Page.captureScreenshot',{format:'jpeg',quality:55});await writeFile(join(out,name+'-'+width+'.jpg'),Buffer.from(shot.data,'base64'));
-        }
+        });
         await send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
     }
 }

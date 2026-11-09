@@ -1,3 +1,4 @@
+import {sequential} from './test-sequence.mjs';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
@@ -8,11 +9,12 @@ import {setTimeout as sleep} from 'node:timers/promises';
 export async function checkPhase10BSecurity({send,js,login,click,text,waitFor,profile,password,exceptions}) {
  const origin=await js('location.origin');assert.equal(origin,'http://127.0.0.1:18081');
  const out=join(process.env.SAMPIRA_TEST_PHASE6_SCREENSHOTS||profile,'phase10b');await mkdir(out,{recursive:true});
- const q=JSON.stringify, findings={};
- async function call(path,token,body,expected=200,headers={},method){
-  const response=await fetch(origin+path,{method:method||(body?'POST':'GET'),headers:{...(token?{Authorization:'Bearer '+token}:{}),...(body&&!(body instanceof FormData)?{'Content-Type':'application/json'}:{}),...headers},body:body instanceof FormData?body:body?JSON.stringify(body):undefined,redirect:'manual'});
+ const findings={};
+ async function call(path,token,body,expected=200,headers={},method=undefined){
+  let displayValue1; if (body instanceof FormData) { displayValue1 = body; } else { if (body) { displayValue1 = JSON.stringify(body); } else { displayValue1 = undefined; } }
+const response=await fetch(origin+path,{method:method||(body?'POST':'GET'),headers:{...(token?{Authorization:'Bearer '+token}:{}),...(body&&!(body instanceof FormData)?{'Content-Type':'application/json'}:{}),...headers},body:displayValue1,redirect:'manual'});
   const raw=await response.text();let payload;try{payload=JSON.parse(raw);}catch{payload={message:raw};}
-  if(expected!==null)assert.equal(response.status,expected,path+' '+payload.message);
+  if(expected!==null){ assert.equal(response.status,expected,path+' '+payload.message); }
   return {data:payload.data,status:response.status,message:payload.message,retry:response.headers.get('Retry-After'),cookie:response.headers.get('Set-Cookie')};
  }
  const auth=async email=>(await call('/api/auth/login',null,{email,password})).data;
@@ -23,7 +25,7 @@ export async function checkPhase10BSecurity({send,js,login,click,text,waitFor,pr
  const beforeWallet=(await call('/api/user/contributions',owner.token)).data;
  const pickup=(await call(base+'request_pickup',owner.token,{item_description:'Security boundary '+randomUUID(),category:'Computers',weight_kg:20,pickup_address:'Jalan Security Fixture Bandung',contact_phone:'081234567890',latitude:-6.91,longitude:107.61},201,{'Idempotency-Key':randomUUID()})).data;
  await call(base+'assign_collector',officer.token,{tracking_number:pickup.tracking_number});
- for(const status of ['transit','arrived'])await call(base+'pickup_status',officer.token,{tracking_number:pickup.tracking_number,status});
+ await sequential(['transit','arrived'], async (status) => { await call(base+'pickup_status',officer.token,{tracking_number:pickup.tracking_number,status}); });
  await call(base+'verify_pickup',officer.token,{pickup_id:pickup.pickup_id,final_weight_kg:2});
  const wallet=(await call('/api/user/contributions',owner.token)).data;
  assert.equal(wallet.balance-beforeWallet.balance,20,'Credit must use actual 2kg, not estimated 20kg');
@@ -42,7 +44,7 @@ export async function checkPhase10BSecurity({send,js,login,click,text,waitFor,pr
  findings.voucher_issue_time_utc=Math.abs(Date.parse(issued.created_at)/1000-Number(sql('SELECT UNIX_TIMESTAMP()')))<90;
  const auditRows=(await call('/api/administrator/contribution-audit',administrator.token)).data;
  if(auditRows){const e=auditRows.find(row=>row.action==='voucher_redeem'&&row.entity_id===receipt.id);assert(e);findings.audit_time_utc=Math.abs(Date.parse(e.created_at)/1000-Number(sql('SELECT UNIX_TIMESTAMP()')))<90;}
- else throw Error('Audit fixture route missing');
+ else { throw new Error('Audit fixture route missing'); }
  assert.equal((await call('/api/user/contributions',owner.token)).data.balance,wallet.balance-1);
  await call('/api/vouchers/'+voucher.id+'/redeem',owner.token,null,200,{'Idempotency-Key':key,'X-Expected-Point-Cost':'1'},'POST');
  assert.equal((await call('/api/user/contributions',owner.token)).data.balance,wallet.balance-1);
@@ -56,22 +58,22 @@ export async function checkPhase10BSecurity({send,js,login,click,text,waitFor,pr
  await call('/api/user/profile',other.token,{name:'Security profile fixture',payout_method:'unsupported'},400);
  await call('/api/user/profile',other.token,{name:'Security profile fixture',payout_method:'bank'},400);
  assert(!(await call('/api/user/vouchers',other.token)).data.some(e=>e.code===issued.code));
- for(const actor of [owner,officer,admin])await call('/api/administrator/vouchers',actor.token,null,403);
- const scoped=await call('/api/user/contributions?user_id='+owner.id,other.token,null,null);assert([200,400].includes(scoped.status));if(scoped.status===200)assert.equal(scoped.data.balance,0,'Owner override must never expose another wallet');
+ await sequential([owner,officer,admin], async (actor) => { await call('/api/administrator/vouchers',actor.token,null,403); });
+ const scoped=await call('/api/user/contributions?user_id='+owner.id,other.token,null,null);assert([200,400].includes(scoped.status));if(scoped.status===200){ assert.equal(scoped.data.balance,0,'Owner override must never expose another wallet'); }
  await call('/api/analytics?user_id='+owner.id,other.token,null,400);
  await call('/api/analytics/facility-grid',owner.token,null,403);
  await call('/api/administrator/vouchers',null,voucherBody,403,{Cookie:'sampira_session='+administrator.token,Origin:'https://untrusted.invalid','Sec-Fetch-Site':'cross-site'});
- for(const query of ['limit=-1','limit=1&limit=100','before=1%20OR%201=1'])await call('/api/vouchers?'+query,owner.token,null,400);
+ await sequential(['limit=-1','limit=1&limit=100','before=1%20OR%201=1'], async (query) => { await call('/api/vouchers?'+query,owner.token,null,400); });
  const injection=await call('/api/vouchers/1%20OR%201=1/redeem',owner.token,null,400,{'Idempotency-Key':randomUUID()},'POST');
  assert(!/(SQLSTATE|SELECT |mysql|token_digest)/i.test(injection.message),'Validation must not expose database details');
  const cookie=(await call('/api/auth/login',null,{email:'owner@phase1.invalid',password})).cookie;
  assert(cookie.includes('HttpOnly')&&cookie.includes('SameSite=Lax')&&cookie.includes('Path=/'),'Session cookie attributes missing');
  const rowsBefore=sql('SELECT COUNT(*) FROM pickups');
  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==','base64');
- for(const [filename,data] of [['proof.txt',png],['proof.png',Buffer.from('<svg onload=alert(1)>')],['proof.jpg',png],['proof.png',Buffer.alloc(5*1024*1024+1)]]){
-  const form=new FormData();for(const [k,v] of Object.entries({category:'Computers',item_description:'Invalid upload fixture',weight_kg:2,pickup_address:'Jalan Security Fixture Bandung',contact_phone:'081234567890'}))form.set(k,String(v));
+ await sequential([['proof.txt',png],['proof.png',Buffer.from('<svg onload=alert(1)>')],['proof.jpg',png],['proof.png',Buffer.alloc(5*1024*1024+1)]], async ([filename,data]) => {
+  const form=new FormData();for(const [k,v] of Object.entries({category:'Computers',item_description:'Invalid upload fixture',weight_kg:2,pickup_address:'Jalan Security Fixture Bandung',contact_phone:'081234567890'})){ form.set(k,String(v)); }
   form.set('photo',new Blob([data],{type:'image/png'}),filename);await call(base+'request_pickup',owner.token,form,400,{'Idempotency-Key':randomUUID()});
- }
+ });
  assert.equal(sql('SELECT COUNT(*) FROM pickups'),rowsBefore,'Rejected uploads must not create pickups');
  await call('/uploads/..%5C.env',owner.token,null,404);
  // No script execution from voucher text when traversing Administrator -> User.
@@ -89,14 +91,14 @@ export async function checkPhase10BSecurity({send,js,login,click,text,waitFor,pr
  await capture('revoked-session');
  await call('/api/administrator/accounts/'+admin.id,administrator.token,{role:'admin',is_active:true,expected_role:'admin',expected_active:false,reason:'Restore fixture admin after revocation'},200,{},'PATCH');
  // Deliberately bounded login attempts against the isolated server, never 8080.
- const attempts=[];for(let i=0;i<35;i++)attempts.push(await call('/api/auth/login',null,{email:'owner@phase1.invalid',password:'intentionally-wrong'},null));
+ const attempts=[];await sequential(Array.from({length:35}),async()=>{attempts.push(await call('/api/auth/login',null,{email:'owner@phase1.invalid',password:'invalid-'+randomUUID()},null));});
  findings.login_throttled=attempts.some(r=>r.status===429&&Number(r.retry)>0);
- const spoof=await call('/api/auth/login',null,{email:'owner@phase1.invalid',password:'intentionally-wrong'},null,{'X-Forwarded-For':'192.0.2.99'});
+ const spoof=await call('/api/auth/login',null,{email:'owner@phase1.invalid',password:'invalid-'+randomUUID()},null,{'X-Forwarded-For':'192.0.2.99'});
  findings.forwarded_header_cannot_bypass=spoof.status===429;
  assert(attempts.every(r=>[401,429].includes(r.status)));
  await writeFile(join(out,'security-observations.json'),JSON.stringify({findings,ledger_epoch:epoch,point_created_at:entry.created_at,voucher_created_at:issued.created_at,login_statuses:attempts.map(r=>r.status)},null,2));
  console.log('Phase 10B boundary observations: '+JSON.stringify(findings));
  assert(Object.values(findings).every(Boolean),'New security/boundary failures: '+Object.entries(findings).filter(([,ok])=>!ok).map(([name])=>name).join(', '));
  console.log('PASS Phase 10B: UTC transaction histories, private voucher scope, XSS rendering, CSRF/RBAC, revoked-session refresh and bounded login throttle.');
- async function capture(name){for(const width of [1280,390]){await send('Emulation.setDeviceMetricsOverride',{width,height:960,deviceScaleFactor:1,mobile:width<500});const shot=await send('Page.captureScreenshot',{format:'png'});await writeFile(join(out,`${name}-${width}.png`),Buffer.from(shot.data,'base64'));}}
+ async function capture(name){await sequential([1280,390], async (width) => {await send('Emulation.setDeviceMetricsOverride',{width,height:960,deviceScaleFactor:1,mobile:width<500});const shot=await send('Page.captureScreenshot',{format:'png'});await writeFile(join(out,`${name}-${width}.png`),Buffer.from(shot.data,'base64'));});}
 }

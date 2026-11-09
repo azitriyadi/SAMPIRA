@@ -87,7 +87,7 @@ export async function checkUserWorkspace({send, js, nav, login, click, text, wai
     const title = await js('document.querySelector("#edukasi .sp-portal-articles a").textContent');
     await js('document.querySelector("#edukasi input[name=q]").value = ' + JSON.stringify(title.slice(0, 90)) +
         '; document.querySelector("#edukasi form").requestSubmit(); void 0');
-    await text('#edukasi [role=status]', 'artikel');
+    await text('#edukasi :is(output,[role=status])', 'artikel');
     await text('#edukasi .sp-portal-articles', title);
     await capture('07-edukasi');
     const article = await js('document.querySelector("#edukasi .sp-portal-articles a").getAttribute("href")');
