@@ -314,7 +314,7 @@ if (root) {
 
 const metrics = document.querySelector("#sp-system-metrics");
 if (metrics) {
-    const message = metrics.querySelector("output, [role=status]");
+    const message = metrics.querySelector("[role=status]");
     const number = new Intl.NumberFormat("id-ID");
     const rupiah = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
     function refreshSystemMetrics() {

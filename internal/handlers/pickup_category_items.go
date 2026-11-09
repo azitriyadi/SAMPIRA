@@ -65,7 +65,9 @@ func pricePickupItems(ctx context.Context, db categoryQuery, raw string) ([]pick
 			return nil, 0, 0, 0, 0, errors.New("Kategori yang sama tidak boleh diulang.")
 		}
 		seenIDs[id] = true
-		first = firstPickupCategory(first, id)
+		if first == 0 {
+			first = id
+		}
 		item := pickupCategoryItem{Category: row.Category, Weight: weight, Reward: rewardValue(rate, weight), Fee: rewardValue(cost, weight)}
 		items = append(items, item)
 		total += weight
@@ -109,13 +111,19 @@ func verifyPickupItems(ctx context.Context, tx *sql.Tx, raw sql.NullString, subm
 	if err := json.Unmarshal([]byte(raw.String), &saved); err != nil {
 		return "", 0, 0, err
 	}
-	var actual []actualPickupWeight
+	var actual []struct {
+		Category string  `json:"category"`
+		Weight   float64 `json:"weight_kg"`
+	}
 	if len(submitted) > 12000 || json.Unmarshal([]byte(submitted), &actual) != nil || len(actual) != len(saved) {
 		return "", 0, 0, errors.New("Isi berat aktual untuk setiap kategori yang diajukan.")
 	}
-	weights, err := actualPickupWeights(actual)
-	if err != nil {
-		return "", 0, 0, err
+	weights := map[string]float64{}
+	for _, row := range actual {
+		if _, ok := weights[row.Category]; ok {
+			return "", 0, 0, errors.New("Kategori aktual berulang.")
+		}
+		weights[row.Category] = row.Weight
 	}
 	var sum, reward, fee float64
 	for i := range saved {
@@ -158,28 +166,4 @@ func (a *App) priceRequestItems(r *http.Request, data map[string]string) ([]pick
 	canonical, _ := json.Marshal(input)
 	data["items"] = string(canonical)
 	return items, id, weight, reward, fee, nil
-}
-
-func firstPickupCategory(current, next int) int {
-	if current == 0 {
-		return next
-	}
-	return current
-}
-
-type actualPickupWeight struct {
-	Category string  `json:"category"`
-	Weight   float64 `json:"weight_kg"`
-}
-
-func actualPickupWeights(actual []actualPickupWeight) (map[string]float64, error) {
-	weights := map[string]float64{}
-	for _, row := range actual {
-		if _, ok := weights[row.Category]; ok {
-			return nil, errors.New("Kategori aktual berulang.")
-		}
-		weights[row.Category] = row.Weight
-	}
-
-	return weights, nil
 }

@@ -2,7 +2,7 @@ let globalActiveMission = null;
 let missionSequence = 0;
 let disposeMissionLocation;
 const missionLocation = document.getElementById('mission-location');
-const missionMaps = import('./location-map.js?v=collector-tasks-2');
+const missionMaps = import('/assets/js/location-map.js?v=collector-tasks-2');
 
 function clearMissionLocation() {
     ++missionSequence;
@@ -66,14 +66,14 @@ function getCollectorStatusMeta(status) {
 }
 
 function switchView(viewId, element) {
-    if (viewId !== 'active-mission') { clearMissionLocation(); }
+    if (viewId !== 'active-mission') clearMissionLocation();
     document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
     const target = document.getElementById('view-' + viewId);
     if (target) {
         target.classList.add('active');
     }
     window.dispatchEvent(new Event('sampira:collector-view'));
-    if (viewId === 'dashboard') { document.querySelector('[data-collector-summary]')?.dispatchEvent(new Event('sampira:open')); }
+    if (viewId === 'dashboard') document.querySelector('[data-collector-summary]')?.dispatchEvent(new Event('sampira:open'));
 
     document.querySelectorAll('.sidebar-item, .nav-item').forEach(item => item.classList.remove('active'));
     if (viewId === 'operations') {
@@ -87,7 +87,7 @@ function switchView(viewId, element) {
             const viewLabels = {dashboard:['dashboard','beranda'],history:['riwayat'],earnings:['komisi'],profile:['profil'],facility:['fasilitas'],'active-mission':['pickup aktif','misi']};
             const matchesView = (viewLabels[viewId] || [viewId.replace('-', ' ')]).some(label => text === label || (label !== 'misi' && text.includes(label)));
             const matchesHome = viewId === 'dashboard' && text.includes('home');
-            if (matchesView || matchesHome) { item.classList.add('active'); }
+            if (matchesView || matchesHome) item.classList.add('active');
         });
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -97,7 +97,7 @@ function openActiveMission() {
     if (globalActiveMission) {
         void viewActiveMission(globalActiveMission.tracking_number);
     } else {
-        void Swal.fire({
+        Swal.fire({
             icon: 'info',
             title: 'Tidak Ada Misi Aktif',
             text: 'Saat ini Anda tidak memiliki misi penjemputan aktif. Silakan ambil tugas dari Antrean.',
@@ -110,9 +110,9 @@ function openActiveMission() {
 async function fetchMission(tracking) {
     const query = new URLSearchParams({tracking_number: tracking});
     const response = await portalFetch('/api/ecorecycle/pickup_status?' + query);
-    if ([401, 403, 404].includes(response.status)) { return null; }
+    if ([401, 403, 404].includes(response.status)) return null;
     const body = await response.json();
-    if (!response.ok || !body.data) { throw new Error('Detail tugas belum dapat dimuat. Coba lagi.'); }
+    if (!response.ok || !body.data) throw new Error('Detail tugas belum dapat dimuat. Coba lagi.');
     return body.data;
 }
 
@@ -125,7 +125,7 @@ async function viewActiveMission(tracking, navigation) {
     missionLocation.textContent = 'Memuat lokasi penjemputan…';
     try {
         const item = await fetchMission(tracking);
-        if (sequence !== missionSequence) { return; }
+        if (sequence !== missionSequence) return;
         if (!item) {
             missionLocation.textContent = 'Detail pickup tidak tersedia untuk akun ini.';
             void loadCollectorData();
@@ -134,7 +134,7 @@ async function viewActiveMission(tracking, navigation) {
         renderMission(item);
         try {
             const {mountLocationDetail} = await missionMaps;
-            if (sequence !== missionSequence) { return; }
+            if (sequence !== missionSequence) return;
             disposeMissionLocation = mountLocationDetail(missionLocation, {
                 title: 'Titik tujuan penjemputan', point: item, address: item.pickup_address, autoTiles: true,
                 popup: {title: 'Lokasi donor: ' + (item.donor_name || 'Warga'), address: item.pickup_address || 'Alamat belum tersedia.'},
@@ -145,9 +145,9 @@ async function viewActiveMission(tracking, navigation) {
         }
 
         async function authorize() {
-            if (sequence !== missionSequence) { return false; }
+            if (sequence !== missionSequence) return false;
             const latest = await fetchMission(tracking);
-            if (sequence !== missionSequence) { return false; }
+            if (sequence !== missionSequence) return false;
             if (!latest) {
                 clearMissionLocation();
                 missionLocation.textContent = 'Akses tugas berakhir. Kembali ke daftar tugas.';
@@ -161,7 +161,7 @@ async function viewActiveMission(tracking, navigation) {
             return true;
         }
     } catch (error) {
-        if (sequence === missionSequence) { missionLocation.textContent = error.message; }
+        if (sequence === missionSequence) missionLocation.textContent = error.message;
     }
 }
 
@@ -230,16 +230,16 @@ async function recordActualWeight(pickupId) {
     const result = rows?.length ? await Swal.fire({title:'Berat aktual per kategori (kg)',customClass:{popup:'pickup-weighing-dialog'},html:rows.map((row,index)=>`<label class="pickup-actual-field">${escapePortalHTML(row.category)}<input class="swal2-input" type="number" min="0.01" max="99999.99" step="0.01" id="actual-item-${index}" value="${row.weight_kg}"></label>`).join(''),showCancelButton:true,cancelButtonText:'Batal',confirmButtonText:'Simpan penimbangan',preConfirm:()=>{const items=rows.map((row,index)=>({category:row.category,weight_kg:Number(document.getElementById('actual-item-'+index).value)}));if(items.some(row=>!row.weight_kg||row.weight_kg<=0||row.weight_kg>99999.99||Math.abs(row.weight_kg*100-Math.round(row.weight_kg*100))>.00001)){Swal.showValidationMessage('Isi berat aktual tiap kategori, maksimal dua desimal.');return false;}return items;}}) : await Swal.fire({
         title: 'Berat aktual di hub (kg)', input: 'number', inputAttributes: {min: '0.01', max: '99999.99', step: '0.01'},
         showCancelButton: true, confirmButtonText: 'Simpan',
-        inputValidator: value => /^\d{1,5}(\.\d{1,2})?$/.test(value) && Number(value) > 0 ? undefined : 'Masukkan berat lebih dari nol.'
+        inputValidator: value => /^[0-9]{1,5}(\.[0-9]{1,2})?$/.test(value) && Number(value) > 0 ? undefined : 'Masukkan berat lebih dari nol.'
     });
-    if (!result.isConfirmed) { return; }
+    if (!result.isConfirmed) return;
     try {
         const response = await portalFetch('/api/ecorecycle/verify_pickup', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({pickup_id: pickupId, final_weight_kg: rows?.length ? Math.round(result.value.reduce((sum,row)=>sum+row.weight_kg,0)*100)/100 : Number(result.value), ...(rows?.length?{items:JSON.stringify(result.value)}:{})})
         });
         const data = await response.json();
-        if (!response.ok) { throw new Error(data.message); }
+        if (!response.ok) throw new Error(data.message);
         await Swal.fire({icon: 'success', title: 'Berat aktual tercatat, penjemputan selesai'});
         switchView('dashboard');
         await loadCollectorData();
@@ -250,7 +250,7 @@ async function recordActualWeight(pickupId) {
 
 async function updateMissionStatus(trackingNum, newStatus, location, notes) {
     const result = await Swal.fire({title: 'Konfirmasi Perubahan Status', text: 'Ubah status penjemputan ' + trackingNum + ' menjadi ' + newStatus.toUpperCase() + '?', icon: 'question', showCancelButton: true, confirmButtonColor: '#126048', cancelButtonColor: '#64748b', confirmButtonText: 'Ya, Update!', cancelButtonText: 'Batal'});
-    if (!result.isConfirmed) { return; }
+    if (!result.isConfirmed) return;
     try {
         const response = await portalFetch('api/ecorecycle/pickup_status', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({tracking_number: trackingNum, status: newStatus, location, notes})});
         const data = await response.json();
@@ -259,7 +259,7 @@ async function updateMissionStatus(trackingNum, newStatus, location, notes) {
             return;
         }
         await Swal.fire({icon: 'success', title: 'Berhasil', text: 'Status misi berhasil diperbarui!', timer: 1500, showConfirmButton: false});
-        void loadCollectorData();
+        loadCollectorData();
         switchView('dashboard');
     } catch {
         await Swal.fire({icon: 'error', title: 'Kesalahan', text: 'Gagal terhubung ke server.', confirmButtonColor: '#126048'});
@@ -268,7 +268,7 @@ async function updateMissionStatus(trackingNum, newStatus, location, notes) {
 
 async function claimPickup(trackingNum) {
     const result = await Swal.fire({title: 'Ambil Tugas Penjemputan', text: 'Apakah Anda bersedia menjemput sampah ' + trackingNum + '?', icon: 'question', showCancelButton: true, confirmButtonColor: '#126048', cancelButtonColor: '#64748b', confirmButtonText: 'Ya, Jemput!', cancelButtonText: 'Batal'});
-    if (!result.isConfirmed) { return; }
+    if (!result.isConfirmed) return;
     try {
         const response = await portalFetch('api/ecorecycle/assign_collector', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({tracking_number: trackingNum})});
         const data = await response.json();
@@ -277,7 +277,7 @@ async function claimPickup(trackingNum) {
             return;
         }
         await Swal.fire({icon: 'success', title: 'Tugas Diambil!', text: 'Silakan lihat rincian alamat penjemputan masyarakat di tab Misi Aktif.', confirmButtonColor: '#126048'});
-        void loadCollectorData();
+        loadCollectorData();
         void viewActiveMission(trackingNum);
     } catch {
         await Swal.fire({icon: 'error', title: 'Kesalahan', text: 'Gagal menghubungi server.', confirmButtonColor: '#126048'});
@@ -342,8 +342,8 @@ function summarizeCollectorPickups(list, userId) {
             result.weight += Number(item.final_weight_kg ?? 0);
             result.historyHtml += renderCollectorHistory(item);
         } else if (String(item.collector_id) === String(userId)) {
-            if (['pickup', 'transit', 'arrived'].includes(item.status)) { result.activeCount++; }
-            if (['pickup', 'transit'].includes(item.status)) { result.activeMission = item; }
+            if (['pickup', 'transit', 'arrived'].includes(item.status)) result.activeCount++;
+            if (['pickup', 'transit'].includes(item.status)) result.activeMission = item;
             result.tasksHtml += renderAssignedCollectorTask(item);
             result.queueCount++;
         } else if (item.status === 'pending') {
@@ -365,8 +365,8 @@ function renderCollectorDashboard(list, userId) {
     document.getElementById('earnings-weight').textContent = result.weight.toLocaleString('id-ID',{maximumFractionDigits:2}) + ' kg';
     document.getElementById('collector-history-count').textContent = result.completedCount + ' misi selesai';
     document.getElementById('collector-queue-count').textContent = result.queueCount + ' tugas';
-    if (upcomingList) { upcomingList.innerHTML = result.tasksHtml || '<div class="collector-queue-empty"><i class="fas fa-inbox" aria-hidden="true"></i><strong>Tidak ada antrean pickup tersedia</strong><p>Tugas baru akan tampil di sini saat tersedia. Anda juga dapat meninjau tugas fasilitas.</p><button type="button" class="sp-button sp-button--quiet" onclick="switchView(\'facility\')">Lihat Tugas Fasilitas</button></div>'; }
-    if (historyBody) { historyBody.innerHTML = result.historyHtml || '<tr><td colspan="4" class="collector-history-empty"><i class="fas fa-clipboard-check" aria-hidden="true"></i><strong>Belum ada misi selesai</strong><p>Penjemputan yang sudah selesai akan tercatat di sini.</p></td></tr>'; }
+    if (upcomingList) upcomingList.innerHTML = result.tasksHtml || '<div class="collector-queue-empty"><i class="fas fa-inbox" aria-hidden="true"></i><strong>Tidak ada antrean pickup tersedia</strong><p>Tugas baru akan tampil di sini saat tersedia. Anda juga dapat meninjau tugas fasilitas.</p><button type="button" class="sp-button sp-button--quiet" onclick="switchView(\'facility\')">Lihat Tugas Fasilitas</button></div>';
+    if (historyBody) historyBody.innerHTML = result.historyHtml || '<tr><td colspan="4" class="collector-history-empty"><i class="fas fa-clipboard-check" aria-hidden="true"></i><strong>Belum ada misi selesai</strong><p>Penjemputan yang sudah selesai akan tercatat di sini.</p></td></tr>';
 }
 
 let collectorLoadSequence=0;
@@ -379,8 +379,8 @@ async function loadCollectorData() {
     collectorRetry.hidden=true;
     try {
         const user=await portalUser('petugas');
-        if (run !== collectorLoadSequence) { return; }
-        if (!user) { throw new Error('Profile unavailable'); }
+        if (run !== collectorLoadSequence) return;
+        if (!user) throw new Error('Profile unavailable');
         document.getElementById('desktop-greeting').innerText=`Halo, ${user.name}. Tinjau penjemputan dan tugas fasilitasmu.`;
         document.getElementById('collector-welcome-title').textContent=`Halo, ${user.name}.`;
         document.getElementById('mobile-name').innerText=user.name;
@@ -389,15 +389,15 @@ async function loadCollectorData() {
         document.getElementById('mobile-avatar').innerText=user.name.substring(0,2).toUpperCase();
         document.getElementById('profile-avatar-large').innerText=user.name.substring(0,2).toUpperCase();
         const response=await portalFetch('/api/ecorecycle/list_pickups?type=petugas',{signal:AbortSignal.timeout(15000)});
-        if (run !== collectorLoadSequence) { return; }
+        if (run !== collectorLoadSequence) return;
         if (response.status === 401 || response.status === 403) {logoutPortal();return;}
         const data=await response.json();
-        if (run !== collectorLoadSequence) { return; }
-        if (!response.ok || data.status !== 'success' || !Array.isArray(data.data)) { throw new Error('Tasks unavailable'); }
+        if (run !== collectorLoadSequence) return;
+        if (!response.ok || data.status !== 'success' || !Array.isArray(data.data)) throw new Error('Tasks unavailable');
         renderCollectorDashboard(data.data,user.id);
         collectorStatus.parentElement.hidden=true;
     } catch {
-        if (run !== collectorLoadSequence) { return; }
+        if (run !== collectorLoadSequence) return;
         globalActiveMission=null;
         collectorStatus.textContent='Daftar penjemputan belum dapat dimuat.';
         collectorRetry.hidden=false;
@@ -405,24 +405,24 @@ async function loadCollectorData() {
         historyBody.replaceChildren();
         document.getElementById('stat-active-tasks').textContent='—';
         document.getElementById('stat-packages').textContent='—';
-        for(const id of ['earnings-completed-count','earnings-weight','collector-history-count']){ document.getElementById(id).textContent='—'; }
+        for(const id of ['earnings-completed-count','earnings-weight','collector-history-count'])document.getElementById(id).textContent='—';
         document.getElementById('collector-queue-count').textContent='—';
     }
 }
 collectorRetry.addEventListener('click',loadCollectorData);
 document.getElementById('collector-refresh').addEventListener('click', async event => {
     const button=event.currentTarget;
-    if(button.disabled){ return; }
+    if(button.disabled)return;
     button.disabled=true;
     document.querySelector('[data-collector-summary]').dispatchEvent(new Event('sampira:open'));
     try { await loadCollectorData(); } finally { button.disabled=false; }
 });
 window.addEventListener('sampira:session-ended',() => {collectorLoadSequence++;clearMissionLocation();});
 window.addEventListener('focus',() => {
-    if (document.hidden) { return; }
-    if (document.getElementById('view-dashboard').classList.contains('active')) { void loadCollectorData(); }
+    if (document.hidden) return;
+    if (document.getElementById('view-dashboard').classList.contains('active')) void loadCollectorData();
     else if (document.getElementById('view-active-mission').classList.contains('active') && globalActiveMission)
-        { void viewActiveMission(globalActiveMission.tracking_number); }
+        void viewActiveMission(globalActiveMission.tracking_number);
 });
 
 function logoutCollector() {

@@ -27,34 +27,27 @@ const articles={
 };
 const categories={'pemilahan-sampah':['bins','sorting'],'pengurangan-sampah':['groceries','food'],'daur-ulang':['recycling','sorting'],pengomposan:['compost','food'],'bank-sampah':['recycling','bins'],'sampah-elektronik':['batteries','bins'],'panduan-sampira':['community','facilities']};
 export function educationPhotos(item){
-    if(Array.isArray(item.photos)&&item.photos.length){ return item.photos.map(p=>({src:p.url,alt:p.alt,author:p.credit||'',source:p.url.startsWith('https://')?p.url:'',license:'',provider:'',width:960,height:640})); }
+    if(Array.isArray(item.photos)&&item.photos.length)return item.photos.map(p=>({src:p.url,alt:p.alt,author:p.credit||'',source:p.url.startsWith('https://')?p.url:'',license:'',provider:'',width:960,height:640}));
     return (articles[item.slug]||categories[item.category]||['bins','sorting']).map(key=>educationPhotoLibrary[key]);
 }
 export function educationPhotoImage(photo,lazy=true){
     const image=document.createElement('img');image.src=photo.src;image.alt=photo.alt;image.width=photo.width;image.height=photo.height;image.loading=lazy?'lazy':'eager';image.decoding='async';
     image.addEventListener('error',()=>{image.hidden=true;});return image;
 }
-function photoCredit(photo){if(!photo.author){ return 'Foto artikel'; }return 'Foto: '+photo.author+(photo.provider?' / '+photo.provider:'');}
 export function educationPhotoFigure(photo,detail=false){
     const figure=document.createElement('figure');figure.className='sp-article-photo'+(detail?' sp-article-photo-detail':'');
     const caption=document.createElement('figcaption');
     if(detail){const text=document.createElement('span');text.textContent='Ilustrasi: '+photo.alt+' ';caption.append(text);}
-    const source=document.createElement(photo.source?'a':'span');source.textContent=photoCredit(photo);if(photo.source){source.href=photo.source;source.rel='noopener noreferrer';}caption.append(source);
+    const source=document.createElement(photo.source?'a':'span');source.textContent=photo.author?'Foto: '+photo.author+(photo.provider?' / '+photo.provider:''):'Foto artikel';if(photo.source){source.href=photo.source;source.rel='noopener noreferrer';}caption.append(source);
     if(detail&&photo.license){const license=document.createElement('a');license.textContent='Lisensi';license.href=photo.license;license.rel='noopener noreferrer';caption.append(document.createTextNode(' · '),license);}
     figure.append(educationPhotoImage(photo),caption);return figure;
 }
 
 // Render stored plain text as readable blocks without interpreting HTML.
-function articleHeading(block){
-    const line=block.replace(/\n$/,'');if(line.includes('\n')){ return null; }
-    let count=0;while(count<line.length&&line[count]==='#'){ count++; }
-    if(count<1||count>3||!/^\s/.test(line.slice(count))){ return null; }
-    const title=line.slice(count).trimStart();return title?[line,title]:null;
-}
 export function educationArticleBody(text){
     const body=document.createElement('div');body.className='sp-article-body';
     for(const block of String(text||'').split(/\n\s*\n/)){
-        const heading=articleHeading(block);
+        const heading=block.match(/^#{1,3}\s+([^\n]+)$/);
         const element=document.createElement(heading?'h3':'p');
         element.textContent=heading?heading[1]:block;body.append(element);
     }

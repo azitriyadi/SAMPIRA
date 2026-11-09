@@ -16,7 +16,7 @@
     outline: 3px solid var(--sp-focus);
     outline-offset: 3px;
 }
-[hidden] { display: none ; }
+[hidden] { display: none !important; }
 .sp-public { margin: 0; background: var(--sp-canvas); color: var(--sp-ink); font: 1rem/1.6 Inter, system-ui, sans-serif; }
 .sp-public *, .sp-console *, .sp-panel *, .sp-service-grid * { box-sizing: border-box; }
 .sp-public a, .sp-panel a, .sp-landing-services a { color: var(--sp-green); }
@@ -49,9 +49,9 @@
     padding: 8px 10px; border-radius: 8px; font: inherit; color: var(--sp-ink); background: white;
 }
 .sp-editor textarea { resize: vertical; }
-.sp-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 15px; border: 1px solid var(--sp-green); border-radius: 8px; background: var(--sp-green); color: white ; text-align: center; text-decoration: none; font: inherit; font-size: .9rem; font-weight: 700; cursor: pointer; }
+.sp-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 15px; border: 1px solid var(--sp-green); border-radius: 8px; background: var(--sp-green); color: white !important; text-align: center; text-decoration: none; font: inherit; font-size: .9rem; font-weight: 700; cursor: pointer; }
 .sp-button:hover { background: var(--sp-green-dark); }
-.sp-button--quiet { background: white; color: var(--sp-green) ; border-color: #a8bcb0; }
+.sp-button--quiet { background: white; color: var(--sp-green) !important; border-color: #a8bcb0; }
 .sp-button--quiet:hover { background: var(--sp-soft); }
 .sp-button:disabled { opacity: .6; cursor: default; }
 .sp-card-grid, .sp-service-grid, .sp-metric-grid { display: grid; gap: 13px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 215px), 1fr)); }
@@ -197,6 +197,6 @@ body.role-warrior .user-overview .kpi-grid { grid-column: 1 / -1; grid-template-
     :is(.sp-landing, .sp-public, .sp-console, .portal-page, [data-auth-page]) *,
     :is(.sp-landing, .sp-public, .sp-console, .portal-page, [data-auth-page]) *::before,
     :is(.sp-landing, .sp-public, .sp-console, .portal-page, [data-auth-page]) *::after {
-        animation-duration: .01ms ; transition-duration: .01ms ; scroll-behavior: auto ;
+        animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important;
     }
 }

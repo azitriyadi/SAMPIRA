@@ -147,23 +147,14 @@ func (s FacilityReports) Create(ctx context.Context, reporterID int, key string,
 }
 
 func (s FacilityReports) Revise(ctx context.Context, id, reporterID, version int, input models.FacilityReportInput) (models.FacilityReport, error) {
-	return s.transition(ctx, facilityTransition{id: id, ownerID: reporterID, actorID: reporterID, version: version, from: models.FacilityRevisionRequired, to: models.FacilityPending, input: &input})
+	return s.transition(ctx, id, reporterID, reporterID, version, models.FacilityRevisionRequired, models.FacilityPending, nil, &input)
 }
 
 func (s FacilityReports) Verify(ctx context.Context, id, adminID, version int, status string, note *string) (models.FacilityReport, error) {
-	return s.transition(ctx, facilityTransition{id: id, actorID: adminID, version: version, from: models.FacilityPending, to: status, note: note})
+	return s.transition(ctx, id, 0, adminID, version, models.FacilityPending, status, note, nil)
 }
 
-type facilityTransition struct {
-	id, ownerID, actorID, version int
-	from, to                      string
-	note                          *string
-	input                         *models.FacilityReportInput
-}
-
-func (s FacilityReports) transition(ctx context.Context, change facilityTransition) (models.FacilityReport, error) {
-	id, ownerID, actorID, version := change.id, change.ownerID, change.actorID, change.version
-	from, to, note, input := change.from, change.to, change.note, change.input
+func (s FacilityReports) transition(ctx context.Context, id, ownerID, actorID, version int, from, to string, note *string, input *models.FacilityReportInput) (models.FacilityReport, error) {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return models.FacilityReport{}, err

@@ -28,8 +28,6 @@ const educationSummaryColumns = "id, slug, title, summary, category, published_a
 const educationBodyColumns = ", body, source_urls"
 const educationAuditColumns = ", status, version, created_by, updated_by, created_at, updated_at"
 
-const educationSelectPrefix = "SELECT "
-
 func educationSummaryFields(item *models.EducationSummary) []any {
 	return []any{&item.ID, &item.Slug, &item.Title, &item.Summary, &item.Category, &item.PublishedAt, &item.Photos}
 }
@@ -64,7 +62,7 @@ func educationListQuery(filter EducationFilter, public bool) (string, []any) {
 		where = append(where, "(title LIKE ? ESCAPE '!' OR summary LIKE ? ESCAPE '!')")
 		args = append(args, pattern, pattern)
 	}
-	query := educationSelectPrefix + columns + " FROM education_articles"
+	query := "SELECT " + columns + " FROM education_articles"
 	if len(where) > 0 {
 		query += " WHERE " + strings.Join(where, " AND ")
 	}

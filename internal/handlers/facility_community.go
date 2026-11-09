@@ -13,9 +13,6 @@ import (
 
 // The list stays minimal. Community detail shares facility content only;
 // reporter identity, private review notes and internal evidence remain protected.
-const communityCacheHeader = "Cache-Control"
-const communityCachePolicy = "private, no-store"
-
 type communityFacility struct {
 	ID         int       `json:"id"`
 	Tracking   string    `json:"tracking_number"`
@@ -36,7 +33,7 @@ func (a *App) communityFacilityReports(w http.ResponseWriter, r *http.Request) {
 	if actor == nil {
 		return
 	}
-	w.Header().Set(communityCacheHeader, communityCachePolicy)
+	w.Header().Set("Cache-Control", "private, no-store")
 	q := r.URL.Query()
 	before := 0
 	if q.Get("before_id") != "" {
@@ -97,7 +94,7 @@ func (a *App) confirmFacilityAffected(w http.ResponseWriter, r *http.Request) {
 	if id == 0 {
 		return
 	}
-	w.Header().Set(communityCacheHeader, communityCachePolicy)
+	w.Header().Set("Cache-Control", "private, no-store")
 	tx, err := a.DB.BeginTx(r.Context(), nil)
 	if err != nil {
 		facilityFailure(w, err)
@@ -163,7 +160,7 @@ func (a *App) communityFacilityDetail(w http.ResponseWriter, r *http.Request) {
 	if id == 0 {
 		return
 	}
-	w.Header().Set(communityCacheHeader, communityCachePolicy)
+	w.Header().Set("Cache-Control", "private, no-store")
 	var item communityFacilityDetail
 	var hasPhoto bool
 	err := a.DB.QueryRowContext(r.Context(), `SELECT r.id,r.tracking_number,r.category,r.title,r.address,r.status,COALESCE(h.status,''),
