@@ -98,7 +98,9 @@ if (root) {
     function open(item, action) {
         const navigation = { origin, action };
         if (item.type === "pickup") {
-            window.viewActiveMission(item.tracking, navigation);
+            window.viewActiveMission(item.tracking, navigation).catch(() => {
+                feedback.textContent = 'Detail penjemputan belum dapat dibuka. Coba lagi.';
+            });
             return;
         }
         const selector = item.handling ? "[data-open-handling]" : "[data-open-verification]";

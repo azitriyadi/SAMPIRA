@@ -57,6 +57,13 @@ func TestFacilityPhotoRequiresDecodableRaster(t *testing.T) {
 	}
 }
 
+func requireFacilityProblem(t *testing.T, problem *apiProblem, status int) {
+	t.Helper()
+	if problem == nil || problem.status != status {
+		t.Fatalf("problem = %v, want status %d", problem, status)
+	}
+}
+
 func TestFacilityVerificationRejectsUntrustedBody(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -78,9 +85,7 @@ func TestFacilityVerificationRejectsUntrustedBody(t *testing.T) {
 			r.Header.Set("Content-Type", "application/json")
 			input, problem := readFacilityVerification(httptest.NewRecorder(), r)
 			if tc.status != 0 {
-				if problem == nil || problem.status != tc.status {
-					t.Fatalf("problem = %v, want status %d", problem, tc.status)
-				}
+				requireFacilityProblem(t, problem, tc.status)
 				return
 			}
 			if problem != nil {

@@ -1,6 +1,6 @@
 import {mountCommunityReports} from './facility-community.js?v=community-detail-15';
 import {mountReportForm} from './facility-report-form.js?v=facility-simple-2';
-import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=facility-simple-2';
+import {historyEntry, mountReports, reportCard, reportDetails} from './facility-report-ui.js?v=facility-simple-2';
 import {base, request} from './facility-api.js?v=phase5b';
 import {mountPublicHandling} from './facility-handling.js?v=facility-simple-2';
 import {mountLocationDetail} from './location-map.js?v=phase8';
@@ -28,6 +28,28 @@ function messageFor(error, collection) {
     case 0: return error.message + ' Coba lagi saat koneksi tersedia.';
     default: return 'Layanan laporan sedang bermasalah. Coba lagi dalam beberapa saat.';
     }
+}
+
+function verificationButtonLabel(status) {
+    const labels = {approved: 'Setujui dan tugaskan', revision_required: 'Kirim permintaan perbaikan', rejected: 'Tolak laporan'};
+    return labels[status] || 'Simpan';
+}
+
+function verificationSuccess(status) {
+    const messages = {
+        approved: 'Laporan disetujui. Tugas sudah masuk ke akun Petugas yang dipilih.',
+        revision_required: 'Permintaan perbaikan sudah dikirim ke pelapor.',
+        rejected: 'Laporan ditolak. Alasan tersimpan untuk pelapor.'
+    };
+    return messages[status];
+}
+
+function validVerificationNote(note) {
+    const value = note.value.trim();
+    if ((!note.required || value) && [...value].length <= 1000) return true;
+    note.setCustomValidity(value ? 'Catatan maksimal 1.000 karakter.' : 'Isi alasan keputusan ini.');
+    note.reportValidity();
+    return false;
 }
 
 function init(root) {
@@ -420,13 +442,16 @@ function init(root) {
                 officerMore.hidden = officerCursor === null;
                 officerMore.textContent = 'Muat Petugas lainnya';
                 officerState.textContent = officer.options.length > 1 ? '' : 'Belum ada Petugas aktif. Aktifkan akun Petugas terlebih dahulu.';
-            } catch (error) { officerState.textContent = 'Daftar Petugas belum dapat dimuat. Klik Muat Petugas untuk mencoba lagi.'; }
+            } catch (error) {
+                if (error.status === 401) failure(error);
+                officerState.textContent = 'Daftar Petugas belum dapat dimuat. Klik Muat Petugas untuk mencoba lagi.';
+            }
             finally { loadingOfficers = false; officerMore.disabled = false; }
         }
         officerMore.addEventListener('click', () => void loadOfficers());
         decision.addEventListener('change', () => {
             const approved = decision.value === 'approved';
-            $('verify-submit').textContent = approved ? 'Setujui dan tugaskan' : decision.value === 'revision_required' ? 'Kirim permintaan perbaikan' : decision.value === 'rejected' ? 'Tolak laporan' : 'Simpan';
+            $('verify-submit').textContent = verificationButtonLabel(decision.value);
             $('note-label').textContent = decision.value === 'rejected' ? 'Alasan laporan ditolak' : 'Apa yang perlu diperbaiki pelapor?';
             $('officer-field').hidden = !approved; officer.required = approved;
             $('note-field').hidden = approved || !decision.value;
@@ -440,11 +465,7 @@ function init(root) {
             if (busy || sessionEnding || selected?.status !== 'pending') { return; }
             const status = decision.value;
             const value = note.value.trim();
-            if ((note.required && !value) || [...value].length > 1000) {
-                note.setCustomValidity(value ? 'Catatan maksimal 1.000 karakter.' : 'Isi alasan keputusan ini.');
-                note.reportValidity();
-                return;
-            }
+            if (!validVerificationNote(note)) return;
             if (status === 'approved' && !officer.reportValidity()) return;
             const id = selected.id;
             const body = {status, version: selected.version, note: status === 'approved' ? null : value || null};
@@ -456,7 +477,7 @@ function init(root) {
                 await request(base + '/' + id + '/verification', {
                     method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
                 });
-                const success = body.status === 'approved' ? 'Laporan disetujui. Tugas sudah masuk ke akun Petugas yang dipilih.' : body.status === 'revision_required' ? 'Permintaan perbaikan sudah dikirim ke pelapor.' : 'Laporan ditolak. Alasan tersimpan untuk pelapor.';
+                const success = verificationSuccess(body.status);
                 $('verify-feedback').textContent = success; announce(success);
                 void loadDetail(id);
             } catch (error) {

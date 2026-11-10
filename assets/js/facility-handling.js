@@ -215,24 +215,7 @@ function workspace(root) {
         void loadList();
     }
 
-    async function openDetail(id, navigation) {
-        if (!Number.isSafeInteger(id) || id < 1) return;
-        selected = id;
-        const sequence = ++detailSequence;
-        detailView.hidden = false;
-        listView.hidden = true;
-        detailHeading.focus();
-        const status = element('output', 'Memuat detail penanganan…', 'facility-muted');
-        disposeLocation?.();
-        detailBody.replaceChildren(status);
-        refresh.disabled = true;
-        try {
-            const report = await request(detailPath(id));
-            if (sequence !== detailSequence) return;
-            const history = historyPanel(report, role, error => {
-                handleReadError(error, errorBox);
-                if (error.status === 404 || error.status === 403) showList();
-            });
+    function detailActions(report, history, id) {
             const actions = element('div', undefined, 'facility-actions handling-actions');
             const extras = element('details', undefined, 'facility-extra-actions');
             extras.append(element('summary', 'Opsi lainnya'));
@@ -260,6 +243,28 @@ function workspace(root) {
                 }, () => sessionEnded(errorBox));
             }, true));
             if (extraActions.childElementCount) actions.append(extras);
+            return actions;
+    }
+
+    async function openDetail(id, navigation) {
+        if (!Number.isSafeInteger(id) || id < 1) return;
+        selected = id;
+        const sequence = ++detailSequence;
+        detailView.hidden = false;
+        listView.hidden = true;
+        detailHeading.focus();
+        const status = element('output', 'Memuat detail penanganan…', 'facility-muted');
+        disposeLocation?.();
+        detailBody.replaceChildren(status);
+        refresh.disabled = true;
+        try {
+            const report = await request(detailPath(id));
+            if (sequence !== detailSequence) return;
+            const history = historyPanel(report, role, error => {
+                handleReadError(error, errorBox);
+                if (error.status === 404 || error.status === 403) showList();
+            });
+            const actions = detailActions(report, history, id);
             const location = element('div');
             if (admin) {
                 const mapGroup=element('details',undefined,'admin-detail-group');mapGroup.append(element('summary','Lokasi fasilitas'),location);

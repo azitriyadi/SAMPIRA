@@ -100,4 +100,5 @@ async function welcomeAfterLogin() {
     } catch { /* A welcome message must never block access to the portal. */ }
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', welcomeAfterLogin, {once: true});
-else void welcomeAfterLogin();
+// Defer the greeting until the current page initialization has finished.
+else window.setTimeout(welcomeAfterLogin, 0);

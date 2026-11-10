@@ -79,9 +79,7 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	photoCommitted := false
 	defer func() {
-		if photoURL != nil && !photoCommitted {
-			_ = os.Remove(*photoURL)
-		}
+		discardPickupPhoto(photoURL, photoCommitted)
 	}()
 	ecoReward := rewardValue(rewardPerKg, weight)
 	processingFee := rewardValue(processingFeePerKg, weight)
@@ -89,6 +87,12 @@ func (a *App) RequestPickupHandler(w http.ResponseWriter, r *http.Request) {
 	trackingNum := fmt.Sprintf("ECR-%s-%s", time.Now().Format("20060102"), rand.Text())
 
 	photoCommitted = a.persistPickup(w, r, pickupCreateData{userID: user.ID, key: key, data: data, location: location, photoURL: photoURL, fingerprint: fingerprint, categoryItems: categoryItems, catID: catID, weight: weight, ecoReward: ecoReward, processingFee: processingFee, trackingNum: trackingNum})
+}
+
+func discardPickupPhoto(photoURL *string, committed bool) {
+	if photoURL != nil && !committed {
+		_ = os.Remove(*photoURL)
+	}
 }
 
 func (a *App) ListPickupsHandler(w http.ResponseWriter, r *http.Request) {
