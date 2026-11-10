@@ -23,11 +23,11 @@ if (document.body.classList.contains('user-reference')) {
         'fa-truck-fast':'Truck','fa-truck-pickup':'Truck'
     };
     function lineIcons(root) {
-        if (!window.lucide) return; // Existing Font Awesome remains the fallback.
+        if (!window.lucide) { return; } // Existing Font Awesome remains the fallback.
         for (const icon of root.querySelectorAll('i[class*="fa-"]:not([data-ref-icon])')) {
             const key = Object.keys(icons).find(name => icon.classList.contains(name));
             const definition = window.lucide.icons[icons[key]];
-            if (!definition) continue;
+            if (!definition) { continue; }
             const svg = window.lucide.createElement(definition, {width:18,height:18,'stroke-width':1.8,'aria-hidden':'true'});
             icon.replaceChildren(svg);
             icon.classList.add('ref-line-icon');
@@ -36,14 +36,14 @@ if (document.body.classList.contains('user-reference')) {
     }
     function reportLayout() {
         const form = document.getElementById('facility-form');
-        if (!form || form.dataset.referenceLayout) return;
+        if (!form || form.dataset.referenceLayout) { return; }
         form.dataset.referenceLayout = 'ready';
         const panels = [...form.querySelectorAll('.sp-pickup-panel')];
-        if (panels.length !== 3) return;
+        if (panels.length !== 3) { return; }
         const [map, data, address] = panels;
         const categories = data.querySelector('.sp-report-categories');
         const title = data.querySelector('h4');
-        if (categories && title) title.after(categories);
+        if (categories && title) { title.after(categories); }
         const photo = address.querySelector('.sp-pickup-photo');
         if (photo) {
             const columns = document.createElement('div'); columns.className = 'ref-form-columns';
@@ -54,9 +54,9 @@ if (document.body.classList.contains('user-reference')) {
         const fields = form.querySelector('.sp-report-fields');
         // Keep all required controls in the existing enabled/disabled fieldset.
         const holder = map.parentElement;
-        holder.insertBefore(data, map);
+        map.before(data);
         holder.insertBefore(map, data.nextSibling);
-        if (fields && !fields.children.length) fields.remove();
+        if (fields && !fields.children.length) { fields.remove(); }
         data.id = 'report-data'; map.id = 'report-map'; address.id = 'report-address';
         const heading = document.getElementById('facility-form-heading');
         if (heading) {
@@ -74,6 +74,15 @@ if (document.body.classList.contains('user-reference')) {
         }
         form.before(nav);
     }
+    function decorateStat(stat){
+            stat.dataset.referenceStat = 'ready';
+            const icon = document.createElement('i'); icon.className = 'fas fa-coins'; icon.setAttribute('aria-hidden','true');
+            const label = stat.querySelector('span')?.textContent || '';
+            if (/level/i.test(label)) { icon.className = 'fas fa-leaf'; }
+            else if (/berat/i.test(label)) { icon.className = 'fas fa-weight-hanging'; }
+            else if (/reward|dibayar/i.test(label)) { icon.className = 'fas fa-wallet'; }
+            stat.append(icon);
+            }
     function contributionLayout() {
         const points = document.querySelector('[data-p9-user]');
         const nav = points?.querySelector('.p9-tabs');
@@ -89,23 +98,15 @@ if (document.body.classList.contains('user-reference')) {
             const heading = badges.previousElementSibling;
             const rule = badges.nextElementSibling;
             heading.before(details); details.append(summary, heading, badges);
-            if (rule) details.append(rule);
+            if (rule) { details.append(rule); }
         }
-        for (const stat of document.querySelectorAll('.p9-stat:not([data-reference-stat])')) {
-            stat.dataset.referenceStat = 'ready';
-            const icon = document.createElement('i'); icon.className = 'fas fa-coins'; icon.setAttribute('aria-hidden','true');
-            const label = stat.querySelector('span')?.textContent || '';
-            if (/level/i.test(label)) icon.className = 'fas fa-leaf';
-            else if (/berat/i.test(label)) icon.className = 'fas fa-weight-hanging';
-            else if (/reward|dibayar/i.test(label)) icon.className = 'fas fa-wallet';
-            stat.append(icon);
-        }
+        document.querySelectorAll('.p9-stat:not([data-reference-stat])').forEach(decorateStat);
         const reward = document.querySelector('[data-p9-rewards]');
         const summaryHeading = reward?.querySelector('[data-reward-summary]>.p9-heading');
         if (summaryHeading && !summaryHeading.dataset.referenceCompact) {
             summaryHeading.dataset.referenceCompact = 'ready';
             const refresh = summaryHeading.querySelector('[data-analytics-retry]');
-            if (refresh) reward.querySelector(':scope>.p9-heading')?.append(refresh);
+            if (refresh) { reward.querySelector(':scope>.p9-heading')?.append(refresh); }
             summaryHeading.hidden = true;
         }
         const filter = reward?.querySelector('[data-reward-filter]')?.closest('label');
@@ -118,21 +119,22 @@ if (document.body.classList.contains('user-reference')) {
     function decorate() {
         reportLayout(); contributionLayout(); lineIcons(document);
         for (const nav of document.querySelectorAll('.ref-form-navigation')) {
-            if (!nav.querySelector('[aria-current]')) nav.querySelector('a')?.setAttribute('aria-current','step');
+            if (!nav.querySelector('[aria-current]')) { nav.querySelector('a')?.setAttribute('aria-current','step'); }
         }
     }
     document.addEventListener('click', event => {
         const link = event.target.closest('.ref-form-navigation a');
-        if (!link) return;
-        for (const item of link.parentElement.children) item.removeAttribute('aria-current');
+        if (!link) { return; }
+        for (const item of link.parentElement.children) { item.removeAttribute('aria-current'); }
         link.setAttribute('aria-current','step');
     });
+    function appendSupportingPhoto(content,photos,figure){if(photos[1]){ content.append(figure(photos[1],true)); }}
     let articleRequest;
     document.addEventListener('click', async event => {
         const link = event.target.closest('#edukasi a[href*="?artikel="]');
-        if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.button > 0) return;
+        if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.button > 0) { return; }
         const slug = new URL(link.href).searchParams.get('artikel');
-        if (!slug) return;
+        if (!slug) { return; }
         event.preventDefault();
         document.querySelector('[data-reference-reader]')?.close();
         const controller = new AbortController(); articleRequest = controller;
@@ -142,20 +144,20 @@ if (document.body.classList.contains('user-reference')) {
         const state = document.createElement('p'); state.setAttribute('role','status'); state.textContent = 'Memuat artikel…';
         dialog.setAttribute('aria-label','Detail artikel edukasi'); dialog.append(close, state, content); document.body.append(dialog);
         close.addEventListener('click',()=>dialog.close());
-        dialog.addEventListener('close',()=>{controller.abort();dialog.remove();if(link.isConnected)link.focus();},{once:true});
+        dialog.addEventListener('close',()=>{controller.abort();dialog.remove();if(link.isConnected){ link.focus(); }},{once:true});
         dialog.showModal();
         try {
             const response = await fetch('/api/ecorecycle/education/articles/'+encodeURIComponent(slug), {credentials:'same-origin',signal:controller.signal});
-            if (!response.ok) throw new Error('Artikel belum dapat dimuat. Tutup lalu coba kembali.');
+            if (!response.ok) { throw new Error('Artikel belum dapat dimuat. Tutup lalu coba kembali.'); }
             const {data} = await response.json();
-            if (controller.signal.aborted) return;
+            if (controller.signal.aborted) { return; }
             const title = document.createElement('h2'); title.textContent = data.title;
             const summary = document.createElement('p'); summary.textContent = data.summary;
-            
+
             const {educationArticleBody,educationPhotos,educationPhotoFigure}=await import('./education-photos.js?v=maps-reader-9');
-            if(controller.signal.aborted)return;
+            if(controller.signal.aborted){ return; }
             const photos=educationPhotos(data);const body=educationArticleBody(data.body);
-            content.append(title,summary,educationPhotoFigure(photos[0],true),body);if(photos[1])content.append(educationPhotoFigure(photos[1],true));
+            content.append(title,summary,educationPhotoFigure(photos[0],true),body);appendSupportingPhoto(content,photos,educationPhotoFigure);
             if (data.published_at) {
                 const date = document.createElement('time');date.dateTime = data.published_at;
                 date.textContent = new Intl.DateTimeFormat('id-ID',{dateStyle:'medium',timeZone:'Asia/Jakarta'}).format(new Date(data.published_at));title.after(date);
@@ -163,18 +165,18 @@ if (document.body.classList.contains('user-reference')) {
             const sources = document.createElement('ul');
             for (const raw of data.sources || []) {
                 let url;try {url = new URL(raw);} catch {continue;}
-                if (url.protocol !== 'https:' || url.username || url.password) continue;
+                if (url.protocol !== 'https:' || url.username || url.password) { continue; }
                 const item = document.createElement('li'), source = document.createElement('a');
                 source.textContent = url.hostname+url.pathname;source.href = url.href;source.target = '_blank';source.rel = 'noopener noreferrer';
                 item.append(source);sources.append(item);
             }
             if (sources.children.length) {const heading = document.createElement('h3');heading.textContent = 'Sumber';content.append(heading,sources);}
             state.textContent = '';
-        } catch (error) {if (!controller.signal.aborted) state.textContent = error.message;}
+        } catch (error) {if (!controller.signal.aborted) { state.textContent = error.message; }}
     });
     let queued = false;
     const observer = new MutationObserver(() => {
-        if (queued) return;
+        if (queued) { return; }
         queued = true;
         requestAnimationFrame(() => { queued = false; decorate(); });
     });

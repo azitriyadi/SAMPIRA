@@ -6,7 +6,7 @@ const toggle = document.getElementById('admin-menu-toggle');
 const breadcrumb = document.getElementById('admin-current-view');
 const content = document.getElementById('admin-content');
 const overview = document.getElementById('admin-overview');
-const notice = overview.querySelector('[role=status], .sp-admin-overview-status');
+const notice = overview.querySelector('output, [role=status], .sp-admin-overview-status');
 const metrics = overview.querySelectorAll('[data-overview-status]');
 const table = document.getElementById('admin-recent-reports');
 const state = document.getElementById('admin-recent-state');
@@ -24,7 +24,7 @@ toggle.addEventListener('click', () => {
 
 navigation.addEventListener('click', event => {
     const button = event.target.closest('[aria-controls]');
-    if (!button) return;
+    if (!button) { return; }
     breadcrumb.textContent = button.textContent.trim();
     if (toggle.getClientRects().length && toggle.getAttribute('aria-expanded') === 'true') {
         toggle.setAttribute('aria-expanded', 'false');
@@ -34,14 +34,14 @@ navigation.addEventListener('click', event => {
 });
 
 document.querySelector('.sp-admin-sidebar').addEventListener('keydown', event => {
-    if (event.key !== 'Escape' || toggle.getAttribute('aria-expanded') !== 'true') return;
+    if (event.key !== 'Escape' || toggle.getAttribute('aria-expanded') !== 'true') { return; }
     toggle.setAttribute('aria-expanded', 'false');
     toggle.focus();
 });
 
 overview.addEventListener('click', event => {
     const shortcut = event.target.closest('[data-admin-go]');
-    if (!shortcut) return;
+    if (!shortcut) { return; }
     switchView(shortcut.dataset.adminGo);
     content.focus({preventScroll: true});
 });
@@ -83,12 +83,12 @@ async function loadOverview() {
     state.hidden = false;
     tableRegion.hidden = true;
     table.replaceChildren();
-    for (const field of metrics) field.textContent = '—';
+    for (const field of metrics) { field.textContent = '—'; }
     try {
         const [verification, handling, aggregate] = await Promise.allSettled([
             request(base + '?limit=20'), request(base + '/handling?limit=20'), request('/api/analytics')
         ]);
-        if (run !== sequence) return;
+        if (run !== sequence) { return; }
         const count = (items, status) => items.filter(item => item.status === status).length;
         const reports = verification.value?.items;
         const tasks = handling.value?.items;
@@ -98,19 +98,18 @@ async function loadOverview() {
         for (const field of metrics) {
             const key = field.dataset.overviewStatus;
             const value = totals?.[keys[key]];
-            if (Number.isFinite(value)) field.textContent = value;
+            if (Number.isFinite(value)) { field.textContent = value; }
         }
-        for (const report of (reports || []).slice(0, 8)) addReport(report);
+        for (const report of (reports || []).slice(0, 8)) { addReport(report); }
         tableRegion.hidden = !reports?.length;
         state.hidden = !tableRegion.hidden;
         state.textContent = reports ? 'Belum ada laporan fasilitas.' : 'Daftar laporan gagal dimuat.';
         overview.dataset.state = complete ? 'ready' : 'error';
         const unavailable = [verification, handling].some(result => result.reason?.status === 404);
-        notice.textContent = complete
-            ? 'Cuplikan ' + reports.length + ' laporan verifikasi dan ' + tasks.length + ' laporan penanganan' +
+        let displayValue1; if (complete) { displayValue1 = 'Cuplikan ' + reports.length + ' laporan verifikasi dan ' + tasks.length + ' laporan penanganan' +
                 ' · Perlu revisi ' + count(reports, 'revision_required') + ' · Disetujui ' + count(reports, 'approved') +
-                ' · Selesai ' + count(tasks, 'completed')
-            : unavailable ? 'Layanan laporan tidak tersedia di server ini.' : 'Data antrean belum dapat dimuat sepenuhnya.';
+                ' · Selesai ' + count(tasks, 'completed'); } else if (unavailable) { displayValue1 = 'Layanan laporan tidak tersedia di server ini.'; } else { displayValue1 = 'Data antrean belum dapat dimuat sepenuhnya.'; }
+notice.textContent = displayValue1;
         retry.hidden = complete;
     } finally {
         if (run === sequence) {
@@ -121,11 +120,11 @@ async function loadOverview() {
 }
 
 overview.addEventListener('sampira:open', loadOverview);
-function refreshVisibleOverview() {
-    if (!document.hidden && overview.getClientRects().length) void loadOverview();
+async function refreshVisibleOverview() {
+    if (!document.hidden && overview.getClientRects().length) { await loadOverview(); }
 }
 window.addEventListener('focus', refreshVisibleOverview);
 document.addEventListener('visibilitychange', refreshVisibleOverview);
 retry.addEventListener('click', loadOverview);
 overview.addEventListener('sampira:close', () => { sequence++; overview.removeAttribute('aria-busy'); });
-void loadOverview();
+await loadOverview();

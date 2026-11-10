@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/assets/css/admin.css">
     <link rel="stylesheet" href="/assets/css/portal-system.css">
     <link rel="stylesheet" href="/assets/css/portal-controls.css">
-    <script src="/assets/js/portal-session.js?v=phase1-final" defer></script>
+    <script src="/assets/js/portal-session.js?v=session-dialog-2" defer></script>
     <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <script src="/assets/js/admin.js?v=phase1-final" defer></script>
     <script src="/assets/js/reward-payments.js?v=payment-clean-1" defer></script>
@@ -24,6 +24,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
 <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="/assets/css/city-datasets.css?v=bandung-2">
+    <link rel="stylesheet" href="/assets/css/session-dialog.css?v=1">
 </head>
 <body class="sp-portal sp-console sp-system administrator-refresh">
     <aside class="sp-system-sidebar"><a class="sp-brand" href="/home"><img src="/assets/img/sampira-mark.svg" width="36" height="36" alt=""><span>SAMPIRA<small>Administrator</small></span></a><nav class="sp-system-nav" aria-label="Navigasi Administrator">
@@ -33,13 +34,13 @@
         <header class="sp-system-header"><button id="system-menu-toggle" type="button" aria-label="Buka navigasi" aria-controls="system-navigation" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><div><p class="sp-kicker">Portal Administrator</p><h1 id="system-page-title">Ringkasan</h1></div>
 
         <form action="/logout" method="post">
-            <button class="btn btn-primary" type="submit">Keluar</button>
+            <button class="btn" type="submit">Keluar</button>
         </form>
         </header>
 
         <section class="sp-panel" id="sp-system-metrics" aria-labelledby="sp-metrics-title">
     <div class="system-welcome"><p class="sp-kicker">Pusat kendali layanan</p><h2 id="sp-metrics-title">Kelola layanan.<br><span>Pantau dampaknya.</span></h2><p>Ringkasan penjemputan, petugas, dan pembayaran reward yang tercatat di SAMPIRA.</p><a href="#system-payments" class="system-welcome-link">Periksa pembayaran reward</a></div>
-    <output role="status" aria-live="polite">Memuat ringkasan…</output>
+    <output aria-live="polite">Memuat ringkasan…</output>
     <dl class="sp-metric-grid"><div><dt>Total penjemputan</dt><dd data-metric="total_pickups" >—</dd></div><div><dt>Menunggu petugas</dt><dd data-metric="pending_verifications" >—</dd></div><div><dt>Berat terverifikasi (kg)</dt><dd data-metric="total_weight" >—</dd></div><div><dt>Akun petugas aktif</dt><dd data-metric="collectors_online" >—</dd></div><div><dt>Reward menunggu pembayaran</dt><dd data-metric="total_reward_pending" data-currency>—</dd></div><div><dt>Reward dibayar</dt><dd data-metric="total_reward_paid" data-currency>—</dd></div></dl>
     <div class="system-shortcuts"><a href="#p9-accounts"><strong>Kelola akun</strong><span>Periksa peran dan akses pengguna</span></a><a href="#p9-voucher-admin"><strong>Atur voucher</strong><span>Kelola stok, biaya poin, dan masa berlaku</span></a><a href="#p9-audit"><strong>Tinjau aktivitas</strong><span>Pantau penukaran dan perubahan sistem</span></a></div>
 </section>
@@ -104,8 +105,8 @@
         <section class="panel-card sp-payments" id="system-payments" aria-labelledby="reward-payments-title">
             <div class="payment-heading"><div><p class="sp-kicker">Reward penjemputan</p><h2 id="reward-payments-title">Pembayaran Reward</h2><p>Periksa kewajiban, lalu catat transfer yang sudah Anda lakukan.</p></div><button type="button" id="reward-payment-refresh" class="sp-button sp-button--quiet">Muat ulang</button></div>
             <div class="payment-overview" id="reward-payment-overview" aria-label="Ringkasan data pembayaran yang dimuat"></div>
-            <output id="reward-payment-status" role="status" aria-live="polite"></output>
-            <div class="payment-workspace"><div class="payment-register"><h3>Daftar pembayaran</h3><div class="payment-filters"><label for="reward-payment-filter">Status<select id="reward-payment-filter"><option value="pending">Menunggu pembayaran</option><option value="paid">Pembayaran tercatat</option><option value="">Semua status</option></select></label><label for="reward-payment-search">Cari penjemputan / referensi<input type="search" id="reward-payment-search" placeholder="Nomor penjemputan atau referensi"></label></div><p id="reward-payment-count" class="payment-caption" role="status"></p>
+            <output id="reward-payment-status" aria-live="polite"></output>
+            <div class="payment-workspace"><div class="payment-register"><h3>Daftar pembayaran</h3><div class="payment-filters"><label for="reward-payment-filter">Status<select id="reward-payment-filter"><option value="pending">Menunggu pembayaran</option><option value="paid">Pembayaran tercatat</option><option value="">Semua status</option></select></label><label for="reward-payment-search">Cari penjemputan / referensi<input type="search" id="reward-payment-search" placeholder="Nomor penjemputan atau referensi"></label></div><output id="reward-payment-count" class="payment-caption"></output>
             <ul id="reward-payment-list"></ul>
             </div><div class="payment-entry"><div class="payment-form-heading"><p class="sp-kicker">Pencatatan transfer</p><h3>Catat pembayaran</h3><p>Transfer dilakukan di luar SAMPIRA. Form ini hanya mencatat pembayaran beserta buktinya.</p></div><p id="reward-payment-form-empty" class="payment-empty" hidden>Tidak ada kewajiban yang menunggu pembayaran.</p>
             <form id="reward-payment-form" class="cms-form" hidden>
@@ -123,7 +124,7 @@
                 <label for="reward-payment-proof">Bukti pembayaran (JPG, PNG, WEBP)</label>
                 <input name="proof" id="reward-payment-proof" type="file" accept="image/jpeg,image/png,image/webp" required>
                 <small>Maksimal 5 MB. Foto besar dioptimalkan; pastikan nominal dan referensi terbaca pada pratinjau.</small>
-                <img id="reward-proof-preview" alt="Pratinjau bukti pembayaran yang akan disimpan" hidden style="max-width:240px;max-height:240px;object-fit:contain">
+                <img id="reward-proof-preview" alt="Pratinjau bukti pembayaran yang akan disimpan" hidden>
                 </div><label for="reward-payment-confirm" class="payment-confirm"><input id="reward-payment-confirm" type="checkbox" required><span>Saya telah memeriksa nominal, penerima, dan bukti pembayaran eksternal.</span></label>
                 <button class="btn btn-primary" type="submit">Catat pembayaran</button>
             </form>

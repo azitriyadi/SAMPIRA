@@ -20,7 +20,7 @@ export async function prepareHandlingPhoto(file) {
             context.drawImage(image,0,0,canvas.width,canvas.height);
             for(const quality of [.85,.7,.55,.4]){
                 const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));
-                if(blob&&blob.type==='image/jpeg'&&blob.size<=maxBytes){
+                if(blob?.type==='image/jpeg'&&blob.size<=maxBytes){
                     return new File([blob],'bukti-penanganan.jpg',{type:'image/jpeg',lastModified:file.lastModified});
                 }
             }

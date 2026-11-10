@@ -2,7 +2,7 @@ let globalActiveMission = null;
 let missionSequence = 0;
 let disposeMissionLocation;
 const missionLocation = document.getElementById('mission-location');
-const missionMaps = import('/assets/js/location-map.js?v=collector-tasks-2');
+const missionMaps = import('./location-map.js?v=collector-tasks-2');
 
 function clearMissionLocation() {
     ++missionSequence;
@@ -210,16 +210,13 @@ function renderMission(item) {
         btn.disabled = false;
         if (item.status === 'pickup') {
             btn.innerHTML = '<i class="fas fa-truck-fast"></i> Mulai Transit (Bawa Sampah ke Hub)';
-            btn.style.background = '#276e57';
             btn.onclick = () => updateMissionStatus(item.tracking_number, 'transit', 'Di Perjalanan', 'Limbah telah diangkut oleh petugas menuju Recycling Hub.');
         } else if (item.status === 'transit') {
             btn.innerHTML = '<i class="fas fa-check-circle"></i> Tiba di Hub';
-            btn.style.background = '#087443';
             btn.onclick = () => updateMissionStatus(item.tracking_number, 'arrived', 'Recycling Hub Bandung', 'Sampah telah tiba di Recycling Hub dan siap ditimbang.');
         } else if (item.status === 'arrived') {
             btn.textContent = item.verified_at ? 'Berat aktual sudah tercatat' : 'Catat Berat Aktual';
             btn.disabled = Boolean(item.verified_at);
-            btn.style.background = '#087443';
             btn.onclick = () => recordActualWeight(item.id);
         }
     }
@@ -227,10 +224,10 @@ function renderMission(item) {
 
 async function recordActualWeight(pickupId) {
     const rows=globalActiveMission?.id===pickupId?globalActiveMission.items:null;
-    const result = rows?.length ? await Swal.fire({title:'Berat aktual per kategori (kg)',customClass:{popup:'pickup-weighing-dialog'},html:rows.map((row,index)=>`<label class="pickup-actual-field">${escapePortalHTML(row.category)}<input class="swal2-input" type="number" min="0.01" max="99999.99" step="0.01" id="actual-item-${index}" value="${row.weight_kg}"></label>`).join(''),showCancelButton:true,cancelButtonText:'Batal',confirmButtonText:'Simpan penimbangan',preConfirm:()=>{const items=rows.map((row,index)=>({category:row.category,weight_kg:Number(document.getElementById('actual-item-'+index).value)}));if(items.some(row=>!row.weight_kg||row.weight_kg<=0||row.weight_kg>99999.99||Math.abs(row.weight_kg*100-Math.round(row.weight_kg*100))>.00001)){Swal.showValidationMessage('Isi berat aktual tiap kategori, maksimal dua desimal.');return false;}return items;}}) : await Swal.fire({
+    const result = rows?.length ? await Swal.fire({title:'Berat aktual per kategori (kg)',customClass:{popup:'pickup-weighing-dialog'},confirmButtonColor:'#174c3c',html:rows.map((row,index)=>`<label class="pickup-actual-field">${escapePortalHTML(row.category)}<input class="swal2-input" type="number" min="0.01" max="99999.99" step="0.01" id="actual-item-${index}" value="${row.weight_kg}"></label>`).join(''),showCancelButton:true,cancelButtonText:'Batal',confirmButtonText:'Simpan penimbangan',preConfirm:()=>{const items=rows.map((row,index)=>({category:row.category,weight_kg:Number(document.getElementById('actual-item-'+index).value)}));if(items.some(row=>!row.weight_kg||row.weight_kg<=0||row.weight_kg>99999.99||Math.abs(row.weight_kg*100-Math.round(row.weight_kg*100))>.00001)){Swal.showValidationMessage('Isi berat aktual tiap kategori, maksimal dua desimal.');return false;}return items;}}) : await Swal.fire({
         title: 'Berat aktual di hub (kg)', input: 'number', inputAttributes: {min: '0.01', max: '99999.99', step: '0.01'},
         showCancelButton: true, confirmButtonText: 'Simpan',
-        inputValidator: value => /^[0-9]{1,5}(\.[0-9]{1,2})?$/.test(value) && Number(value) > 0 ? undefined : 'Masukkan berat lebih dari nol.'
+        inputValidator: value => /^\d{1,5}(\.\d{1,2})?$/.test(value) && Number(value) > 0 ? undefined : 'Masukkan berat lebih dari nol.'
     });
     if (!result.isConfirmed) return;
     try {
@@ -259,7 +256,7 @@ async function updateMissionStatus(trackingNum, newStatus, location, notes) {
             return;
         }
         await Swal.fire({icon: 'success', title: 'Berhasil', text: 'Status misi berhasil diperbarui!', timer: 1500, showConfirmButton: false});
-        loadCollectorData();
+        await loadCollectorData();
         switchView('dashboard');
     } catch {
         await Swal.fire({icon: 'error', title: 'Kesalahan', text: 'Gagal terhubung ke server.', confirmButtonColor: '#126048'});
@@ -277,7 +274,7 @@ async function claimPickup(trackingNum) {
             return;
         }
         await Swal.fire({icon: 'success', title: 'Tugas Diambil!', text: 'Silakan lihat rincian alamat penjemputan masyarakat di tab Misi Aktif.', confirmButtonColor: '#126048'});
-        loadCollectorData();
+        await loadCollectorData();
         void viewActiveMission(trackingNum);
     } catch {
         await Swal.fire({icon: 'error', title: 'Kesalahan', text: 'Gagal menghubungi server.', confirmButtonColor: '#126048'});
@@ -390,7 +387,7 @@ async function loadCollectorData() {
         document.getElementById('profile-avatar-large').innerText=user.name.substring(0,2).toUpperCase();
         const response=await portalFetch('/api/ecorecycle/list_pickups?type=petugas',{signal:AbortSignal.timeout(15000)});
         if (run !== collectorLoadSequence) return;
-        if (response.status === 401 || response.status === 403) {logoutPortal();return;}
+        if (response.status === 401 || response.status === 403) {logoutPortal(false);return;}
         const data=await response.json();
         if (run !== collectorLoadSequence) return;
         if (!response.ok || data.status !== 'success' || !Array.isArray(data.data)) throw new Error('Tasks unavailable');

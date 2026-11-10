@@ -48,7 +48,7 @@ func NewApp(db *sql.DB, auth *services.AuthService) *App {
 
 func (a *App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	var releaseAttempt func()
@@ -121,7 +121,7 @@ func (a *App) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	data := httpx.RequestData(r)
@@ -170,7 +170,7 @@ func (a *App) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) ProfileGetHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	sessionUser, err := a.apiSession(r)
@@ -193,7 +193,7 @@ func (a *App) ProfileGetHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) ProfileUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	sessionUser, err := a.apiSession(r)
@@ -239,7 +239,7 @@ func (a *App) ProfileUpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) ListCollectorsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		httpx.SendResponse(w, "error", "Metode request tidak diizinkan.", nil, http.StatusMethodNotAllowed)
+		httpx.SendResponse(w, "error", methodNotAllowedMessage, nil, http.StatusMethodNotAllowed)
 		return
 	}
 	sessionUser, err := a.apiSession(r)

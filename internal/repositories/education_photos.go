@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"ecorecycle/internal/models"
 	"encoding/json"
 	"errors"
@@ -33,31 +34,15 @@ func (r Education) SavePhotos(ctx context.Context, id, version, actorID int, upl
 	}
 	photos := models.EducationPhotos{}
 	for i, upload := range uploads {
-		if upload.Keep {
-			if err = tx.QueryRowContext(ctx, "SELECT photo_data,mime_type FROM education_article_photos WHERE article_id=? AND position=?", id, i).Scan(&upload.Data, &upload.MIME); err != nil {
-				return empty, err
-			}
-		}
-		if _, err = tx.ExecContext(ctx, "DELETE FROM education_article_photos WHERE article_id=? AND position=?", id, i); err != nil {
+		photo, err := saveEducationPhoto(ctx, tx, id, version, i, upload)
+		if err != nil {
 			return empty, err
 		}
-		if len(upload.Data) > 0 {
-			var packet int64
-			if err = tx.QueryRowContext(ctx, "SELECT @@max_allowed_packet").Scan(&packet); err != nil {
-				return empty, err
-			}
-			if int64(len(upload.Data)) > packet-(64<<10) {
-				return empty, ErrEducationPhotoCapacity
-			}
-			if _, err = tx.ExecContext(ctx, "INSERT INTO education_article_photos(article_id,position,photo_data,mime_type) VALUES(?,?,?,?)", id, i, upload.Data, upload.MIME); err != nil {
-				return empty, err
-			}
-			upload.URL = "/api/ecorecycle/education/media/" + strconv.Itoa(id) + "/" + strconv.Itoa(i) + "?v=" + strconv.Itoa(version+1)
-		}
-		if upload.URL != "" {
-			photos = append(photos, upload.EducationPhoto)
+		if photo.URL != "" {
+			photos = append(photos, photo)
 		}
 	}
+
 	raw, err := json.Marshal(photos)
 	if err != nil {
 		return empty, err
@@ -81,3 +66,29 @@ func (r Education) Photo(ctx context.Context, id, position int, admin bool) ([]b
 }
 
 var ErrEducationPhotoCapacity = errors.New("education photo storage capacity exceeded")
+
+func saveEducationPhoto(ctx context.Context, tx *sql.Tx, id, version, position int, upload EducationPhotoUpload) (models.EducationPhoto, error) {
+	var err error
+	if upload.Keep {
+		if err = tx.QueryRowContext(ctx, "SELECT photo_data,mime_type FROM education_article_photos WHERE article_id=? AND position=?", id, position).Scan(&upload.Data, &upload.MIME); err != nil {
+			return models.EducationPhoto{}, err
+		}
+	}
+	if _, err = tx.ExecContext(ctx, "DELETE FROM education_article_photos WHERE article_id=? AND position=?", id, position); err != nil {
+		return models.EducationPhoto{}, err
+	}
+	if len(upload.Data) > 0 {
+		var packet int64
+		if err = tx.QueryRowContext(ctx, "SELECT @@max_allowed_packet").Scan(&packet); err != nil {
+			return models.EducationPhoto{}, err
+		}
+		if int64(len(upload.Data)) > packet-(64<<10) {
+			return models.EducationPhoto{}, ErrEducationPhotoCapacity
+		}
+		if _, err = tx.ExecContext(ctx, "INSERT INTO education_article_photos(article_id,position,photo_data,mime_type) VALUES(?,?,?,?)", id, position, upload.Data, upload.MIME); err != nil {
+			return models.EducationPhoto{}, err
+		}
+		upload.URL = "/api/ecorecycle/education/media/" + strconv.Itoa(id) + "/" + strconv.Itoa(position) + "?v=" + strconv.Itoa(version+1)
+	}
+	return upload.EducationPhoto, nil
+}

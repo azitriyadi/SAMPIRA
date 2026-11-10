@@ -364,30 +364,29 @@ export function mountReports(root, admin) {
 const verificationMarkup = `
     <form id="facility-verify" class="facility-stack" hidden>
         <fieldset class="facility-stack">
-            <legend><strong>Keputusan verifikasi</strong></legend>
-            <label for="facility-decision" class="facility-field">Tindakan
+            <legend><strong>Periksa laporan</strong></legend>
+            <label for="facility-decision" class="facility-field">Pilih keputusan
                 <select id="facility-decision" name="status" required>
                     <option value="">Pilih tindakan</option>
                     <option value="approved">Setujui laporan</option>
-                    <option value="revision_required">Minta revisi</option>
+                    <option value="revision_required">Minta pelapor memperbaiki laporan</option>
                     <option value="rejected">Tolak laporan</option>
                 </select>
             </label>
-            <div class="facility-field"><label for="facility-note">Catatan Admin</label>
-                <textarea id="facility-note" name="note" rows="3" aria-describedby="facility-note-help"></textarea>
-                <small id="facility-note-help">Wajib untuk revisi atau penolakan. Maksimal 1.000 karakter.</small>
+            <div id="facility-officer-field" class="facility-field" hidden>
+                <label for="facility-verify-officer">Petugas yang ditugaskan</label>
+                <select id="facility-verify-officer" name="petugas_id"><option value="">Pilih Petugas aktif</option></select>
+                <small>Petugas ini akan menerima tugas untuk menangani laporan.</small>
+                <output id="facility-officer-state" aria-live="polite"></output>
+                <button type="button" id="facility-officer-more" class="facility-button">Muat Petugas</button>
             </div>
-            <div><button type="submit" class="facility-button primary">Tinjau keputusan</button></div>
+            <div id="facility-note-field" class="facility-field" hidden><label id="facility-note-label" for="facility-note">Apa yang perlu diperbaiki pelapor?</label>
+                <textarea id="facility-note" name="note" rows="3" aria-describedby="facility-note-help"></textarea>
+                <small id="facility-note-help">Jelaskan dengan singkat agar pelapor memahami alasannya. Maksimal 1.000 karakter.</small>
+            </div>
+            <div><button id="facility-verify-submit" type="submit" class="facility-button primary">Simpan</button></div>
+            <output id="facility-verify-feedback" aria-live="polite"></output>
         </fieldset>
     </form>
-    <dialog id="facility-confirm" class="facility-dialog" aria-labelledby="facility-confirm-title" aria-describedby="facility-confirm-copy">
-        <form method="dialog" class="facility-stack">
-            <h4 id="facility-confirm-title">Konfirmasi verifikasi</h4>
-            <p id="facility-confirm-copy"></p>
-            <div class="facility-actions">
-                <button class="facility-button" type="submit" value="cancel" autofocus>Batal</button>
-                <button class="facility-button primary" type="submit" value="confirm">Simpan keputusan</button>
-            </div>
-        </form>
-    </dialog>
+
 `;

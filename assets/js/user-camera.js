@@ -10,7 +10,7 @@ dialog.innerHTML = `<header><h2 id="user-camera-title">Ambil Foto</h2><button ty
 document.body.append(dialog);
 const video = dialog.querySelector('video');
 const capture = dialog.querySelector('[data-camera-capture]');
-const status = dialog.querySelector('[role="status"]');
+const cameraStatus = dialog.querySelector('[role="status"]');
 
 function closeCamera() {
     generation++;
@@ -27,7 +27,7 @@ async function openCamera(input, output) {
     const current = generation;
     source = input;
     output.textContent = '';
-    status.textContent = 'Meminta akses kamera…';
+    cameraStatus.textContent = 'Meminta akses kamera…';
     dialog.showModal();
     try {
         if (!navigator.mediaDevices?.getUserMedia) throw new Error('unavailable');
@@ -40,7 +40,7 @@ async function openCamera(input, output) {
         await video.play();
         if (current !== generation) return;
         capture.disabled = false;
-        status.textContent = 'Arahkan kamera ke sampah atau fasilitas, lalu ambil foto.';
+        cameraStatus.textContent = 'Arahkan kamera ke sampah atau fasilitas, lalu ambil foto.';
     } catch (error) {
         if (current !== generation) return;
         closeCamera();
@@ -71,7 +71,7 @@ capture.addEventListener('click', async () => {
         closeCamera();
     } catch {
         if (current !== generation) return;
-        status.textContent = 'Foto gagal diambil. Coba kembali atau gunakan Unggah Foto.';
+        cameraStatus.textContent = 'Foto gagal diambil. Coba kembali atau gunakan Unggah Foto.';
         capture.disabled = false;
     }
 });

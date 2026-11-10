@@ -1,7 +1,7 @@
 import {base, request} from './facility-api.js?v=phase5b';
-import {adminTable, categories, element, options} from './facility-report-ui.js?v=community-13';
-import {button, handlingCard, handlingEvent, handlingStatuses, handlingSummary} from './facility-handling-ui.js?v=community-13';
-import {handlingActions, openHandlingForm} from './facility-handling-form.js?v=handling-photo-fix';
+import {adminTable, categories, element, options} from './facility-report-ui.js?v=facility-simple-1';
+import {button, handlingCard, handlingEvent, handlingStatuses, handlingSummary} from './facility-handling-ui.js?v=facility-simple-1';
+import {handlingActions, openHandlingForm} from './facility-handling-form.js?v=facility-simple-1';
 import {mountLocationDetail} from './location-map.js?v=phase8';
 
 const listPath = base + '/handling';
@@ -234,7 +234,10 @@ function workspace(root) {
                 if (error.status === 404 || error.status === 403) showList();
             });
             const actions = element('div', undefined, 'facility-actions handling-actions');
-            for (const config of handlingActions(report, role)) actions.append(button(config.title, () => {
+            const extras = element('details', undefined, 'facility-extra-actions');
+            extras.append(element('summary', 'Opsi lainnya'));
+            const extraActions = element('div', undefined, 'facility-actions'); extras.append(extraActions);
+            for (const config of handlingActions(report, role)) (config.secondary ? extraActions : actions).append(button(config.title, () => {
                 openHandlingForm(root, report, config, history.events, async (endpoint, payload, close) => {
                     notice.textContent = errorBox.textContent = '';
                     try {
@@ -256,6 +259,7 @@ function workspace(root) {
                     }
                 }, () => sessionEnded(errorBox));
             }, true));
+            if (extraActions.childElementCount) actions.append(extras);
             const location = element('div');
             if (admin) {
                 const mapGroup=element('details',undefined,'admin-detail-group');mapGroup.append(element('summary','Lokasi fasilitas'),location);

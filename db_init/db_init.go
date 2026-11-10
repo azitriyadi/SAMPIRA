@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -11,6 +13,7 @@ import (
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Loader file .env sederhana
@@ -41,8 +44,59 @@ func loadEnv() {
 
 const insertWasteCategorySQL = "INSERT INTO waste_categories (category_name, description, reward_per_kg, processing_fee_per_kg) VALUES (?, ?, ?, ?)"
 
+type initialAccount struct {
+	name, email, role, password, hash string
+	generated                         bool
+}
+
+func prepareInitialAccounts(getenv func(string) string) ([]initialAccount, error) {
+	accounts := []initialAccount{
+		{name: "Admin SAMPIRA", email: "admin@eco.com", role: "admin", password: getenv("SAMPIRA_INITIAL_ADMIN_PASSWORD")},
+		{name: "Administrator SAMPIRA", email: "administrator@eco.com", role: "administrator", password: getenv("SAMPIRA_INITIAL_ADMINISTRATOR_PASSWORD")},
+	}
+	for i := range accounts {
+		account := &accounts[i]
+		if account.password == "" {
+			secret := make([]byte, 16)
+			if _, err := rand.Read(secret); err != nil {
+				return nil, err
+			}
+			account.password = hex.EncodeToString(secret)
+			account.generated = true
+		}
+		if len(account.password) < 15 || len(account.password) > 72 {
+			return nil, fmt.Errorf("password awal role %s harus 15–72 byte", account.role)
+		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(account.password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, err
+		}
+		account.hash = string(hash)
+	}
+	return accounts, nil
+}
+
+func seedInitialAccounts(conn *sql.Conn, accounts []initialAccount) error {
+	ctx := context.Background()
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	for _, account := range accounts {
+		if _, err := tx.ExecContext(ctx, "INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)", account.name, account.email, account.hash, account.role); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
 func main() {
 	loadEnv()
+	accounts, err := prepareInitialAccounts(os.Getenv)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	host := os.Getenv("DB_HOST")
 	if host == "" {
@@ -249,5 +303,17 @@ func main() {
 		}
 	}
 
-	fmt.Println("Database baru siap.")
+	if err := seedInitialAccounts(conn, accounts); err != nil {
+		log.Fatalf("Gagal membuat akun awal: %v", err)
+	}
+	fmt.Println("Database baru siap. Akun awal:")
+	for _, account := range accounts {
+		fmt.Printf("Role: %s | Email: %s\n", account.role, account.email)
+		if account.generated {
+			fmt.Printf("Password awal: %s\n", account.password)
+		} else {
+			fmt.Println("Password: sesuai konfigurasi lokal .env.")
+		}
+	}
+	fmt.Println("Simpan password awal secara privat. Jangan commit .env atau hasil terminal ke repository.")
 }

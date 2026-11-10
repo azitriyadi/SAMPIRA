@@ -38,11 +38,7 @@ func (l *loginLimiter) take(remote string) (func(), int) {
 	if window == nil || !now.Before(window.until) {
 		delete(l.windows, ip)
 		if len(l.windows) >= loginLimitEntries {
-			for key, entry := range l.windows {
-				if !now.Before(entry.until) {
-					delete(l.windows, key)
-				}
-			}
+			l.pruneExpired(now)
 			if len(l.windows) >= loginLimitEntries {
 				return nil, 60
 			}
@@ -54,6 +50,19 @@ func (l *loginLimiter) take(remote string) (func(), int) {
 		return nil, int((window.until.Sub(now) + time.Second - 1) / time.Second)
 	}
 	window.used++
+	return l.releaseAttempt(ip, window), 0
+}
+
+// Caller holds l.mu.
+func (l *loginLimiter) pruneExpired(now time.Time) {
+	for key, entry := range l.windows {
+		if !now.Before(entry.until) {
+			delete(l.windows, key)
+		}
+	}
+}
+
+func (l *loginLimiter) releaseAttempt(ip string, window *loginWindow) func() {
 	var once sync.Once
 	return func() {
 		once.Do(func() {
@@ -66,5 +75,5 @@ func (l *loginLimiter) take(remote string) (func(), int) {
 				}
 			}
 		})
-	}, 0
+	}
 }

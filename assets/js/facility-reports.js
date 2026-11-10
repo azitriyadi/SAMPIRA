@@ -1,15 +1,15 @@
 import {mountCommunityReports} from './facility-community.js?v=community-detail-15';
-import {mountReportForm} from './facility-report-form.js?v=home-location-14';
-import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=community-13';
+import {mountReportForm} from './facility-report-form.js?v=facility-simple-2';
+import {historyEntry, mountReports, reportCard, reportDetails, statuses} from './facility-report-ui.js?v=facility-simple-2';
 import {base, request} from './facility-api.js?v=phase5b';
-import {mountPublicHandling} from './facility-handling.js?v=community-13';
+import {mountPublicHandling} from './facility-handling.js?v=facility-simple-2';
 import {mountLocationDetail} from './location-map.js?v=phase8';
 import {facilityMapStates} from './map-core.js?v=phase8';
 
 const pageLimit = 20;
 
 function submissionKey() {
-    if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+    if (typeof crypto.randomUUID === 'function') { return crypto.randomUUID(); }
     const bytes = crypto.getRandomValues(new Uint8Array(16));
     bytes[6] = (bytes[6] & 15) | 64;
     bytes[8] = (bytes[8] & 63) | 128;
@@ -54,10 +54,10 @@ function init(root) {
     let busy = false;
     let sessionEnding = false;
     let disposeLocation;
-    if (admin) $('status').value = 'pending';
+    if (admin) { $('status').value = 'pending'; }
 
     function announce(text, error = false) {
-        if (sessionEnding) return;
+        if (sessionEnding) { return; }
         $('success').textContent = error ? '' : text;
         $('error').textContent = error ? text : '';
     }
@@ -65,7 +65,7 @@ function init(root) {
     function failure(error, collection = false) {
         if (error.status === 401) {
             announce('Sesi berakhir. Anda akan diarahkan ke halaman masuk.', true);
-            if (!sessionEnding) setTimeout(() => window.location.replace('/login'), 800);
+            if (!sessionEnding) { setTimeout(() => window.location.replace('/login'), 800); }
             sessionEnding = true;
             return;
         }
@@ -75,7 +75,7 @@ function init(root) {
     let cachedReports = [];
 
     function renderDisplayedList(focusFirst = false) {
-        if (admin) return;
+        if (admin) { return; }
         list.replaceChildren();
         const query = ($('search')?.value || '').trim().toLocaleLowerCase('id-ID');
         const sortDir = $('sort')?.value === 'oldest' ? 1 : -1;
@@ -105,49 +105,54 @@ function init(root) {
     }
 
     function syncCommunity() {
-        if(community)community.hidden=$('form-view').hidden||Boolean(editing)||(userForm.form.dataset.wizardStep||'1')!=='1';
+        if(community){ community.hidden=$('form-view').hidden||Boolean(editing)||(userForm.form.dataset.wizardStep||'1')!=='1'; }
     }
     userForm?.form.addEventListener('sampira:form-step',syncCommunity);
 
+    function updateHero(view){
+        const title=root.querySelector('#facility-heading');if(!title){ return; }
+        const isForm=view==='form';const hero=title.closest('.ref-form-hero');if(hero){ hero.hidden=isForm; }
+        const label=root.querySelector('.ref-hero-label');if(label){ label.textContent=isForm?'Layanan Pengaduan':'Pusat Monitoring Laporan'; }
+        title.textContent=isForm?'Lapor Fasilitas':'Riwayat & Pelacakan';
+        const description=root.querySelector('.ref-form-hero p');if(description){ description.textContent=isForm?'Laporkan masalah pada fasilitas sampah dan pantau hasil verifikasinya.':'Lihat riwayat penjemputan sampah dan laporan fasilitas yang Anda ajukan.'; }
+        const note=root.querySelector('.ref-hero-note');if(note){ note.hidden=isForm; }
+    }
     function show(view) {
-        if (view !== 'list') ++listRequest;
-        if (view !== 'detail') disposeLocation?.();
+        if (view !== 'list') { ++listRequest; }
+        if (view !== 'detail') { disposeLocation?.(); }
         for (const panel of ['list', 'detail', 'form']) {
             const section = $(panel + '-view');
-            if (section) section.hidden = panel !== view;
+            if (section) { section.hidden = panel !== view; }
         }
         syncCommunity();
-        if (!admin) {
-            const heroLabel = root.querySelector('.ref-hero-label');
-            const heroTitle = root.querySelector('#facility-heading');
-            const pageHero = heroTitle?.closest('.ref-form-hero');
-            if (pageHero) pageHero.hidden = view === 'form';
-            const heroDesc = root.querySelector('.ref-form-hero p');
-            const heroNote = root.querySelector('.ref-hero-note');
-            if (heroTitle) {
-                if (view === 'form') {
-                    if (heroLabel) heroLabel.textContent = 'Layanan Pengaduan';
-                    heroTitle.textContent = 'Lapor Fasilitas';
-                    if (heroDesc) heroDesc.textContent = 'Laporkan masalah pada fasilitas sampah dan pantau hasil verifikasinya.';
-                    if (heroNote) heroNote.hidden = true;
-                } else {
-                    if (heroLabel) heroLabel.textContent = 'Pusat Monitoring Laporan';
-                    heroTitle.textContent = 'Riwayat & Pelacakan';
-                    if (heroDesc) heroDesc.textContent = 'Lihat riwayat penjemputan sampah dan laporan fasilitas yang Anda ajukan.';
-                    if (heroNote) heroNote.hidden = false;
-                }
-            }
-        }
+        if(!admin){ updateHero(view); }
         $(view + '-heading').focus();
+    }
+
+    function renderListPage(page,cursor){
+            if (admin) {
+                const items = page.items.map(report => reportCard(report, admin, openFromList, base));
+                list.append(...items);
+                listCursor = page.next_before_id;
+                $('list-message').textContent = list.children.length
+                    ? list.children.length + ' laporan ditampilkan.'
+                    : 'Belum ada laporan untuk filter ini.';
+                if (cursor !== null) { (items[0]?.querySelector('button') || $('list-heading')).focus(); }
+            } else {
+                if (cursor === null) { cachedReports = page.items; }
+                else { cachedReports.push(...page.items); }
+                listCursor = page.next_before_id;
+                renderDisplayedList(cursor !== null);
+            }
     }
 
     async function loadList(cursor = null) {
         const sequence = ++listRequest;
         const params = new URLSearchParams({limit: pageLimit});
         for (const filter of ['status', 'category']) {
-            if ($(filter).value) params.set(filter, $(filter).value);
+            if ($(filter).value) { params.set(filter, $(filter).value); }
         }
-        if (cursor !== null) params.set('before_id', cursor);
+        if (cursor !== null) { params.set('before_id', cursor); }
         else {
             list.replaceChildren();
             cachedReports = [];
@@ -159,23 +164,10 @@ function init(root) {
         $('list-message').textContent = 'Memuat daftar laporan…';
         try {
             const page = await request(base + '?' + params);
-            if (sequence !== listRequest) return;
-            if (admin) {
-                const items = page.items.map(report => reportCard(report, admin, openFromList, base));
-                list.append(...items);
-                listCursor = page.next_before_id;
-                $('list-message').textContent = list.children.length
-                    ? list.children.length + ' laporan ditampilkan.'
-                    : 'Belum ada laporan untuk filter ini.';
-                if (cursor !== null) (items[0]?.querySelector('button') || $('list-heading')).focus();
-            } else {
-                if (cursor === null) cachedReports = page.items;
-                else cachedReports.push(...page.items);
-                listCursor = page.next_before_id;
-                renderDisplayedList(cursor !== null);
-            }
+            if (sequence !== listRequest) { return; }
+            renderListPage(page,cursor);
         } catch (error) {
-            if (sequence !== listRequest) return;
+            if (sequence !== listRequest) { return; }
             retryCursor = cursor;
             $('list-message').textContent = 'Daftar laporan gagal dimuat.';
             listRetry.hidden = error.status === 401;
@@ -204,7 +196,7 @@ function init(root) {
     }
 
     async function loadDetail(id) {
-        if (!Number.isSafeInteger(id) || id < 1) return;
+        if (!Number.isSafeInteger(id) || id < 1) { return; }
         detailID = id;
         const sequence = ++detailRequest;
         selected = null;
@@ -221,7 +213,7 @@ function init(root) {
         try {
             const detail = await request(base + '/' + id);
             const [report] = await facilityMapStates([detail],request,base);
-            if (sequence !== detailRequest) return;
+            if (sequence !== detailRequest) { return; }
             selected = report;
             $('detail-message').hidden = true;
             const location = document.createElement('div');
@@ -229,10 +221,15 @@ function init(root) {
             disposeLocation = mountLocationDetail(location, {
                 title: 'Titik lokasi fasilitas', point: report, address: report.address, reported: true, autoTiles: true, kind:'facility'
             });
-            if (!admin) mountPublicHandling($('detail'), report);
+            if (!admin) { mountPublicHandling($('detail'), report); }
             action.hidden = admin ? report.status !== 'pending' : report.status !== 'revision_required';
             if (admin) {
                 action.reset();
+                $('officer-field').hidden = true;
+                $('note-field').hidden = true;
+                $('verify-officer').required = false;
+                $('verify-submit').textContent = 'Simpan';
+                $('verify-feedback').textContent = '';
                 $('note').required = false;
                 $('note').setCustomValidity('');
             }
@@ -240,7 +237,7 @@ function init(root) {
             historyCursor = null;
             void loadHistory();
         } catch (error) {
-            if (sequence !== detailRequest) return;
+            if (sequence !== detailRequest) { return; }
             $('detail-message').textContent = 'Detail laporan gagal dimuat.';
             $('detail-retry').hidden = error.status === 401 || error.status === 403 || error.status === 404;
             $('detail-retry').onclick = () => openFromList(id);
@@ -251,16 +248,16 @@ function init(root) {
     async function loadHistory(cursor = null) {
         const sequence = detailRequest;
         const id = selected?.id;
-        if (!id) return;
+        if (!id) { return; }
         const params = new URLSearchParams({limit: pageLimit});
-        if (cursor !== null) params.set('before_version', cursor);
+        if (cursor !== null) { params.set('before_version', cursor); }
         history.setAttribute('aria-busy', 'true');
         historyMore.hidden = cursor === null;
         historyMore.disabled = true;
         $('history-message').textContent = 'Memuat histori…';
         try {
             const page = await request(base + '/' + id + '/history?' + params);
-            if (sequence !== detailRequest) return;
+            if (sequence !== detailRequest) { return; }
             const entries = page.items.map(item => historyEntry(item, admin));
             history.append(...entries);
             historyCursor = page.next_before_version;
@@ -272,12 +269,12 @@ function init(root) {
                 entries[0].focus();
             }
         } catch (error) {
-            if (sequence !== detailRequest) return;
+            if (sequence !== detailRequest) { return; }
             historyCursor = cursor;
             $('history-message').textContent = 'Histori gagal dimuat. ' + messageFor(error);
             historyMore.textContent = 'Coba lagi memuat histori';
             historyMore.hidden = error.status === 401;
-            if (error.status === 401) failure(error);
+            if (error.status === 401) { failure(error); }
         } finally {
             if (sequence === detailRequest) {
                 history.removeAttribute('aria-busy');
@@ -290,8 +287,8 @@ function init(root) {
         busy = active;
         form.querySelector('fieldset').disabled = active;
         form.setAttribute('aria-busy', String(active));
-        for (const button of backButtons) button.disabled = active;
-        if (userForm) $('form-back').disabled = active;
+        for (const button of backButtons) { button.disabled = active; }
+        if (userForm) { $('form-back').disabled = active; }
     }
 
     function updatePostControls() {
@@ -315,7 +312,7 @@ function init(root) {
             const report = revision
                 ? await request(base + '/' + revision.id, {method: 'PUT', body})
                 : await request(base, {method: 'POST', headers: {'Idempotency-Key': attempt.key}, body: attempt.body});
-            if (!revision) postAttempt = null;
+            if (!revision) { postAttempt = null; }
             editing = null;
             userForm.reset();
             const action = revision ? 'Revisi terkirim. ' : 'Laporan tercatat. ';
@@ -338,20 +335,20 @@ function init(root) {
         } finally {
             setBusy(form, false);
             updatePostControls();
-            if (postAttempt?.uncertain && !$('form-view').hidden && !sessionEnding) $('retry-post').focus();
+            if (postAttempt?.uncertain && !$('form-view').hidden && !sessionEnding) { $('retry-post').focus(); }
         }
     }
 
     function initUser() {
         $('new').addEventListener('click', () => {
             editing = null;
-            if (!postAttempt?.uncertain) userForm.reset();
+            if (!postAttempt?.uncertain) { userForm.reset(); }
             announce(postAttempt?.uncertain ? 'Lanjutkan pengajuan yang hasilnya belum dikonfirmasi.' : '');
             updatePostControls();
             show('form');
         });
         $('revise').addEventListener('click', () => {
-            if (selected?.status !== 'revision_required') return;
+            if (selected?.status !== 'revision_required') { return; }
             if (postAttempt?.uncertain) {
                 announce('Selesaikan atau abaikan pengiriman laporan sebelumnya dari daftar sebelum membuka revisi.', true);
                 return;
@@ -363,7 +360,7 @@ function init(root) {
             show('form');
         });
         $('form-back').addEventListener('click', () => {
-            if (busy) return;
+            if (busy) { return; }
             if (editing) {
                 const id = editing.id;
                 editing = null;
@@ -378,7 +375,7 @@ function init(root) {
             }
         });
         $('retry-post').addEventListener('click', () => {
-            if (!busy && postAttempt?.uncertain && !sessionEnding) void sendReport();
+            if (!busy && postAttempt?.uncertain && !sessionEnding) { void sendReport(); }
         });
         $('discard-post').addEventListener('click', () => {
             if (!busy && window.confirm('Hasil pengiriman belum diketahui. Periksa daftar sebelum membuat laporan baru. Abaikan percobaan ini?')) {
@@ -390,9 +387,9 @@ function init(root) {
         });
         userForm.form.addEventListener('submit', event => {
             event.preventDefault();
-            if (busy || sessionEnding || (!editing && postAttempt?.uncertain)) return;
+            if (busy || sessionEnding || (!editing && postAttempt?.uncertain)) { return; }
             const body = userForm.payload();
-            if (!body) return;
+            if (!body) { return; }
             if (editing) {
                 body.set('version', editing.version);
             } else {
@@ -404,18 +401,43 @@ function init(root) {
 
     function initAdmin() {
         const form = $('verify');
-        const dialog = $('confirm');
         const decision = $('decision');
         const note = $('note');
-        let draft;
+        const officer = $('verify-officer');
+        const officerState = $('officer-state');
+        const officerMore = $('officer-more');
+        let officerCursor = null, officersLoaded = false, loadingOfficers = false;
+        async function loadOfficers() {
+            if (loadingOfficers) return;
+            loadingOfficers = true; officerMore.disabled = true;
+            officerState.textContent = 'Memuat Petugas aktif…';
+            try {
+                const query = new URLSearchParams({limit: 100});
+                if (officerCursor !== null) query.set('before_id', officerCursor);
+                const page = await request(base + '/handling/officers?' + query);
+                for (const item of page.items) officer.append(new Option(item.name, item.id));
+                officerCursor = page.next_before_id; officersLoaded = true;
+                officerMore.hidden = officerCursor === null;
+                officerMore.textContent = 'Muat Petugas lainnya';
+                officerState.textContent = officer.options.length > 1 ? '' : 'Belum ada Petugas aktif. Aktifkan akun Petugas terlebih dahulu.';
+            } catch (error) { officerState.textContent = 'Daftar Petugas belum dapat dimuat. Klik Muat Petugas untuk mencoba lagi.'; }
+            finally { loadingOfficers = false; officerMore.disabled = false; }
+        }
+        officerMore.addEventListener('click', () => void loadOfficers());
         decision.addEventListener('change', () => {
+            const approved = decision.value === 'approved';
+            $('verify-submit').textContent = approved ? 'Setujui dan tugaskan' : decision.value === 'revision_required' ? 'Kirim permintaan perbaikan' : decision.value === 'rejected' ? 'Tolak laporan' : 'Simpan';
+            $('note-label').textContent = decision.value === 'rejected' ? 'Alasan laporan ditolak' : 'Apa yang perlu diperbaiki pelapor?';
+            $('officer-field').hidden = !approved; officer.required = approved;
+            $('note-field').hidden = approved || !decision.value;
+            if (approved && !officersLoaded) void loadOfficers();
             note.required = ['revision_required', 'rejected'].includes(decision.value);
             note.setCustomValidity('');
         });
         note.addEventListener('input', () => note.setCustomValidity(''));
-        form.addEventListener('submit', event => {
+        form.addEventListener('submit', async event => {
             event.preventDefault();
-            if (busy || sessionEnding || selected?.status !== 'pending') return;
+            if (busy || sessionEnding || selected?.status !== 'pending') { return; }
             const status = decision.value;
             const value = note.value.trim();
             if ((note.required && !value) || [...value].length > 1000) {
@@ -423,26 +445,25 @@ function init(root) {
                 note.reportValidity();
                 return;
             }
-            draft = {id: selected.id, status, version: selected.version, note: value || null};
-            $('confirm-copy').textContent = 'Simpan keputusan “' + statuses[status] + '” untuk ' + selected.tracking_number + '?';
-            dialog.returnValue = '';
-            dialog.showModal();
-        });
-        dialog.addEventListener('close', async () => {
-            if (dialog.returnValue !== 'confirm' || busy || !draft || draft.id !== selected?.id) return;
-            const {id, ...body} = draft;
-            draft = null;
+            if (status === 'approved' && !officer.reportValidity()) return;
+            const id = selected.id;
+            const body = {status, version: selected.version, note: status === 'approved' ? null : value || null};
+            if (status === 'approved') body.petugas_id = Number(officer.value);
             setBusy(form, true);
-            announce('Menyimpan keputusan…');
+            $('verify-feedback').textContent = 'Menyimpan…';
+            announce('Menyimpan…');
             try {
                 await request(base + '/' + id + '/verification', {
                     method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
                 });
-                announce('Keputusan verifikasi tersimpan.');
+                const success = body.status === 'approved' ? 'Laporan disetujui. Tugas sudah masuk ke akun Petugas yang dipilih.' : body.status === 'revision_required' ? 'Permintaan perbaikan sudah dikirim ke pelapor.' : 'Laporan ditolak. Alasan tersimpan untuk pelapor.';
+                $('verify-feedback').textContent = success; announce(success);
                 void loadDetail(id);
             } catch (error) {
+                const feedback = error.status === 400 && body.status === 'approved' && error.message === 'Body laporan tidak valid.' ? 'Persetujuan belum tersimpan. Backend mungkin belum mendukung penugasan langsung; periksa versi server.' : messageFor(error);
+                $('verify-feedback').textContent = feedback;
                 failure(error);
-                if (error.status === 409) void loadDetail(id);
+                if (error.status === 409) { void loadDetail(id); }
             } finally {
                 setBusy(form, false);
             }
@@ -457,11 +478,11 @@ function init(root) {
     listRetry.addEventListener('click', () => { announce(''); void loadList(retryCursor); });
     listMore.addEventListener('click', () => void loadList(listCursor));
     historyMore.addEventListener('click', () => void loadHistory(historyCursor));
-    for (const button of backButtons) button.addEventListener('click', showList);
+    for (const button of backButtons) { button.addEventListener('click', showList); }
     if (admin) {
         initAdmin();
         window.addEventListener('sampira:report-detail', event => {
-            if (!root.hidden) openFromList(event.detail.id);
+            if (!root.hidden) { openFromList(event.detail.id); }
         });
         root.addEventListener('sampira:close', () => {
             ++detailRequest;
@@ -472,21 +493,21 @@ function init(root) {
             disposeLocation?.();
         });
         document.querySelector('[data-open-verification]').addEventListener('click', () => {
-            if (detailID) void loadDetail(detailID);
+            if (detailID) { void loadDetail(detailID); }
         });
         void loadList();
     } else {
         initUser();
         window.addEventListener('sampira:user-report-view', event => {
-            if (!root.classList.contains('active') || busy || sessionEnding) return;
-            if (event.detail.view === 'new') $('new').click();
-            else if (event.detail.view === 'detail') openFromList(event.detail.id);
-            else if (event.detail.view === 'list' && $('list-view').hidden) showList();
+            if (!root.classList.contains('active') || busy || sessionEnding) { return; }
+            if (event.detail.view === 'new') { $('new').click(); }
+            else if (event.detail.view === 'detail') { openFromList(event.detail.id); }
+            else if (event.detail.view === 'list' && $('list-view').hidden) { showList(); }
         });
         window.addEventListener('sampira:user-view', event => {
-            if(event.detail!=='laporan-fasilitas'||busy||sessionEnding)return;
-            if ($('form-view').hidden) $('new').click();
-            else $('form-heading').focus();
+            if(event.detail!=='laporan-fasilitas'||busy||sessionEnding){ return; }
+            if ($('form-view').hidden) { $('new').click(); }
+            else { $('form-heading').focus(); }
             syncCommunity();
         });
         $('new').click();
@@ -494,4 +515,4 @@ function init(root) {
 }
 
 const root = document.querySelector('[data-facility-reports]');
-if (root) init(root);
+if (root) { init(root); }

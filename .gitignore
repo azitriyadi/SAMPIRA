@@ -25,3 +25,14 @@ Desktop.ini
 
 # Compiled Binaries
 *.exe
+
+# Local secrets, runtime output, and database backups (keep SQL migrations tracked).
+.env.*
+!.env.example
+*.log
+*.key
+backups/
+*.sql.gz
+*.dump
+*.test
+coverage.out

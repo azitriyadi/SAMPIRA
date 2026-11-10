@@ -57,12 +57,12 @@ func NextHandlingStatus(current string, action HandlingAction) string {
 	case action == HandlingReassign && current != FacilityApproved && current != HandlingCompleted && ValidHandlingStatus(current):
 		return HandlingAssigned
 	case current == HandlingAssigned && action == HandlingStartAssessment:
-		return HandlingAssessing
+		return HandlingInProgress
 	case current == HandlingAssessing && action == HandlingRecordAssessment:
 		return HandlingInProgress
 	case (current == HandlingInProgress || current == HandlingRevision) && action == HandlingRecordProgress:
 		return HandlingInProgress
-	case current == HandlingInProgress && action == HandlingSubmitResolution:
+	case (current == HandlingInProgress || current == HandlingAssessing || current == HandlingRevision) && action == HandlingSubmitResolution:
 		return HandlingSubmitted
 	case current == HandlingSubmitted && action == HandlingRequestRevision:
 		return HandlingRevision

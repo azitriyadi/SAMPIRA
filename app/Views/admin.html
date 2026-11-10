@@ -6,17 +6,17 @@
     <title>Admin | SAMPIRA</title>
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="/assets/css/facility-reports.css?v=phase4b">
-    <script src="/assets/js/portal-session.js?v=phase5b" defer></script>
-    <link rel="stylesheet" href="/assets/css/facility-handling.css?v=phase4b">
+    <script src="/assets/js/portal-session.js?v=session-dialog-2" defer></script>
+    <link rel="stylesheet" href="/assets/css/facility-handling.css?v=facility-simple-2">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
     <link rel="stylesheet" href="/assets/css/location-map.css?v=phase8">
     <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
-    <script type="module" src="/assets/js/facility-reports.js?v=community-13"></script>
+    <script type="module" src="/assets/js/facility-reports.js?v=facility-simple-2"></script>
     <link rel="icon" href="/assets/img/sampira-mark.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/sampira.css?v=phase6b-live">
     <link rel="stylesheet" href="/assets/css/admin-workspace.css?v=roles-1">
     <script type="module" src="/assets/js/education.js?v=maps-reader-9"></script>
-    <script type="module" src="/assets/js/operations.js?v=admin-refresh-1"></script>
+    <script type="module" src="/assets/js/operations.js?v=status-native-2"></script>
     <script type="module" src="/assets/js/admin-workspace.js?v=community-13"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/portal-design.css?v=roles-1">
@@ -25,6 +25,7 @@
 <link rel="stylesheet" href="/assets/css/admin-refresh.css?v=maps-reader-9">
 <link rel="stylesheet" href="/assets/css/facility-community.css?v=community-13">
 <link rel="stylesheet" href="/assets/css/city-datasets.css?v=bandung-2">
+    <link rel="stylesheet" href="/assets/css/session-dialog.css?v=1">
 </head>
 <body class="sp-portal facility-admin-page sp-console sp-admin admin-refresh">
     <a class="sp-admin-skip" href="#admin-content">Lewati ke isi</a>
@@ -116,7 +117,7 @@
         <label for="admin-edu-status">Status</label><select id="admin-edu-status" name="status"><option value="">Semua status</option><option value="draft">Draf</option><option value="published">Terbit</option><option value="archived">Arsip</option></select>
         <button class="sp-button" type="submit">Terapkan</button>
     </form>
-    <output role="status" aria-live="polite"></output>
+    <output aria-live="polite"></output>
     <section class="sp-table-wrap" aria-label="Daftar artikel edukasi"><table><thead><tr><th scope="col">Judul</th><th scope="col">Kategori</th><th scope="col">Status</th><th scope="col">Diperbarui</th><th scope="col">Aksi</th></tr></thead><tbody></tbody></table></section>
     <div class="sp-pager">
         <button class="sp-button sp-button--quiet" data-education-page="-1" type="button" disabled>Sebelumnya</button>
@@ -134,7 +135,7 @@
             <label for="admin-edit-sources">Sumber (opsional)</label><textarea id="admin-edit-sources" name="sources" rows="2" aria-describedby="source-hint"></textarea><small id="source-hint">Satu URL HTTPS per baris. Maksimal delapan sumber.</small>
             <fieldset id="education-photo-editor"><legend>Foto artikel (opsional)</legend><p>Upload JPG, PNG, WEBP maksimal 5 MB atau gunakan tautan foto HTTPS.</p><p data-photo-status aria-live="polite">Memeriksa layanan foto…</p><div data-photo-fields></div></fieldset>
             <details class="sp-admin-article-preview"><summary>Pratinjau teks artikel</summary><h4 data-preview-title>Pratinjau Judul</h4><p data-preview-summary></p><p data-preview-body></p></details>
-            <output role="status" aria-live="polite"></output>
+            <output aria-live="polite"></output>
             <div class="sp-pager">
                 <button class="sp-button" type="submit">Simpan draf</button>
                 <button class="sp-button" type="button" data-publication="published" hidden>Terbitkan</button>
