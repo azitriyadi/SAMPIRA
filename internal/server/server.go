@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
 	"time"
 
+	ecorecycle "ecorecycle"
 	"ecorecycle/db_init/migrations"
 	"ecorecycle/internal/handlers"
 	"ecorecycle/internal/models"
@@ -82,15 +83,19 @@ func prepareApplicationSchemas(app *handlers.App, db *sql.DB) error {
 	if err := app.Users.EnsureProfileSchema(); err != nil {
 		return fmt.Errorf("gagal menyiapkan kolom profil payout: %w", err)
 	}
+
 	if err := app.Users.EnsureSessionSchema(); err != nil {
 		return fmt.Errorf("gagal menyiapkan sesi: %w", err)
 	}
+
 	if err := app.Pickups.EnsureVerificationSchema(); err != nil {
 		return fmt.Errorf("gagal menyiapkan kolom verifikasi penjemputan: %w", err)
 	}
+
 	if err := app.Pickups.EnsureWorkflowSchema(); err != nil {
 		return fmt.Errorf("gagal menyiapkan skema pickup Phase 2: %w", err)
 	}
+
 	if err := app.Announcements.EnsureSchema(); err != nil {
 		return fmt.Errorf("gagal menyiapkan tabel CMS portal: %w", err)
 	}
@@ -100,21 +105,27 @@ func prepareApplicationSchemas(app *handlers.App, db *sql.DB) error {
 	if err := migrations.ApplyFacilityReports(ctx, db); err != nil {
 		return fmt.Errorf("gagal menyiapkan skema laporan fasilitas: %w", err)
 	}
+
 	if err := migrations.ApplyFacilityHandling(ctx, db); err != nil {
 		return fmt.Errorf("gagal menyiapkan skema penanganan fasilitas: %w", err)
 	}
+
 	if err := migrations.ApplyPreciseLocations(ctx, db); err != nil {
 		return fmt.Errorf("gagal menyiapkan skema lokasi penjemputan: %w", err)
 	}
+
 	if err := migrations.ApplyEducationContent(ctx, db); err != nil {
 		return fmt.Errorf("gagal menyiapkan skema Pusat Edukasi: %w", err)
 	}
+
 	if err := migrations.ApplyPickupIdempotency(ctx, db); err != nil {
 		return fmt.Errorf("gagal menyiapkan idempotency penjemputan: %w", err)
 	}
+
 	if err := migrations.ApplyRegistrationUnicode(ctx, db); err != nil {
 		return fmt.Errorf("gagal menyiapkan teks registrasi Unicode: %w", err)
 	}
+
 	if err := migrations.ApplyContributions(ctx, db); err != nil {
 		return fmt.Errorf("gagal menyiapkan skema kontribusi Phase 9: %w", err)
 	}
@@ -122,9 +133,7 @@ func prepareApplicationSchemas(app *handlers.App, db *sql.DB) error {
 	return nil
 }
 
-// NewHandler membuat aplikasi dan seluruh routing HTTP SAMPIRA.
 // NewHandler membuat aplikasi dan menjalankan migrasi database.
-// Digunakan oleh server lokal.
 func NewHandler() (http.Handler, *sql.DB, error) {
 	return NewHandlerWithMigrations(true)
 }
@@ -150,40 +159,46 @@ func NewHandlerWithMigrations(runMigrations bool) (http.Handler, *sql.DB, error)
 			return nil, nil, err
 		}
 	}
-	wd, _ := os.Getwd()
-	_, statErr := os.Stat("app/Views/index.html")
 
-	log.Printf("VERCEL DEBUG | Working Directory: %s", wd)
-	log.Printf("VERCEL DEBUG | index.html ditemukan: %v", statErr == nil)
+	// Mengambil folder assets dari embedded filesystem.
+	assetsFS, err := fs.Sub(ecorecycle.WebFiles, "assets")
+	if err != nil {
+		db.Close()
+		return nil, nil, fmt.Errorf("gagal membaca embedded assets: %w", err)
+	}
 
 	mux := http.NewServeMux()
 
 	app.RegisterContributions(mux)
 
+	// Halaman utama.
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			http.ServeFile(w, r, "app/Views/index.html")
+			http.ServeFileFS(w, r, ecorecycle.WebFiles, "app/Views/index.html")
 			return
 		}
+
 		http.NotFound(w, r)
 	})
 
 	mux.HandleFunc("GET /home", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "app/Views/index.html")
+		http.ServeFileFS(w, r, ecorecycle.WebFiles, "app/Views/index.html")
 	})
 
 	mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/assets/img/waste-organic.svg", http.StatusTemporaryRedirect)
 	})
 
+	// Halaman autentikasi.
 	mux.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "app/Views/login.html")
+		http.ServeFileFS(w, r, ecorecycle.WebFiles, "app/Views/login.html")
 	})
 
 	mux.HandleFunc("GET /register", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "app/Views/register.html")
+		http.ServeFileFS(w, r, ecorecycle.WebFiles, "app/Views/register.html")
 	})
 
+	// Halaman berdasarkan role pengguna.
 	mux.HandleFunc("GET /dashboard", app.Portal(models.RoleUser, "app/Views/dashboard.html"))
 	mux.HandleFunc("GET /profile", app.Portal(models.RoleUser, "app/Views/profile.html"))
 	mux.HandleFunc("GET /admin", app.Portal(models.RoleAdmin, "app/Views/admin.html"))
@@ -196,8 +211,9 @@ func NewHandlerWithMigrations(runMigrations bool) (http.Handler, *sql.DB, error)
 
 	mux.HandleFunc("POST /logout", app.LogoutHandler)
 
+	// Dokumentasi Swagger.
 	mux.HandleFunc("GET /swagger", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "docs/swagger.html")
+		http.ServeFileFS(w, r, ecorecycle.WebFiles, "docs/swagger.html")
 	})
 
 	mux.HandleFunc("GET /swagger/", func(w http.ResponseWriter, r *http.Request) {
@@ -206,20 +222,33 @@ func NewHandlerWithMigrations(runMigrations bool) (http.Handler, *sql.DB, error)
 
 	mux.HandleFunc("GET /swagger/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		http.ServeFile(w, r, "docs/openapi.json")
+		http.ServeFileFS(w, r, ecorecycle.WebFiles, "docs/openapi.json")
 	})
 
-	mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
+	// File CSS, JavaScript, gambar, dan vendor.
+	mux.Handle(
+		"GET /assets/",
+		http.StripPrefix(
+			"/assets/",
+			http.FileServer(http.FS(assetsFS)),
+		),
+	)
+
+	// Foto hasil upload disimpan di filesystem runtime.
 	mux.HandleFunc("GET /uploads/{name}", app.PickupPhotoHandler)
 
+	// API autentikasi.
 	mux.HandleFunc("POST /api/auth/login", app.LoginHandler)
 	mux.HandleFunc("POST /api/auth/register", app.RegisterHandler)
+
+	// API pengguna.
 	mux.HandleFunc("GET /api/user/profile", app.ProfileGetHandler)
 	mux.HandleFunc("POST /api/user/profile", app.ProfileUpdateHandler)
 	mux.HandleFunc("GET /api/users/collectors", app.ListCollectorsHandler)
 	mux.HandleFunc("GET /api/users/petugas", app.ListCollectorsHandler)
 	mux.HandleFunc("GET /api/administrator/session", app.AdministratorSessionHandler)
 
+	// API penjemputan.
 	mux.HandleFunc("POST /api/ecorecycle/request_pickup", app.RequestPickupHandler)
 	mux.HandleFunc("POST /api/ecorecycle/update_pickup", app.UpdatePickupHandler)
 	mux.HandleFunc("POST /api/ecorecycle/cancel_pickup", app.CancelPickupHandler)
@@ -232,16 +261,21 @@ func NewHandlerWithMigrations(runMigrations bool) (http.Handler, *sql.DB, error)
 	mux.HandleFunc("GET /api/administrator/pickup-rewards", app.PendingRewardsHandler)
 	mux.HandleFunc("GET /api/administrator/pickup-rewards/{id}/proof", app.RewardProofHandler)
 	mux.HandleFunc("GET /api/ecorecycle/list_pickups", app.ListPickupsHandler)
+
+	// API pengumuman.
 	mux.HandleFunc("GET /api/ecorecycle/announcements", app.ListAnnouncementsHandler)
 	mux.HandleFunc("POST /api/ecorecycle/announcements", app.ManageAnnouncementsHandler)
 	mux.HandleFunc("DELETE /api/ecorecycle/announcements", app.DeleteAnnouncementHandler)
 
+	// Modul tambahan.
 	app.RegisterFacilityReports(mux)
 	app.RegisterFacilityHandling(mux)
 	app.RegisterEducation(mux)
 
+	// Middleware utama.
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+
 		if app.AllowBrowserWrite(w, r) {
 			mux.ServeHTTP(w, r)
 		}

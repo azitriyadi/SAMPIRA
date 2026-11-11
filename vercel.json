@@ -1,7 +1,3 @@
 {
-  "functions": {
-    "cmd/server/main.go": {
-      "includeFiles": "{app/Views/**,assets/**,docs/**}"
-    }
-  }
+  "version": 2
 }
