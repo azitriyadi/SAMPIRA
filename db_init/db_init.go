@@ -51,6 +51,8 @@ type initialAccount struct {
 
 func prepareInitialAccounts(getenv func(string) string) ([]initialAccount, error) {
 	accounts := []initialAccount{
+		{name: "User Demo SAMPIRA", email: "user@eco.com", role: "user", password: getenv("SAMPIRA_INITIAL_USER_PASSWORD")},
+		{name: "Petugas Demo SAMPIRA", email: "petugas@eco.com", role: "petugas", password: getenv("SAMPIRA_INITIAL_PETUGAS_PASSWORD")},
 		{name: "Admin SAMPIRA", email: "admin@eco.com", role: "admin", password: getenv("SAMPIRA_INITIAL_ADMIN_PASSWORD")},
 		{name: "Administrator SAMPIRA", email: "administrator@eco.com", role: "administrator", password: getenv("SAMPIRA_INITIAL_ADMINISTRATOR_PASSWORD")},
 	}

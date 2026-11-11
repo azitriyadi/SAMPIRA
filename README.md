@@ -115,6 +115,8 @@ JWT_SECRET=
 PORT=8080
 SAMPIRA_LISTEN_HOST=127.0.0.1
 SAMPIRA_SECURE_COOKIE=false
+SAMPIRA_INITIAL_USER_PASSWORD=
+SAMPIRA_INITIAL_PETUGAS_PASSWORD=
 SAMPIRA_INITIAL_ADMIN_PASSWORD=
 SAMPIRA_INITIAL_ADMINISTRATOR_PASSWORD=
 ```
@@ -137,14 +139,16 @@ Sesuaikan `DB_USER` dan `DB_PASS` dengan database setempat. Gunakan `SAMPIRA_SEC
 go run ./db_init
 ```
 
-Initializer membuat database, tabel dasar, kategori sampah, serta dua akun awal:
+Initializer membuat database, tabel dasar, kategori sampah, serta akun demo untuk semua role:
 
 | Role | Email | Password |
 | --- | --- | --- |
+| User | `user@eco.com` | Acak; ditampilkan setelah inisialisasi berhasil |
+| Petugas | `petugas@eco.com` | Acak; ditampilkan setelah inisialisasi berhasil |
 | Admin | `admin@eco.com` | Acak; ditampilkan setelah inisialisasi berhasil |
 | Administrator | `administrator@eco.com` | Acak; ditampilkan setelah inisialisasi berhasil |
 
-Password disimpan sebagai hash bcrypt. Jika ingin memilih password sendiri, isi dua variabel `SAMPIRA_INITIAL_*_PASSWORD` sebelum inisialisasi; panjang masing-masing 15–72 byte. Nilai kosong menghasilkan password acak yang berbeda untuk setiap akun.
+Password disimpan sebagai hash bcrypt. Jika ingin memilih password sendiri, isi variabel `SAMPIRA_INITIAL_USER_PASSWORD`, `SAMPIRA_INITIAL_PETUGAS_PASSWORD`, `SAMPIRA_INITIAL_ADMIN_PASSWORD`, dan `SAMPIRA_INITIAL_ADMINISTRATOR_PASSWORD` sebelum inisialisasi; panjang masing-masing 15–72 byte. Nilai kosong menghasilkan password acak yang berbeda untuk setiap akun dan password tersebut ditampilkan sekali di terminal.
 
 **Jangan membuat database kosong secara manual sebelum menjalankan initializer.** Initializer menggunakan `CREATE DATABASE` dan menolak nama database yang sudah ada. Simpan password awal secara privat; jangan menjalankannya pada database utama yang telah berisi data.
 
