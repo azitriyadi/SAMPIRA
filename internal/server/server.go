@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -149,6 +150,11 @@ func NewHandlerWithMigrations(runMigrations bool) (http.Handler, *sql.DB, error)
 			return nil, nil, err
 		}
 	}
+	wd, _ := os.Getwd()
+	_, statErr := os.Stat("app/Views/index.html")
+
+	log.Printf("VERCEL DEBUG | Working Directory: %s", wd)
+	log.Printf("VERCEL DEBUG | index.html ditemukan: %v", statErr == nil)
 
 	mux := http.NewServeMux()
 
